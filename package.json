@@ -1,0 +1,8 @@
+{
+  "name": "quiniela-webview-vercel",
+  "version": "1.0.0",
+  "description": "Renderizador HTML WebView para la Quiniela Qatar 2022",
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}

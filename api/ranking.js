@@ -97,9 +97,9 @@ export default function handler(req) {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background-color: #F8F9FA; color: var(--text-dark); -webkit-font-smoothing: antialiased; }
-    .container { max-width: 430px; margin: 0 auto; background: #F8F9FA; min-height: 100vh; display: flex; flex-direction: column; }
-    .header { background: linear-gradient(160deg, #4A0A12 0%, #6B0F1A 40%, #8B1A2A 70%, #3D0A10 100%); padding: 30px 20px 40px; text-align: center; position: relative; overflow: hidden; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; box-shadow: 0 4px 20px rgba(74, 10, 18, 0.4); }
+    body { background-color: var(--bordeaux); color: #FFF; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 430px; margin: 0 auto; background: var(--bordeaux); min-height: 100vh; display: flex; flex-direction: column; }
+    .header { background: linear-gradient(160deg, #4A0A12 0%, #6B0F1A 40%, #8B1A2A 70%, #3D0A10 100%); padding: 30px 20px 40px; text-align: center; position: relative; overflow: hidden; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); }
     .header::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: repeating-linear-gradient(45deg, var(--gold) 0, var(--gold) 1px, transparent 1px, transparent 10px); opacity: 0.06; pointer-events: none; }
     .header-chip { display: inline-block; background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 20px; color: #FFF; font-size: 11px; font-weight: 600; margin-bottom: 12px; letter-spacing: 0.5px; }
     .header-title { color: var(--gold-light); font-size: 22px; font-weight: 800; margin-bottom: 6px; position: relative; }
@@ -116,8 +116,8 @@ export default function handler(req) {
     .tu-total { text-align: right; color: rgba(74, 10, 18, 0.7); font-size: 11px; font-weight: 600; margin-bottom: 12px; }
     .tu-motivational { background: rgba(255,255,255,0.3); padding: 10px; border-radius: 10px; text-align: center; color: var(--bordeaux-dark); font-size: 12px; font-weight: 700; }
     .section-title { display: flex; align-items: center; margin-bottom: 16px; }
-    .section-title h3 { font-size: 14px; font-weight: 800; color: rgba(26, 26, 46, 0.8); text-transform: uppercase; letter-spacing: 1px; margin-right: 12px; }
-    .section-title::after { content: ""; flex: 1; height: 2px; background: linear-gradient(to right, rgba(201,168,76,0.4), transparent); border-radius: 2px; }
+    .section-title h3 { font-size: 14px; font-weight: 800; color: #FFF; text-transform: uppercase; letter-spacing: 1px; margin-right: 12px; }
+    .section-title::after { content: ""; flex: 1; height: 2px; background: linear-gradient(to right, rgba(201,168,76,0.6), transparent); border-radius: 2px; }
     .top-list { display: flex; flex-direction: column; gap: 12px; }
     .top-card { background: rgba(255,255,255,0.97); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.04); position: relative; border-left: 4px solid #E0E0E8; }
     .top-card.pos-1 { border-left-color: var(--gold); background: linear-gradient(to right, rgba(201,168,76,0.07), #FFF); }
@@ -138,11 +138,11 @@ export default function handler(req) {
     .tc-score { text-align: right; }
     .tc-score-pts { font-size: 20px; font-weight: 900; color: var(--bordeaux); line-height: 1; }
     .tc-score-lbl { font-size: 9px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; margin-top: 2px; }
-    .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 13px; background: #FFF; border-radius: 16px; font-weight: 600; }
+    .empty-state { text-align: center; padding: 30px 20px; color: rgba(255, 255, 255, 0.7); font-size: 13px; background: rgba(0, 0, 0, 0.15); border-radius: 16px; font-weight: 600; }
     .divider { text-align: center; margin: 30px 0; position: relative; }
-    .divider::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(26, 26, 46, 0.08); z-index: 0; }
-    .divider span { position: relative; background: #F8F9FA; padding: 0 10px; font-size: 14px; color: rgba(26, 26, 46, 0.3); z-index: 1; }
-    .footer { text-align: center; color: rgba(26, 26, 46, 0.25); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .divider::before { content: ""; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, 0.15); z-index: 0; }
+    .divider span { position: relative; background: var(--bordeaux); padding: 0 10px; font-size: 14px; color: rgba(255, 255, 255, 0.4); z-index: 1; }
+    .footer { text-align: center; color: rgba(255, 255, 255, 0.35); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
   </style>
 </head>
 <body>

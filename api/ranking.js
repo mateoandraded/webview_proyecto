@@ -272,11 +272,19 @@ export default function handler(req) {
         })
       })
       .then(res => {
+         // Intentar cerrar de forma nativa con Jelou
          if (window.JelouApi && window.JelouApi.close) window.JelouApi.close();
+         
+         // Fallback 1: Intentar cerrar ventana de forma cruda
+         try { window.close(); } catch(e) {}
+
+         // Fallback 2: Forzar salir del historial o ir a blank (típico hack de WhatsApp WebView)
+         setTimeout(() => { window.history.go(-(window.history.length)); }, 300);
+         setTimeout(() => { window.location.href = 'about:blank'; }, 600);
       })
       .catch(e => {
          console.error(e);
-         btn.innerText = 'Error (Intentar de nuevo)';
+         btn.innerText = 'Error al cerrar (Intenta de nuevo)';
          btn.disabled = false;
       });
     }

@@ -7,8 +7,8 @@ const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
 
 // Utilidad para fetch seguro
-async function fetchDatum(collection, method = 'GET', body = null, id = '') {
-  const url = `${BASE_URL}/${collection}/records${id ? '/' + id : ''}?perPage=500`;
+async function fetchDatum(collection, method = 'GET', body = null, id = '', query = '') {
+  const url = `${BASE_URL}/${collection}/records${id ? '/' + id : ''}?perPage=500${query}`;
   const options = {
     method,
     headers: {
@@ -34,7 +34,7 @@ export default async function handler(req) {
       const body = await req.json(); // Array de { match_id, local_score, visitor_score, ... }
 
       // 1. Obtener los pronósticos actuales del usuario para hacer PATCH o POST
-      const existingReq = await fetchDatum(`pbc_1944158292?filter=(user_id='${userId}')`);
+      const existingReq = await fetchDatum('pbc_1944158292', 'GET', null, '', `&filter=(user_id='${userId}')`);
       const existingItems = existingReq.items || existingReq;
 
       for (const p of body) {
@@ -90,7 +90,7 @@ export default async function handler(req) {
   let userPredictions = [];
   if (userId !== 'GUEST') {
     try {
-      const dataPreds = await fetchDatum(`pbc_1944158292?filter=(user_id='${userId}')`);
+      const dataPreds = await fetchDatum('pbc_1944158292', 'GET', null, '', `&filter=(user_id='${userId}')`);
       userPredictions = Array.isArray(dataPreds) ? dataPreds : (dataPreds.items || []);
     } catch (e) { }
   }

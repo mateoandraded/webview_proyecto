@@ -5,8 +5,8 @@ export const config = {
 const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
 
-async function fetchDatum(collection, method = 'GET', body = null, id = '') {
-  const url = `${BASE_URL}/${collection}/records${id ? '/' + id : ''}?perPage=500`;
+async function fetchDatum(collection, method = 'GET', body = null, id = '', query = '') {
+  const url = `${BASE_URL}/${collection}/records${id ? '/' + id : ''}?perPage=500${query}`;
   const options = {
     method,
     headers: { 'X-Api-Key': API_KEY, 'Content-Type': 'application/json' }
@@ -37,7 +37,7 @@ export default async function handler(req) {
 
     try {
       const body = await req.json();
-      const existingReq = await fetchDatum(`pronosticos_brackets?filter=(user_id='${userId}')`);
+      const existingReq = await fetchDatum('pronosticos_brackets', 'GET', null, '', `&filter=(user_id='${userId}')`);
       const existingItems = existingReq.items || existingReq;
 
       const payload = {
@@ -83,7 +83,7 @@ export default async function handler(req) {
 
   if (userId !== 'GUEST') {
     try {
-      const dataB = await fetchDatum(`pronosticos_brackets?filter=(user_id='${userId}')`);
+      const dataB = await fetchDatum('pronosticos_brackets', 'GET', null, '', `&filter=(user_id='${userId}')`);
       const bItems = Array.isArray(dataB) ? dataB : (dataB.items || []);
       if (bItems.length > 0) userBracket = bItems[0];
     } catch (e) { }

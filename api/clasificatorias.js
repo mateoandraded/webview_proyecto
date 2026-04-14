@@ -265,7 +265,7 @@ export default async function handler(req) {
         const el = document.getElementById(id);
         const currVal = el.value || podium[ { 'sel-1':'campeon', 'sel-2':'subcampeon', 'sel-3':'tercero', 'sel-4':'cuarto' }[id] ];
         
-        el.innerHTML = '<option value="">-- Elige Equipo --</option>' + arr4.map(t => \`<option value="\${t}" \${currVal === t ? 'selected':''}>\${t}</option>\`).join('');
+        el.innerHTML = '<option value="">-- Elige Equipo --</option>' + arr4.map(t => '<option value="' + t + '" ' + (currVal === t ? 'selected':'') + '>' + t + '</option>').join('');
         if(isLocked) el.disabled = true;
       });
     }
@@ -304,16 +304,19 @@ export default async function handler(req) {
       
       const urlParams = new URLSearchParams(window.location.search);
       const userId = urlParams.get('user_id') || 'GUEST';
+      const fecha = urlParams.get('fecha') || '';
 
-      const res = await fetch('/api/clasificatorias?user_id=' + userId, {
-          method: 'POST', body: JSON.stringify(payload)
+      const res = await fetch('/api/clasificatorias?user_id=' + userId + (fecha ? '&fecha=' + fecha : ''), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
       });
 
       if(res.ok) {
         document.getElementById('toast').classList.add('show');
         setTimeout(() => document.getElementById('toast').classList.remove('show'), 3000);
       } else {
-        alert("Error al guardar");
+        try { const e = await res.json(); alert('Error: ' + e.error); } catch(x) { alert('Error HTTP: ' + res.status); }
       }
       btn.innerHTML = 'GUARDAR MI BRACKET';
     }

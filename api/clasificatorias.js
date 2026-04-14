@@ -23,7 +23,7 @@ export default async function handler(req) {
   const userId = url.searchParams.get('user_id') || 'GUEST';
   const fechaSimulada = "2026-06-11";
   const hoyReal = new Date().toISOString().split('T')[0];
-  
+
   // BLOQUEO GENERAL (Si el mundial ya empezó, se bloquean los brackets)
   const isLocked = fechaSimulada <= hoyReal; // Ejemplo de logica temporal estricta o simplemente lo dejamos disabled
   // Vamos a usar la lógica temporal estricta de "Si SimulationDate >= Inicio, lock".
@@ -32,14 +32,14 @@ export default async function handler(req) {
   // --- POST ---
   if (req.method === 'POST') {
     if (bracketLocked) {
-       return new Response(JSON.stringify({ error: "El mundial ya inició, los brackets están cerrados." }), { status: 403 });
+      return new Response(JSON.stringify({ error: "El mundial ya inició, los brackets están cerrados." }), { status: 403 });
     }
 
     try {
       const body = await req.json();
       const existingReq = await fetchDatum(`pronosticos_brackets?filter=(user_id='${userId}')`);
       const existingItems = existingReq.items || existingReq;
-      
+
       const payload = {
         user_id: userId,
         dieciseisavos: body.dieciseisavos,
@@ -71,8 +71,8 @@ export default async function handler(req) {
     const dataMatches = await fetchDatum('pbc_631836067');
     const m = Array.isArray(dataMatches) ? dataMatches : (dataMatches.items || []);
     m.forEach(x => { teams.add(x.equipo_local); teams.add(x.equipo_visitante); });
-  } catch(e) {}
-  
+  } catch (e) { }
+
   const allTeams = Array.from(teams).sort();
 
   // Obtener Bracket actual del user
@@ -80,13 +80,13 @@ export default async function handler(req) {
     dieciseisavos: [], octavos: [], cuartos: [], semis: [],
     cuarto_lugar: '', tercer_lugar: '', subcampeon: '', campeon: ''
   };
-  
+
   if (userId !== 'GUEST') {
     try {
       const dataB = await fetchDatum(`pronosticos_brackets?filter=(user_id='${userId}')`);
       const bItems = Array.isArray(dataB) ? dataB : (dataB.items || []);
       if (bItems.length > 0) userBracket = bItems[0];
-    } catch(e) {}
+    } catch (e) { }
   }
 
   // Render HTML

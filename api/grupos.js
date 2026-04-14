@@ -381,64 +381,60 @@ export default async function handler(req) {
   </div>
 
   <div class="container">
-    ${groupKeys.map(gk => {
-    const matchHtml = groups[gk].map(m => {
+    ${(function() {
+      let _html = "";
+      groupKeys.forEach(gk => {
+        let matchHtml = "";
+        groups[gk].forEach(m => {
+          let valL = '', valV = '';
+          if (m.locked) {
+            valL = m.real_l; valV = m.real_v;
+          } else {
+            valL = m.pred_l !== null ? m.pred_l : '';
+            valV = m.pred_v !== null ? m.pred_v : '';
+          }
 
-      let valL = '', valV = '';
-      if (m.locked) {
-        valL = m.real_l;
-        valV = m.real_v;
-      } else {
-        valL = m.pred_l !== null ? m.pred_l : '';
-        valV = m.pred_v !== null ? m.pred_v : '';
-      }
+          const lockClass = m.locked ? 'locked' : '';
+          const badge = m.locked ? '<span class="badge-locked">🔒 Finalizado</span>' : '⏱ PENDIENTE';
 
-      const lockClass = m.locked ? 'locked' : '';
-      const badge = m.locked ? '<span class="badge-locked">🔒 Finalizado</span>' : '⏱ PENDIENTE';
+          matchHtml += 
+            "<div class='match-row' data-id='" + m.id + "' data-locked='" + m.locked + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
+              "<div class='match-info'>" +
+                "<span>" + m.fecha + "</span> " + badge +
+              "</div>" +
+              "<div class='match-teams'>" +
+                "<div class='team-col'>" +
+                  "<span class='team-name'>" + m.local + "</span>" +
+                  "<div class='stepper " + lockClass + "'>" +
+                    "<button type='button' onclick='step(this, -1)'>-</button>" +
+                    "<input type='number' class='score-input input-local' value='" + valL + "' readonly placeholder='-'>" +
+                    "<button type='button' onclick='step(this, 1)'>+</button>" +
+                  "</div>" +
+                "</div>" +
+                "<div class='vs-badge'>VS</div>" +
+                "<div class='team-col'>" +
+                  "<span class='team-name'>" + m.visitante + "</span>" +
+                  "<div class='stepper " + lockClass + "'>" +
+                    "<button type='button' onclick='step(this, -1)'>-</button>" +
+                    "<input type='number' class='score-input input-visitor' value='" + valV + "' readonly placeholder='-'>" +
+                    "<button type='button' onclick='step(this, 1)'>+</button>" +
+                  "</div>" +
+                "</div>" +
+              "</div>" +
+            "</div>";
+        });
 
-      return \`
-          <div class="match-row" data-id="\${m.id}" data-locked="\${m.locked}" data-f="\${m.fecha}" data-l="\${m.local}" data-v="\${m.visitante}">
-            <div class="match-info">
-              <span>\${m.fecha}</span>
-              \${badge}
-            </div>
-            
-            <div class="match-teams">
-              <div class="team-col">
-                <span class="team-name">\${m.local}</span>
-                <div class="stepper \${lockClass}">
-                  <button type="button" onclick="step(this, -1)">-</button>
-                  <input type="number" class="score-input input-local" value="\${valL}" readonly placeholder="-">
-                  <button type="button" onclick="step(this, 1)">+</button>
-                </div>
-              </div>
-              
-              <div class="vs-badge">VS</div>
-              
-              <div class="team-col">
-                <span class="team-name">\${m.visitante}</span>
-                <div class="stepper \${lockClass}">
-                  <button type="button" onclick="step(this, -1)">-</button>
-                  <input type="number" class="score-input input-visitor" value="\${valV}" readonly placeholder="-">
-                  <button type="button" onclick="step(this, 1)">+</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        \`;
-      }).join('');
-
-      return \`
-        <div class="group-card">
-          <div class="group-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
-            GRUPO \${gk} <span style="font-size:12px; color:#A0AEC0;">▼</span>
-          </div>
-          <div class="group-content" style="display:block;">
-            \${matchHtml}
-          </div>
-        </div>
-      \`;
-    }).join('')}
+        _html += "<div class='group-card'>" +
+          "<div class='group-header' onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'\">" +
+            "GRUPO " + gk + " <span style='font-size:12px; color:#A0AEC0;'>▼</span>" +
+          "</div>" +
+          "<div class='group-content' style='display:block;'>" +
+            matchHtml +
+          "</div>" +
+        "</div>";
+      });
+      return _html;
+    })()}
   </div>
 
   <div class="bottom-bar">

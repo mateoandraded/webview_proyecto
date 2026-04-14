@@ -208,42 +208,32 @@ export default async function handler(req) {
   </div>
 
   <div class="container">
-    ${groupKeys.map(gk => {
-    const rows = sortedStandings[gk];
-    return \`
-        <div class="table-container">
-          <div class="group-title">GRUPO \${gk}</div>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th style="text-align:left;">Selección</th>
-                <th>PJ</th>
-                <th>G</th>
-                <th>E</th>
-                <th>P</th>
-                <th>DG</th>
-                <th>PTS</th>
-              </tr>
-            </thead>
-            <tbody>
-              \${rows.map((row, idx) => \`
-                <tr>
-                  <td class="pos-col">\${idx + 1}</td>
-                  <td class="team-col">\${row.equipo}</td>
-                  <td style="color:var(--text-muted);">\${row.PJ}</td>
-                  <td style="color:var(--text-muted);">\${row.PG}</td>
-                  <td style="color:var(--text-muted);">\${row.PE}</td>
-                  <td style="color:var(--text-muted);">\${row.PP}</td>
-                  <td>\${row.DG > 0 ? '+' : ''}\${row.DG}</td>
-                  <td class="pts-col">\${row.Pts}</td>
-                </tr>
-              \`).join('')}
-            </tbody>
-          </table>
-        </div>
-      \`;
-    }).join('')}
+    ${(function() {
+      let _html = "";
+      groupKeys.forEach(gk => {
+        const rows = sortedStandings[gk];
+        let tbody = "";
+        rows.forEach((row, idx) => {
+          tbody += "<tr>" +
+                   "<td class='pos-col'>" + (idx + 1) + "</td>" +
+                   "<td class='team-col'>" + row.equipo + "</td>" +
+                   "<td style='color:var(--text-muted);'>" + row.PJ + "</td>" +
+                   "<td style='color:var(--text-muted);'>" + row.PG + "</td>" +
+                   "<td style='color:var(--text-muted);'>" + row.PE + "</td>" +
+                   "<td style='color:var(--text-muted);'>" + row.PP + "</td>" +
+                   "<td>" + (row.DG > 0 ? '+' : '') + row.DG + "</td>" +
+                   "<td class='pts-col'>" + row.Pts + "</td>" +
+                   "</tr>";
+        });
+        _html += "<div class='table-container'>" +
+                 "<div class='group-title'>GRUPO " + gk + "</div>" +
+                 "<table>" +
+                 "<thead><tr><th>#</th><th style='text-align:left;'>Selección</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>PTS</th></tr></thead>" +
+                 "<tbody>" + tbody + "</tbody>" +
+                 "</table></div>";
+      });
+      return _html;
+    })()}
   </div>
 
 </body>

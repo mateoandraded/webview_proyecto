@@ -21,7 +21,8 @@ async function fetchDatum(collection, method = 'GET', body = null, id = '', quer
 export default async function handler(req) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'GUEST';
-  const fechaSimulada = "2026-06-11";
+  const paramFecha = url.searchParams.get('fecha');
+  const fechaSimulada = paramFecha || "2026-06-11";
   const hoyReal = new Date().toISOString().split('T')[0];
 
   // BLOQUEO GENERAL (Si el mundial ya empezó, se bloquean los brackets)

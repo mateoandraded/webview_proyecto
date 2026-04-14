@@ -97,7 +97,9 @@ export default async function handler(req) {
 
   // Máquina del tiempo simulada en frontend (hardcoded o env)
   // Usaremos un string YYYY-MM-DD para comparar. Por defecto, tomamos FECHA_HOY si existe.
-  const fechaSimulada = "2026-06-11"; // Puedes cambiarla a "2026-06-12" para ver bloquearse partidos del 11.
+  const paramFecha = url.searchParams.get('fecha');
+  const fechaSimulada = paramFecha || "2026-06-11";
+ // Puedes cambiarla a "2026-06-12" para ver bloquearse partidos del 11.
 
   // 3. Procesar Partidos y agrupar por Fase_o_Grupo
   const groups = {};

@@ -173,7 +173,7 @@ export default function handler(req) {
     '<div class="app">' +
       '<div class="header-box">' +
         '<div class="header-26">26</div>' +
-        '<div class="badge-26">QUINIELA 2026</div>' +
+        '<div class="badge-26">Jelou Mundial</div>' +
         '<h1>TABLA DE<br>POSICIONES</h1>' +
       '</div>' +
       '<div class="section-label">\uD83C\uDFC6 RANKING TOP 5</div>' +
@@ -181,7 +181,7 @@ export default function handler(req) {
       '<div class="footer-bar">' +
         '<button class="btn-back" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
       '</div>' +
-      '<div class="footer"><strong>WE ARE 26</strong>FIFA WORLD CUP 2026 \u00B7 QUINIELA OFICIAL</div>' +
+      '<div class="footer"><strong>WE ARE 26</strong>FIFA WORLD CUP 2026 \u00B7 Jelou Mundial</div>' +
     '</div>' +
     '<script>' +
       'function volverMenu(){' +

@@ -136,7 +136,7 @@ export default async function handler(req) {
 '</div>' +
 '<script>var ALL_TEAMS=' + teamsJson + ';var FLAGS=' + flagsJson + ';var SAVED=' + savedJson + ';</script>' +
 '<script>' +
-'var state={d16:[],d8:[],d4:[],semis:[],campeon:"",sub:"",tercero:""};' +
+'var state={d16:[],d8:[],d4:[],semis:[],campeon:"",sub:"",tercero:"",cuarto:""};' +
 '(function initState(){' +
 '  if(!SAVED||!SAVED.dieciseisavos)return;' +
 '  state.d16=SAVED.dieciseisavos||[];' +
@@ -146,6 +146,7 @@ export default async function handler(req) {
 '  state.campeon=SAVED.campeon||"";' +
 '  state.sub=SAVED.subcampeon||"";' +
 '  state.tercero=SAVED.tercer_lugar||"";' +
+'  state.cuarto=SAVED.cuarto_lugar||"";' +
 '})();' +
 'function gf(n){return FLAGS[(n||"").toUpperCase()]||"\\uD83C\\uDFF3\\uFE0F";}' +
 'function chip(team,sel,dimmed,onclick){' +
@@ -182,15 +183,19 @@ export default async function handler(req) {
 '    h+="<div class=\\"instr\\">Selecciona los ganadores finales</div>";' +
 '    if(src.length===0){h+="<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero elige en SEMIS</div>";}' +
 '    else{' +
-'      function podio(label,sk){' +
+'      function podio(label,sk,excl){' +
 '        var sel=state[sk];' +
 '        var html="<div class=\\"podio-section\\"><div class=\\"podio-label\\">"+label+"</div><div class=\\"podio-chips\\">";' +
-'        src.forEach(function(t){html+=chip(t,t===sel,false,"pickFinal(\'"+sk+"\',\'"+t+"\')");});' +
+'        src.forEach(function(t){' +
+'          if(excl.indexOf(t)>=0&&t!==sel)return;' +
+'          html+=chip(t,t===sel,false,"pickFinal(\'"+sk+"\',\'"+t+"\')");' +
+'        });' +
 '        html+="</div></div>";return html;' +
 '      }' +
-'      h+=podio("\uD83C\uDFC6 CAMPE\u00D3N MUNDIAL","campeon");' +
-'      h+=podio("SUBCAMPE\u00D3N (2\u00B0 PUESTO)","sub");' +
-'      h+=podio("TERCER LUGAR (3er PUESTO)","tercero");' +
+'      h+=podio("\uD83C\uDFC6 CAMPE\u00D3N MUNDIAL","campeon",[]);' +
+'      h+=podio("SUBCAMPE\u00D3N (2\u00B0 PUESTO)","sub",[state.campeon]);' +
+'      h+=podio("TERCER LUGAR (3er PUESTO)","tercero",[state.campeon,state.sub]);' +
+'      h+=podio("CUARTO LUGAR (4to PUESTO)","cuarto",[state.campeon,state.sub,state.tercero]);' +
 '    }' +
 '  }' +
 '  p.innerHTML=h;' +
@@ -199,21 +204,28 @@ export default async function handler(req) {
 'function clearDown(k){' +
 '  var o=["d16","d8","d4","semis"];var i=o.indexOf(k)+1;' +
 '  for(;i<o.length;i++){state[o[i]]=state[o[i]].filter(function(t){return state[o[i-1]].indexOf(t)>=0;});}' +
-'  state.campeon="";state.sub="";state.tercero="";' +
+'  state.campeon="";state.sub="";state.tercero="";state.cuarto="";' +
 '}' +
 'function toggleArr(a,t,m){var i=a.indexOf(t);i>=0?a.splice(i,1):(a.length<m&&a.push(t));}' +
 'window.toggle16=function(t){toggleArr(state.d16,t,32);clearDown("d16");rerender();};' +
 'window.toggle8=function(t){toggleArr(state.d8,t,16);clearDown("d8");rerender();};' +
 'window.toggle4=function(t){toggleArr(state.d4,t,8);clearDown("d4");rerender();};' +
 'window.toggleSemi=function(t){toggleArr(state.semis,t,4);clearDown("semis");rerender();};' +
-'window.pickFinal=function(k,t){state[k]=t;buildPhase(4);};' +
+'window.pickFinal=function(k,t){' +
+'  if(state[k]===t)state[k]="";else state[k]=t;' +
+'  if(k==="campeon"){if(state.sub===t)state.sub="";if(state.tercero===t)state.tercero="";if(state.cuarto===t)state.cuarto="";}' +
+'  if(k==="sub"){if(state.campeon===t)state.campeon="";if(state.tercero===t)state.tercero="";if(state.cuarto===t)state.cuarto="";}' +
+'  if(k==="tercero"){if(state.campeon===t)state.campeon="";if(state.sub===t)state.sub="";if(state.cuarto===t)state.cuarto="";}' +
+'  if(k==="cuarto"){if(state.campeon===t)state.campeon="";if(state.sub===t)state.sub="";if(state.tercero===t)state.tercero="";}' +
+'  buildPhase(4);' +
+'};' +
 'function showPhase(idx){' +
 '  document.querySelectorAll(".phase-tab").forEach(function(el,i){el.classList.toggle("active",i===idx);});' +
 '  document.querySelectorAll(".phase-panel").forEach(function(el,i){el.classList.toggle("active",i===idx);});' +
 '}' +
 'window.guardar=function(){' +
 '  var btn=document.getElementById("btnSave");btn.innerText="GUARDANDO...";' +
-'  var payload={dieciseisavos:state.d16,octavos:state.d8,cuartos:state.d4,semis:state.semis,campeon:state.campeon,subcampeon:state.sub,tercer_lugar:state.tercero,cuarto_lugar:""};' +
+'  var payload={dieciseisavos:state.d16,octavos:state.d8,cuartos:state.d4,semis:state.semis,campeon:state.campeon,subcampeon:state.sub,tercer_lugar:state.tercero,cuarto_lugar:state.cuarto};' +
 '  var uid=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
 '  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
 '  fetch("/api/clasificatorias?user_id="+uid,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})' +

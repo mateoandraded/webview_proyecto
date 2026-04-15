@@ -5,8 +5,8 @@ export const config = {
 const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
 
-const FLAGS = {"MEXICO":"🇲🇽","ESTADOS UNIDOS":"🇺🇸","CANADA":"🇨🇦","BRASIL":"🇧🇷","ARGENTINA":"🇦🇷","ECUADOR":"🇪🇨","COLOMBIA":"🇨🇴","PERU":"🇵🇪","CHILE":"🇨🇱","URUGUAY":"🇺🇾","PARAGUAY":"🇵🇾","BOLIVIA":"🇧🇴","VENEZUELA":"🇻🇪","ALEMANIA":"🇩🇪","ESPANA":"🇪🇸","ESPAÑA":"🇪🇸","FRANCIA":"🇫🇷","ITALIA":"🇮🇹","PORTUGAL":"🇵🇹","PAISES BAJOS":"🇳🇱","BELGICA":"🇧🇪","CROACIA":"🇭🇷","SERBIA":"🇷🇸","SUIZA":"🇨🇭","DINAMARCA":"🇩🇰","AUSTRIA":"🇦🇹","UCRANIA":"🇺🇦","TURQUIA":"🇹🇷","HUNGRIA":"🇭🇺","REPUBLICA CHECA":"🇨🇿","GRECIA":"🇬🇷","JAPON":"🇯🇵","REPUBLICA DE COREA":"🇰🇷","COREA DEL SUR":"🇰🇷","AUSTRALIA":"🇦🇺","IRAN":"🇮🇷","ARABIA SAUDITA":"🇸🇦","QATAR":"🇶🇦","MARRUECOS":"🇲🇦","SENEGAL":"🇸🇳","GHANA":"🇬🇭","CAMERUN":"🇨🇲","NIGERIA":"🇳🇬","TUNEZ":"🇹🇳","SUDAFRICA":"🇿🇦","EGIPTO":"🇪🇬","COSTA RICA":"🇨🇷","PANAMA":"🇵🇦","HONDURAS":"🇭🇳","JAMAICA":"🇯🇲","INDONESIA":"🇮🇩","NUEVA ZELANDA":"🇳🇿","GALES":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","ESCOCIA":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","INGLATERRA":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","POLONIA":"🇵🇱","RUMANIA":"🇷🇴","ESLOVENIA":"🇸🇮","ESLOVAQUIA":"🇸🇰","ALBANIA":"🇦🇱","ARGELIA":"🇩🇿","COSTA DE MARFIL":"🇨🇮","NORUEGA":"🇳🇴","SUECIA":"🇸🇪","IRLANDA":"🇮🇪","TRINIDAD Y TOBAGO":"🇹🇹","EL SALVADOR":"🇸🇻","GUATEMALA":"🇬🇹"};
-function flag(n) { return FLAGS[(n||'').toUpperCase()] || '🏳️'; }
+const FLAGS = {"MEXICO":"\uD83C\uDDF2\uD83C\uDDFD","ESTADOS UNIDOS":"\uD83C\uDDFA\uD83C\uDDF8","CANADA":"\uD83C\uDDE8\uD83C\uDDE6","BRASIL":"\uD83C\uDDE7\uD83C\uDDF7","ARGENTINA":"\uD83C\uDDE6\uD83C\uDDF7","ECUADOR":"\uD83C\uDDEA\uD83C\uDDE8","COLOMBIA":"\uD83C\uDDE8\uD83C\uDDF4","PERU":"\uD83C\uDDF5\uD83C\uDDEA","CHILE":"\uD83C\uDDE8\uD83C\uDDF1","URUGUAY":"\uD83C\uDDFA\uD83C\uDDFE","PARAGUAY":"\uD83C\uDDF5\uD83C\uDDFE","BOLIVIA":"\uD83C\uDDE7\uD83C\uDDF4","VENEZUELA":"\uD83C\uDDFB\uD83C\uDDEA","ALEMANIA":"\uD83C\uDDE9\uD83C\uDDEA","ESPANA":"\uD83C\uDDEA\uD83C\uDDF8","ESPAÑA":"\uD83C\uDDEA\uD83C\uDDF8","FRANCIA":"\uD83C\uDDEB\uD83C\uDDF7","ITALIA":"\uD83C\uDDEE\uD83C\uDDF9","PORTUGAL":"\uD83C\uDDF5\uD83C\uDDF9","PAISES BAJOS":"\uD83C\uDDF3\uD83C\uDDF1","BELGICA":"\uD83C\uDDE7\uD83C\uDDEA","CROACIA":"\uD83C\uDDED\uD83C\uDDF7","SERBIA":"\uD83C\uDDF7\uD83C\uDDF8","SUIZA":"\uD83C\uDDE8\uD83C\uDDED","DINAMARCA":"\uD83C\uDDE9\uD83C\uDDF0","AUSTRIA":"\uD83C\uDDE6\uD83C\uDDF9","UCRANIA":"\uD83C\uDDFA\uD83C\uDDE6","TURQUIA":"\uD83C\uDDF9\uD83C\uDDF7","HUNGRIA":"\uD83C\uDDED\uD83C\uDDFA","REPUBLICA CHECA":"\uD83C\uDDE8\uD83C\uDDFF","GRECIA":"\uD83C\uDDEC\uD83C\uDDF7","JAPON":"\uD83C\uDDEF\uD83C\uDDF5","REPUBLICA DE COREA":"\uD83C\uDDF0\uD83C\uDDF7","COREA DEL SUR":"\uD83C\uDDF0\uD83C\uDDF7","AUSTRALIA":"\uD83C\uDDE6\uD83C\uDDFA","IRAN":"\uD83C\uDDEE\uD83C\uDDF7","ARABIA SAUDITA":"\uD83C\uDDF8\uD83C\uDDE6","QATAR":"\uD83C\uDDF6\uD83C\uDDE6","MARRUECOS":"\uD83C\uDDF2\uD83C\uDDE6","SENEGAL":"\uD83C\uDDF8\uD83C\uDDF3","GHANA":"\uD83C\uDDEC\uD83C\uDDED","CAMERUN":"\uD83C\uDDE8\uD83C\uDDF2","NIGERIA":"\uD83C\uDDF3\uD83C\uDDEC","TUNEZ":"\uD83C\uDDF9\uD83C\uDDF3","SUDAFRICA":"\uD83C\uDDFF\uD83C\uDDE6","EGIPTO":"\uD83C\uDDEA\uD83C\uDDEC","COSTA RICA":"\uD83C\uDDE8\uD83C\uDDF7","PANAMA":"\uD83C\uDDF5\uD83C\uDDE6","HONDURAS":"\uD83C\uDDED\uD83C\uDDF3","JAMAICA":"\uD83C\uDDEF\uD83C\uDDF2","INDONESIA":"\uD83C\uDDEE\uD83C\uDDE9","NUEVA ZELANDA":"\uD83C\uDDF3\uD83C\uDDFF","GALES":"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73\uDB40\uDC7F","ESCOCIA":"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F","INGLATERRA":"\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F","POLONIA":"\uD83C\uDDF5\uD83C\uDDF1","RUMANIA":"\uD83C\uDDF7\uD83C\uDDF4","ESLOVENIA":"\uD83C\uDDF8\uD83C\uDDEE","ESLOVAQUIA":"\uD83C\uDDF8\uD83C\uDDF0","ALBANIA":"\uD83C\uDDE6\uD83C\uDDF1","ARGELIA":"\uD83C\uDDE9\uD83C\uDDFF","COSTA DE MARFIL":"\uD83C\uDDE8\uD83C\uDDEE","NORUEGA":"\uD83C\uDDF3\uD83C\uDDF4","SUECIA":"\uD83C\uDDF8\uD83C\uDDEA","IRLANDA":"\uD83C\uDDEE\uD83C\uDDEA","TRINIDAD Y TOBAGO":"\uD83C\uDDF9\uD83C\uDDF9","EL SALVADOR":"\uD83C\uDDF8\uD83C\uDDFB","GUATEMALA":"\uD83C\uDDEC\uD83C\uDDF9"};
+function flag(n) { return FLAGS[(n||'').toUpperCase()] || '\uD83C\uDFF3\uFE0F'; }
 
 async function fetchDatum(collection, method, body, id, query) {
   method = method || 'GET'; id = id || ''; query = query || '';
@@ -26,12 +26,16 @@ export default async function handler(req) {
   if (req.method === 'POST') {
     try {
       const body = await req.json();
-      const existingReq = await fetchDatum('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')");
-      const existingItems = existingReq.items || existingReq;
+      let existingItems = [];
+      try {
+        const existingReq = await fetchDatum('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')");
+        existingItems = existingReq.items || existingReq;
+      } catch(e) { existingItems = []; }
+
       for (const p of body) {
         if (p.locked) continue;
-        const record = existingItems.find(function(e) { return e.match_id === p.match_id; });
-        const recordId = record ? record.id : null;
+        const found = existingItems.find(function(e) { return e.match_id === p.match_id; });
+        const recordId = found ? found.id : null;
         const payload = {
           user_id: userId, match_id: p.match_id, equipo_local: p.equipo_local,
           equipo_visitante: p.equipo_visitante, pronostico_local: p.local_score,
@@ -89,15 +93,15 @@ export default async function handler(req) {
       else { valL = m.pred_l !== null ? m.pred_l : ''; valV = m.pred_v !== null ? m.pred_v : ''; }
       const lockClass = m.locked ? 'locked' : '';
       const lockData = m.locked ? "data-locked='true'" : "";
-      const st = m.locked ? "<div class='lock-badge'>FINALIZADO</div>" : "";
-      const bg = m.locked ? "style='opacity: 0.6'" : "";
+      const st = m.locked ? "<span class='lock-badge'>FIN</span>" : "";
 
       matchHtml +=
-        "<div class='match-row' " + lockData + " data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "' " + bg + ">" +
+        "<div class='match-row' " + lockData + " data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
           "<div class='match-meta'><span>" + m.fecha + "</span> " + st + "</div>" +
           "<div class='match-body'>" +
             "<div class='team-side'>" +
-              "<div class='t-flag'>" + flag(m.local) + "</div><div class='t-name'>" + m.local + "</div>" +
+              "<div class='t-flag'>" + flag(m.local) + "</div>" +
+              "<div class='t-name'>" + m.local + "</div>" +
             "</div>" +
             "<div class='score-block " + lockClass + "'>" +
               "<button type='button' class='btn-step' onclick='step(this,-1)'>-</button>" +
@@ -111,7 +115,8 @@ export default async function handler(req) {
               "<button type='button' class='btn-step' onclick='step(this,1)'>+</button>" +
             "</div>" +
             "<div class='team-side right'>" +
-              "<div class='t-flag'>" + flag(m.visitante) + "</div><div class='t-name'>" + m.visitante + "</div>" +
+              "<div class='t-flag'>" + flag(m.visitante) + "</div>" +
+              "<div class='t-name'>" + m.visitante + "</div>" +
             "</div>" +
           "</div>" +
         "</div>";
@@ -140,17 +145,17 @@ export default async function handler(req) {
     .group-content{display:none;padding:0}
     .group-block.open .group-content{display:block}
     .match-row{border-top:2px solid var(--white);padding:16px 12px}
-    .match-meta{font-size:10px;font-weight:800;color:rgba(255,255,255,.6);display:flex;justify-content:space-between;margin-bottom:16px;letter-spacing:1px}
-    .lock-badge{background:var(--purple);color:var(--white);padding:2px 6px}
+    .match-meta{font-size:10px;font-weight:800;color:rgba(255,255,255,.6);display:flex;justify-content:space-between;margin-bottom:12px;letter-spacing:1px}
+    .lock-badge{background:var(--purple);color:var(--white);padding:2px 6px;font-size:9px}
     .match-body{display:flex;align-items:center;justify-content:space-between;gap:4px}
     .team-side{flex:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0;overflow:hidden}
     .team-side.right{align-items:flex-end}
-    .t-flag{font-size:32px;line-height:1}
-    .t-name{font-weight:900;font-size:11px;text-transform:uppercase;white-space:nowrap;max-width:100%;text-overflow:ellipsis}
+    .t-flag{font-size:28px;line-height:1}
+    .t-name{font-weight:900;font-size:10px;text-transform:uppercase;white-space:nowrap;max-width:100%;text-overflow:ellipsis;overflow:hidden}
     .score-block{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--dim);padding:4px;border:1px solid rgba(255,255,255,.2)}
     .btn-step{width:32px;height:28px;background:var(--white);color:var(--black);border:none;font-size:16px;font-weight:900;cursor:pointer}
     .btn-step:active{background:var(--teal)}
-    .input-score{width:32px;height:32px;background:transparent;border:none;color:var(--lime);font-size:24px;font-family:'Archivo Black';text-align:center}
+    .input-score{width:32px;height:32px;background:transparent;border:none;color:var(--lime);font-size:22px;font-family:'Archivo Black';text-align:center}
     .score-block.locked{border-color:transparent;background:transparent}
     .score-block.locked .btn-step{display:none}
     .score-block.locked .input-score{color:var(--white)}
@@ -162,57 +167,40 @@ export default async function handler(req) {
     .toast.show{transform:translateX(-50%) translateY(0)}
   `;
 
+  const jsCode =
+    'var firstGroup=document.querySelector(".group-block");if(firstGroup)firstGroup.classList.add("open");' +
+    'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
+    'function save(){' +
+      'var btn=document.getElementById("btnSave");btn.innerHTML="GUARDANDO...";' +
+      'var payload=[];' +
+      'document.querySelectorAll(".match-row").forEach(function(row){' +
+        'if(row.getAttribute("data-locked")==="true")return;' +
+        'var valL=row.querySelector(".input-local").value;' +
+        'var valV=row.querySelector(".input-visitor").value;' +
+        'if(valL!==""&&valV!==""){payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL),visitor_score:parseInt(valV),locked:false});}' +
+      '});' +
+      'if(payload.length===0){btn.innerHTML="GUARDAR TODO";return;}' +
+      'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
+      'fetch("/api/grupos?user_id="+userId,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})' +
+        '.then(function(res){if(res.ok){var t=document.getElementById("toast");t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2000);}else{alert("Error al guardar.");}})' +
+        '.catch(function(){alert("Error de red.");})' +
+        '.finally(function(){btn.innerHTML="GUARDAR TODO";});' +
+    '}';
+
   const html = '<!DOCTYPE html><html lang="es"><head>' +
     '<meta charset="UTF-8">' +
-    '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">' +
     '<title>Grupos - World Cup 26</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">' +
     '<style>' + css + '</style>' +
     '</head><body>' +
-    '<div class="toast" id="toast">¡GUARDADO!</div>' +
+    '<div class="toast" id="toast">\u00A1GUARDADO!</div>' +
     '<div class="app-container">' +
-      '<div class="header-box">' +
-        '<div class="badge-26">FASE DE GRUPOS</div>' +
-        '<h1>MIS<br>PRONOSTICOS</h1>' +
-      '</div>' +
+      '<div class="header-box"><div class="badge-26">FASE DE GRUPOS</div><h1>MIS<br>PRON\u00D3STICOS</h1></div>' +
       '<div>' + groupsHtml + '</div>' +
     '</div>' +
     '<div class="bottom-bar"><button class="btn-save" id="btnSave" onclick="save()">GUARDAR TODO</button></div>' +
-    '<script>' +
-      'var firstGroup = document.querySelector(".group-block");' +
-      'if (firstGroup) firstGroup.classList.add("open");' +
-      'function step(btn, amount) {' +
-        'var input = btn.parentElement.querySelector("input");' +
-        'var val = parseInt(input.value);' +
-        'if (isNaN(val)) val = 0;' +
-        'val += amount;' +
-        'if (val < 0) val = 0;' +
-        'if (val > 20) val = 20;' +
-        'input.value = val;' +
-      '}' +
-      'function save() {' +
-        'var btn = document.getElementById("btnSave");' +
-        'btn.innerHTML = "GUARDANDO...";' +
-        'var payload = [];' +
-        'document.querySelectorAll(".match-row").forEach(function(row) {' +
-          'if (row.getAttribute("data-locked") === "true") return;' +
-          'var valL = row.querySelector(".input-local").value;' +
-          'var valV = row.querySelector(".input-visitor").value;' +
-          'if (valL !== "" && valV !== "") {' +
-            'payload.push({ match_id: row.getAttribute("data-id"), equipo_local: row.getAttribute("data-l"), equipo_visitante: row.getAttribute("data-v"), fecha: row.getAttribute("data-f"), local_score: parseInt(valL), visitor_score: parseInt(valV), locked: false });' +
-          '}' +
-        '});' +
-        'if (payload.length === 0) { btn.innerHTML = "GUARDAR TODO"; return; }' +
-        'var urlParams = new URLSearchParams(window.location.search);' +
-        'var userId = urlParams.get("user_id") || "GUEST";' +
-        'fetch("/api/grupos?user_id=" + userId, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })' +
-          '.then(function(res) {' +
-            'if (res.ok) { var t = document.getElementById("toast"); t.classList.add("show"); setTimeout(function() { t.classList.remove("show"); }, 2000); }' +
-            'else { alert("Error al guardar."); }' +
-          '}).catch(function() { alert("Error de red."); })' +
-          '.finally(function() { btn.innerHTML = "GUARDAR TODO"; });' +
-      '}' +
-    '<\/script>' +
+    '<script>' + jsCode + '<\/script>' +
     '</body></html>';
 
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });

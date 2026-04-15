@@ -104,15 +104,15 @@ export default async function handler(req) {
         "<div class='t-name'>" + m.local + "</div>" +
         "</div>" +
         "<div class='score-block " + lockClass + "'>" +
-        "<button type='button' class='btn-step' onclick='step(this,-1)'>-</button>" +
+        "<button type='button' class='btn-step step-up' onclick='step(this,1)'>▲</button>" +
         "<input type='number' class='input-score input-local' value='" + valL + "' readonly placeholder='-'>" +
-        "<button type='button' class='btn-step' onclick='step(this,1)'>+</button>" +
+        "<button type='button' class='btn-step step-down' onclick='step(this,-1)'>▼</button>" +
         "</div>" +
         "<div class='vs'>x</div>" +
         "<div class='score-block " + lockClass + "'>" +
-        "<button type='button' class='btn-step' onclick='step(this,-1)'>-</button>" +
+        "<button type='button' class='btn-step step-up' onclick='step(this,1)'>▲</button>" +
         "<input type='number' class='input-score input-visitor' value='" + valV + "' readonly placeholder='-'>" +
-        "<button type='button' class='btn-step' onclick='step(this,1)'>+</button>" +
+        "<button type='button' class='btn-step step-down' onclick='step(this,-1)'>▼</button>" +
         "</div>" +
         "<div class='team-side right'>" +
         "<div class='t-flag'>" + flag(m.visitante) + "</div>" +
@@ -152,14 +152,16 @@ export default async function handler(req) {
     .team-side.right{align-items:flex-end}
     .t-flag{font-size:28px;line-height:1}
     .t-name{font-weight:900;font-size:10px;text-transform:uppercase;white-space:nowrap;max-width:100%;text-overflow:ellipsis;overflow:hidden}
-    .score-block{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--dim);padding:4px;border:1px solid rgba(255,255,255,.2)}
-    .btn-step{width:32px;height:28px;background:var(--white);color:var(--black);border:none;font-size:16px;font-weight:900;cursor:pointer}
-    .btn-step:active{background:var(--teal)}
-    .input-score{width:32px;height:32px;background:transparent;border:none;color:var(--lime);font-size:22px;font-family:'Archivo Black';text-align:center}
+    .score-block{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--dim);padding:4px;border:1px solid rgba(255,255,255,.1);border-radius:4px}
+    .btn-step{width:34px;height:24px;background:rgba(255,255,255,0.05);color:var(--white);border:none;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.1s}
+    .btn-step:active{background:var(--lime);color:var(--black)}
+    .step-up{border-radius:4px 4px 0 0}
+    .step-down{border-radius:0 0 4px 4px}
+    .input-score{width:34px;height:34px;background:transparent;border:none;color:var(--lime);font-size:24px;font-family:'Archivo Black';text-align:center;line-height:34px}
     .score-block.locked{border-color:transparent;background:transparent}
     .score-block.locked .btn-step{display:none}
     .score-block.locked .input-score{color:var(--white)}
-    .vs{font-family:'Archivo Black';font-size:14px;opacity:.5;padding:0 4px}
+    .vs{font-family:'Archivo Black';font-size:16px;opacity:.3;padding:0 8px;margin-top:28px}
     .bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:16px;border-top:4px solid var(--lime);z-index:50;display:flex;flex-direction:column;gap:10px}
     .btn-save{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--lime);color:var(--black);border:none;padding:16px;font-family:'Archivo Black';font-size:18px;cursor:pointer;letter-spacing:1px}
     .btn-save:active{background:var(--white)}

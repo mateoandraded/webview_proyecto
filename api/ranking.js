@@ -2,46 +2,155 @@ export const config = {
   runtime: 'edge',
 };
 
+const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
+const BASE_URL_COLL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
+
 function esc(s) {
   if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export default function handler(req) {
+async function fetchDB(coll, query = '') {
+  const url = `${BASE_URL_COLL}/${coll}/records?perPage=500${query}`;
+  try {
+    const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" } });
+    if (!res.ok) return [];
+    const d = await res.json();
+    return Array.isArray(d) ? d : (d.items || []);
+  } catch (e) {
+    return [];
+  }
+}
+
+// Background async patch so we don't hold the Edge request
+function silentPatch(coll, id, payload) {
+  const url = `${BASE_URL_COLL}/${coll}/records/${id}`;
+  fetch(url, {
+    method: 'PATCH',
+    headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
+}
+
+export default async function handler(req) {
   const url = new URL(req.url);
   const searchParams = url.searchParams;
-
-  const nombre = searchParams.get('nombre') || '';
-  const posicion = Number(searchParams.get('posicion')) || 0;
-  const puntos = Number(searchParams.get('puntos')) || 0;
-  const aciertos = Number(searchParams.get('aciertos')) || 0;
+  const loggedUser = searchParams.get('nombre') ? searchParams.get('nombre').trim().toLowerCase() : '';
+  const loggedUserId = searchParams.get('user_id') || 'GUEST';
   const executionId = searchParams.get('executionId') || '';
-  const top5Raw = searchParams.get('top5') || '[]';
 
-  let top5 = [];
-  try {
-    top5 = JSON.parse(decodeURIComponent(top5Raw));
-    if (!Array.isArray(top5)) top5 = [];
-  } catch (e) { top5 = []; }
+  // 1. Fetch todo en paralelo para máxima velocidad
+  const [rawMatches, profiles, predictions, brackets] = await Promise.all([
+    fetch(BASE_URL_MATCHES, { headers: {"X-Api-Key": API_KEY} }).then(r=>r.ok?r.json().then(d=>d.items||[]):[]).catch(()=>[]),
+    fetchDB('pbc_3271891893'), // Perfiles/Ranking
+    fetchDB('pbc_1944158292'), // Pronosticos Goles
+    fetchDB('pbc_3221812075')  // Pronosticos Brackets
+  ]);
 
-  let userInTop5 = false;
-  if (nombre) {
-    userInTop5 = top5.some(function(t) {
-      return String(t.nombre).trim().toLowerCase() === nombre.trim().toLowerCase();
-    });
+  // 1.5 Evaluar Fase Oficial de los Partidos Reales
+  const mappedMatches = rawMatches.map(m => ({
+    id_partido: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
+    gl: m.resulltado_local, gv: m.resultado_visitante,
+    fecha: m.fecha, ronda: m.Fase_o_Grupo, ganador: m.ganador_final
+  }));
+
+  const real16 = new Set(); const real8 = new Set(); const real4 = new Set();
+  let campeonReal = ''; let subcampeonReal = ''; let terceroReal = ''; let cuartoReal = '';
+
+  // Determinar quienes jugaron fases (heurística basada en 'Fase_o_Grupo' u otro asumiendo estructura de Mundial 26)
+  // Como la DB puede no tener la fase bien escrita, nos basamos en nombre.
+  const r16M = mappedMatches.filter(m => String(m.ronda).toLowerCase() === 'round of 16' || String(m.ronda).toLowerCase() === 'octavos');
+  r16M.forEach(m => { real16.add(m.local); real16.add(m.visitante); });
+  const r8M = mappedMatches.filter(m => String(m.ronda).toLowerCase() === 'quarter-finals' || String(m.ronda).toLowerCase() === 'cuartos');
+  r8M.forEach(m => { real8.add(m.local); real8.add(m.visitante); });
+  const r4M = mappedMatches.filter(m => String(m.ronda).toLowerCase() === 'semi-finals' || String(m.ronda).toLowerCase() === 'semis');
+  r4M.forEach(m => { real4.add(m.local); real4.add(m.visitante); });
+  
+  const finalM = mappedMatches.find(m => String(m.ronda).toLowerCase() === 'final' && m.gl !== null);
+  if (finalM) {
+    campeonReal = finalM.ganador || '';
+    subcampeonReal = (campeonReal === finalM.local) ? finalM.visitante : finalM.local;
+  }
+  const thirdM = mappedMatches.find(m => String(m.ronda).toLowerCase().includes('third') && m.gl !== null);
+  if (thirdM) {
+    terceroReal = thirdM.ganador || '';
+    cuartoReal = (terceroReal === thirdM.local) ? thirdM.visitante : thirdM.local;
   }
 
-  // Position accent colors — FIFA 2026 palette
+  // 2. Calcular los puntajes de todos dinámicamente y sincronizar DB si varió
+  const calculatedUsers = profiles.map(pr => {
+    let ptsGoles = 0; let aciertos = 0;
+    
+    // Goles
+    const userPreds = predictions.filter(p => p.user_id === pr.user_id);
+    userPreds.forEach(p => {
+      const match = mappedMatches.find(m => m.id_partido === p.match_id);
+      if (match && match.gl !== null && match.gl !== undefined) {
+        let pt = 0;
+        if (p.pronostico_local === match.gl && p.pronostico_visitante === match.gv) { pt = 2; aciertos++; }
+        else if (p.pronostico_local === match.gl || p.pronostico_visitante === match.gv) { pt = 1; }
+        ptsGoles += pt;
+        
+        // Sincronizar el partido en DB si sigue PENDIENTE
+        if (p.estado === 'PENDIENTE') {
+          silentPatch('pbc_1944158292', p.id, {
+            puntos_ganados: pt, estado: (pt===2) ? 'GANADO_EXACTO' : (pt===1 ? 'GANADO_PARCIAL' : 'PERDIDO'),
+            resultado_real_local: match.gl, resultado_real_visitante: match.gv
+          });
+        }
+      }
+    });
+
+    // Brackets
+    let ptsBrackets = 0;
+    const b = brackets.find(br => br.user_id === pr.user_id);
+    if (b) {
+      const check = (arr, setRef, val) => { if(arr && Array.isArray(arr)) arr.forEach(t => { if(setRef.has(t)) ptsBrackets += val; }); }
+      check(b.octavos, real16, 2);
+      check(b.cuartos, real8, 3);
+      check(b.semis, real4, 3);
+      if (b.campeon === campeonReal && campeonReal) ptsBrackets += 10;
+      if (b.subcampeon === subcampeonReal && subcampeonReal) ptsBrackets += 5;
+      if (b.tercer_lugar === terceroReal && terceroReal) ptsBrackets += 4;
+      if (b.cuarto_lugar === cuartoReal && cuartoReal) ptsBrackets += 4;
+    }
+
+    const totalCalculado = ptsGoles + ptsBrackets;
+
+    // Actualizar Base de datos maestrament si cambio el total
+    if (totalCalculado !== pr.total_puntos || aciertos !== pr.pronosticos_correctos) {
+      silentPatch('pbc_3271891893', pr.id, {
+        total_puntos: totalCalculado, puntos_goles: ptsGoles, puntos_brackets: ptsBrackets, pronosticos_correctos: aciertos
+      });
+    }
+
+    return {
+      nombre: String(pr.nombre).trim(),
+      total_puntos: totalCalculado,
+      aciertos: aciertos,
+      isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre).trim().toLowerCase() === loggedUser)
+    };
+  });
+
+  // 3. Ordernar y armar la interfaz
+  calculatedUsers.sort((a, b) => {
+    if (b.total_puntos !== a.total_puntos) return b.total_puntos - a.total_puntos;
+    return b.aciertos - a.aciertos;
+  });
+
+  const top5 = calculatedUsers.slice(0, 5);
+  const currentUserObj = calculatedUsers.find(u => u.isCurrentUser);
+  const currentUserIndex = calculatedUsers.findIndex(u => u.isCurrentUser);
+  const userInTop5 = currentUserIndex >= 0 && currentUserIndex < 5;
+
+  // --- UI Rendereing ---
   const posColors = [
-    { accent: '#C9FF24', dark: '#000' },  // 1st - lime
-    { accent: '#00FFCC', dark: '#000' },  // 2nd - teal
-    { accent: '#FF0055', dark: '#fff' },  // 3rd - magenta
-    { accent: '#6200EA', dark: '#fff' },  // 4th - purple
-    { accent: '#ffffff', dark: '#000' },  // 5th - white
+    { accent: '#C9FF24', dark: '#000' },
+    { accent: '#00FFCC', dark: '#000' },
+    { accent: '#FF0055', dark: '#fff' },
+    { accent: '#6200EA', dark: '#fff' },
+    { accent: '#ffffff', dark: '#000' },
   ];
 
   function medalLabel(posNum) {
@@ -52,12 +161,11 @@ export default function handler(req) {
   }
 
   let listHtml = '';
-
   if (top5.length > 0) {
-    top5.forEach(function(t, idx) {
-      const posNum = Number(t.posicion) || (idx + 1);
+    top5.forEach((t, idx) => {
+      const posNum = idx + 1;
       const c = posColors[Math.min(idx, posColors.length - 1)];
-      const isUser = nombre && String(t.nombre).trim().toLowerCase() === nombre.trim().toLowerCase();
+      const isUser = t.isCurrentUser;
       const badgeHtml = isUser ? '<div class="badge-tu">T\u00FA</div>' : '';
 
       listHtml +=
@@ -65,12 +173,12 @@ export default function handler(req) {
           badgeHtml +
           '<div class="rc-pos" style="background:' + c.accent + ';color:' + c.dark + '">' + medalLabel(posNum) + '</div>' +
           '<div class="rc-info">' +
-            '<div class="rc-name' + (isUser ? ' is-user' : '') + '">' + esc(t.nombre) + '</div>' +
-            '<div class="rc-sub">' + (t.aciertos || 0) + ' aciertos</div>' +
+            '<div class="rc-name' + (isUser ? ' is-user' : '') + '">' + esc(t.nombre || 'Anónimo') + '</div>' +
+            '<div class="rc-sub">' + (t.aciertos || 0) + ' aciertos ext.</div>' +
           '</div>' +
           '<div class="rc-score">' +
-            '<div class="rc-pts" style="color:' + c.accent + '">' + (t.puntos || 0) + '</div>' +
-            '<div class="rc-lbl">PTS</div>' +
+            '<div class="rc-pts" style="color:' + c.accent + '">' + (t.total_puntos || 0) + '</div>' +
+            '<div class="rc-lbl">PTS GLOBALES</div>' +
           '</div>' +
         '</div>';
     });
@@ -78,19 +186,19 @@ export default function handler(req) {
     listHtml = '<div class="empty-state">A\u00FAn no hay participantes</div>';
   }
 
-  // Current user card if not in top5
-  if (nombre && !userInTop5 && posicion > 5) {
+  // Current user fallback if not top 5
+  if (!userInTop5 && currentUserObj) {
     listHtml +=
-      '<div class="divider"><span>TU POSICI\u00D3N</span></div>' +
+      '<div class="divider"><span>TU POSICI\u00D3N GENERAL</span></div>' +
       '<div class="rank-card" style="--accent:#FF6B35;--dark:#fff">' +
         '<div class="badge-tu">T\u00FA</div>' +
-        '<div class="rc-pos" style="background:#FF6B35;color:#fff">' + posicion + '</div>' +
+        '<div class="rc-pos" style="background:#FF6B35;color:#fff">' + (currentUserIndex + 1) + '</div>' +
         '<div class="rc-info">' +
-          '<div class="rc-name is-user">' + esc(nombre) + '</div>' +
-          '<div class="rc-sub">' + aciertos + ' aciertos</div>' +
+          '<div class="rc-name is-user">' + esc(currentUserObj.nombre) + '</div>' +
+          '<div class="rc-sub">' + currentUserObj.aciertos + ' aciertos</div>' +
         '</div>' +
         '<div class="rc-score">' +
-          '<div class="rc-pts" style="color:#FF6B35">' + puntos + '</div>' +
+          '<div class="rc-pts" style="color:#FF6B35">' + currentUserObj.total_puntos + '</div>' +
           '<div class="rc-lbl">PTS</div>' +
         '</div>' +
       '</div>';
@@ -101,17 +209,11 @@ export default function handler(req) {
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     body{background:var(--black);color:var(--white);font-family:'Inter',sans-serif;padding-bottom:60px;overflow-x:hidden}
     .app{max-width:450px;margin:auto;padding:0 16px}
-
-    /* HEADER */
     .header-box{margin:40px 0 32px;padding-bottom:12px;border-bottom:4px solid var(--white);position:relative}
     .badge-26{display:inline-block;background:var(--lime);color:var(--black);font-weight:900;font-size:14px;padding:4px 10px;margin-bottom:12px;letter-spacing:1px}
     h1{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:.9;letter-spacing:-2px}
-    .header-26{font-family:'Archivo Black';font-size:80px;line-height:1;letter-spacing:-4px;color:rgba(255,255,255,.06);position:absolute;right:0;top:0;pointer-events:none;user-select:none}
-
-    /* SECTION LABEL */
+    .header-26{font-family:'Archivo Black';font-size:80px;line-height:1;letter-spacing:-4px;color:rgba(255,255,255,.06);position:absolute;right:0;top:-10px;pointer-events:none;user-select:none}
     .section-label{font-size:11px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.5);text-transform:uppercase;margin-bottom:16px}
-
-    /* RANK CARDS */
     .rank-list{display:flex;flex-direction:column;gap:0}
     .rank-card{
       display:flex;align-items:center;gap:0;
@@ -123,7 +225,6 @@ export default function handler(req) {
       overflow:hidden;
       transition:.15s;
     }
-    .rank-card:active{opacity:.8}
     .rc-pos{
       min-width:56px;width:56px;height:72px;
       display:flex;align-items:center;justify-content:center;
@@ -137,30 +238,19 @@ export default function handler(req) {
     .rc-score{padding:12px 16px 12px 0;text-align:right;flex-shrink:0}
     .rc-pts{font-family:'Archivo Black';font-size:28px;line-height:1}
     .rc-lbl{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);font-weight:800;margin-top:2px}
-
     .badge-tu{
       position:absolute;top:0;right:12px;
       background:var(--accent,var(--lime));color:var(--dark,#000);
       font-size:8px;font-weight:900;padding:3px 8px;
       border-radius:0 0 6px 6px;letter-spacing:1px;text-transform:uppercase;
     }
-
-    /* DIVIDER */
-    .divider{text-align:center;margin:20px 0;position:relative}
+    .divider{text-align:center;margin:30px 0 20px;position:relative}
     .divider::before{content:"";position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,.1)}
-    .divider span{position:relative;background:var(--black);padding:0 12px;font-size:10px;color:rgba(255,255,255,.4);font-weight:800;letter-spacing:2px}
-
-    /* EMPTY */
+    .divider span{position:relative;background:var(--black);padding:0 12px;font-size:10px;color:var(--lime);font-weight:800;letter-spacing:2px}
     .empty-state{text-align:center;padding:40px 24px;color:rgba(255,255,255,.4);font-size:14px;background:var(--dim);font-weight:700;border:1px dashed rgba(255,255,255,.1)}
-
-    /* FOOTER BUTTON */
-    .footer-bar{margin-top:36px}
-    .btn-back{width:100%;background:var(--white);color:var(--black);border:none;padding:16px;font-family:'Archivo Black';font-size:18px;cursor:pointer;letter-spacing:1px}
-    .btn-back:active{background:var(--lime)}
-
-    /* FOOTER */
-    .footer{text-align:center;margin-top:24px;font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase}
-    .footer strong{display:block;font-family:'Archivo Black';font-size:20px;color:rgba(255,255,255,.08);letter-spacing:-1px;margin-bottom:4px}
+    .footer-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:16px;border-top:4px solid var(--lime);z-index:50}
+    .btn-volver{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--white);color:var(--black);border:none;padding:16px;font-family:'Archivo Black';font-size:18px;cursor:pointer;text-align:center;letter-spacing:1px}
+    .btn-volver:active{background:var(--teal)}
   `;
 
   const html = '<!DOCTYPE html><html lang="es"><head>' +
@@ -173,15 +263,14 @@ export default function handler(req) {
     '<div class="app">' +
       '<div class="header-box">' +
         '<div class="header-26">26</div>' +
-        '<div class="badge-26">Jelou Mundial</div>' +
+        '<div class="badge-26">QUINIELA 2026</div>' +
         '<h1>TABLA DE<br>POSICIONES</h1>' +
       '</div>' +
-      '<div class="section-label">\uD83C\uDFC6 RANKING TOP 5</div>' +
+      '<div class="section-label">\uD83C\uDFC6 RANKING GLOBAL TOP 5</div>' +
       '<div class="rank-list">' + listHtml + '</div>' +
-      '<div class="footer-bar">' +
-        '<button class="btn-back" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
-      '</div>' +
-      '<div class="footer"><strong>WE ARE 26</strong>FIFA WORLD CUP 2026 \u00B7 Jelou Mundial</div>' +
+    '</div>' +
+    '<div class="footer-bar">' +
+      '<button class="btn-volver" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
     '</div>' +
     '<script>' +
       'function volverMenu(){' +

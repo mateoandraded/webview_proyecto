@@ -22,7 +22,6 @@ export default async function handler(req) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'GUEST';
 
-  // --- POST ---
   if (req.method === 'POST') {
     try {
       const body = await req.json();
@@ -46,7 +45,6 @@ export default async function handler(req) {
     }
   }
 
-  // --- GET ---
   let rawMatches = [];
   try {
     const dataMatches = await fetchDatum('pbc_631836067');
@@ -80,7 +78,6 @@ export default async function handler(req) {
   });
   const groupKeys = Object.keys(groups).sort();
 
-  // Build body HTML using string concat (no nested template literals)
   let groupsHtml = '';
   groupKeys.forEach(gk => {
     let matchHtml = '';
@@ -89,167 +86,190 @@ export default async function handler(req) {
       if (m.locked) { valL = m.real_l; valV = m.real_v; }
       else { valL = m.pred_l !== null ? m.pred_l : ''; valV = m.pred_v !== null ? m.pred_v : ''; }
       const lockClass = m.locked ? 'locked' : '';
-      const badge = m.locked ? '<span class="badge-locked">🔒 Finalizado</span>' : '<span class="badge-pending">⏱ PENDIENTE</span>';
+      const lockData = m.locked ? "data-locked='true'" : "";
+      
+      const st = m.locked ? "<div class='lock-badge'>FINALIZADO</div>" : "";
+      const bg = m.locked ? "style='opacity: 0.6'" : "";
 
       matchHtml +=
-        "<div class='match-row' data-id='" + m.id + "' data-locked='" + m.locked + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
-          "<div class='match-info'><span>" + m.fecha + "</span> " + badge + "</div>" +
-          "<div class='match-teams'>" +
-            "<div class='team-col'>" +
-              "<span class='team-flag'>" + flag(m.local) + "</span>" +
-              "<span class='team-name'>" + m.local + "</span>" +
-              "<div class='stepper " + lockClass + "'>" +
-                "<button type='button' onclick='step(this,-1)'>−</button>" +
-                "<input type='number' class='score-input input-local' value='" + valL + "' readonly placeholder='-'>" +
-                "<button type='button' onclick='step(this,1)'>+</button>" +
-              "</div>" +
+        "<div class='match-row' "+lockData+" data-id='"+m.id+"' data-f='"+m.fecha+"' data-l='"+m.local+"' data-v='"+m.visitante+"' "+bg+">" +
+          "<div class='match-meta'><span>"+m.fecha+"</span> "+st+"</div>" +
+          "<div class='match-body'>" +
+            "<div class='team-side'>" +
+              "<div class='t-flag'>" + flag(m.local) + "</div><div class='t-name'>" + m.local + "</div>" +
             "</div>" +
-            "<div class='vs-badge'>VS</div>" +
-            "<div class='team-col'>" +
-              "<span class='team-flag'>" + flag(m.visitante) + "</span>" +
-              "<span class='team-name'>" + m.visitante + "</span>" +
-              "<div class='stepper " + lockClass + "'>" +
-                "<button type='button' onclick='step(this,-1)'>−</button>" +
-                "<input type='number' class='score-input input-visitor' value='" + valV + "' readonly placeholder='-'>" +
-                "<button type='button' onclick='step(this,1)'>+</button>" +
-              "</div>" +
+            "<div class='score-block " + lockClass + "'>" +
+              "<button type='button' class='btn-step' onclick='step(this,-1)'>-</button>" +
+              "<input type='number' class='input-score input-local' value='"+valL+"' readonly placeholder='-'>" +
+              "<button type='button' class='btn-step' onclick='step(this,1)'>+</button>" +
+            "</div>" +
+            "<div class='vs'>x</div>" +
+            "<div class='score-block " + lockClass + "'>" +
+              "<button type='button' class='btn-step' onclick='step(this,-1)'>-</button>" +
+              "<input type='number' class='input-score input-visitor' value='"+valV+"' readonly placeholder='-'>" +
+              "<button type='button' class='btn-step' onclick='step(this,1)'>+</button>" +
+            "</div>" +
+            "<div class='team-side right'>" +
+              "<div class='t-flag'>" + flag(m.visitante) + "</div><div class='t-name'>" + m.visitante + "</div>" +
             "</div>" +
           "</div>" +
         "</div>";
     });
 
     groupsHtml +=
-      "<div class='group-card'>" +
-        "<div class='group-header' onclick=\"this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'\">" +
-          "GRUPO " + gk + " <span style='font-size:12px;color:var(--text-muted);'>▼</span>" +
-        "</div>" +
-        "<div class='group-content' style='display:block;'>" + matchHtml + "</div>" +
+      "<div class='group-block'>" +
+        "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\">GRUPO " + gk + "</div>" +
+        "<div class='group-content'>" + matchHtml + "</div>" +
       "</div>";
   });
 
-  const html = `<!DOCTYPE html>
+  const html = \`<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Fase de Grupos - Quiniela 2026</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <title>Grupos - World Cup 26</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
+    /* WORLD CUP 2026 BRUTALIST AESTHETIC */
     :root {
-      --navy: #0A0A2E; --navy-light: #141440; --navy-surface: #1C1C50;
-      --turquoise: #00E6C3; --magenta: #E835A0; --purple: #7B61FF;
-      --blue: #3B82F6; --yellow: #FFD100; --red: #E63946;
-      --text: #FFFFFF; --text-secondary: rgba(255,255,255,0.6); --text-muted: rgba(255,255,255,0.35);
+      --black: #000000;
+      --white: #FFFFFF;
+      --lime: #C9FF24;
+      --magenta: #FF0055;
+      --teal: #00FFCC;
+      --purple: #6200EA;
+      --dim: #1F1F1F;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
-      background-color: var(--navy); color: var(--text); min-height: 100vh; padding-bottom: 90px;
-      background-image:
-        radial-gradient(ellipse at 100% 0%, rgba(123,97,255,0.12) 0%, transparent 50%),
-        radial-gradient(ellipse at 0% 100%, rgba(0,230,195,0.08) 0%, transparent 50%);
+      background-color: var(--black); color: var(--white);
+      font-family: 'Inter', sans-serif;
+      padding-bottom: 90px;
+    }
+    .app-container {
+      width: 100%; max-width: 450px; margin: 0 auto; padding: 0 16px;
     }
 
-    .header {
-      padding: 30px 20px 20px;
-      background: linear-gradient(180deg, rgba(123,97,255,0.2) 0%, transparent 100%);
-      position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); text-align: center;
+    .header-box {
+      margin-top: 40px; margin-bottom: 30px;
+      border-bottom: 4px solid var(--white); padding-bottom: 10px;
     }
-    .header-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,230,195,0.12);
-      border: 1px solid rgba(0,230,195,0.25); padding: 4px 14px; border-radius: 20px;
-      color: var(--turquoise); font-size: 10px; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; }
-    h1 { font-size: 26px; font-weight: 900;
-      background: linear-gradient(135deg, #FFF 0%, var(--turquoise) 60%, var(--magenta) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .subtitle { color: var(--text-secondary); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+    .badge-26 {
+      display: inline-block; background: var(--teal); color: var(--black);
+      font-weight: 900; font-size: 14px; padding: 4px 8px; margin-bottom: 12px;
+    }
+    h1 { font-family: 'Archivo Black', sans-serif; font-size: 40px; line-height: 0.9; letter-spacing: -2px; }
 
-    .container { padding: 0 20px; max-width: 600px; margin: 0 auto; }
-
-    .group-card {
-      background: var(--navy-light); border-radius: 20px; margin-bottom: 20px;
-      border: 1px solid rgba(255,255,255,0.06); overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    /* ACCORDIONS */
+    .group-block {
+      border: 2px solid var(--white);
+      margin-bottom: 16px;
+      background: var(--black);
     }
     .group-header {
-      padding: 18px 20px; display: flex; justify-content: space-between; align-items: center;
-      background: var(--navy-surface); cursor: pointer; font-size: 18px; font-weight: 800;
-      background: linear-gradient(90deg, var(--turquoise), var(--purple));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      font-family: 'Archivo Black'; font-size: 28px; padding: 16px;
+      background: var(--white); color: var(--black);
+      cursor: pointer; position: relative;
     }
-    .group-content { padding: 0 15px; }
-
-    .match-row { padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .match-row:last-child { border-bottom: none; }
-    .match-info { text-align: center; font-size: 11px; color: var(--text-muted); margin-bottom: 14px;
-      display: flex; justify-content: center; align-items: center; gap: 8px; }
-    .badge-locked { background: rgba(230,57,70,0.15); color: var(--red); padding: 3px 8px;
-      border-radius: 10px; font-size: 10px; font-weight: 700; }
-    .badge-pending { color: var(--text-muted); font-size: 10px; }
-
-    .match-teams { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .team-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
-    .team-flag { font-size: 32px; line-height: 1; }
-    .team-name { font-weight: 700; font-size: 11px; text-align: center; text-transform: uppercase; letter-spacing: 0.3px; color: var(--text-secondary); }
-
-    .stepper {
-      display: flex; align-items: center; background: rgba(0,0,0,0.3); border-radius: 12px;
-      padding: 4px; border: 1px solid rgba(255,255,255,0.08);
+    .group-header::after {
+      content: '+'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+      font-weight: 900; font-size: 32px;
     }
-    .stepper button {
-      background: var(--navy-surface); color: var(--text); border: none;
-      width: 34px; height: 34px; border-radius: 8px; font-size: 18px; font-weight: bold;
-      cursor: pointer; transition: 0.2s;
-    }
-    .stepper button:active { transform: scale(0.9); background: var(--purple); }
-    .stepper input {
-      background: transparent; border: none; color: var(--turquoise); font-size: 22px;
-      font-weight: 900; width: 38px; text-align: center; font-family: 'Outfit';
-    }
-    .stepper.locked { opacity: 0.6; pointer-events: none; border-color: var(--red); background: rgba(230,57,70,0.1); }
-    .stepper.locked button { display: none; }
-    .stepper.locked input { width: 100%; color: #FFF; }
+    .group-block.open .group-header { background: var(--magenta); color: var(--white); }
+    .group-block.open .group-header::after { content: '-'; }
+    
+    .group-content { display: none; padding: 0; }
+    .group-block.open .group-content { display: block; }
 
-    .vs-badge { font-weight: 900; color: var(--purple); font-size: 14px; }
+    /* MATCH ROW */
+    .match-row {
+      border-top: 2px solid var(--white); padding: 16px 12px;
+    }
+    .match-meta {
+      font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.6);
+      display: flex; justify-content: space-between; margin-bottom: 16px;
+      letter-spacing: 1px;
+    }
+    .lock-badge { background: var(--purple); color: var(--white); padding: 2px 6px; }
 
+    .match-body {
+      display: flex; align-items: center; justify-content: space-between; gap: 4px;
+    }
+    .team-side {
+      flex: 1; display: flex; flex-direction: column; align-items: flex-start;
+      min-width: 0; overflow: hidden;
+    }
+    .team-side.right { align-items: flex-end; }
+    .t-flag { font-size: 32px; line-height: 1; }
+    .t-name { font-weight: 900; font-size: 11px; text-transform: uppercase; white-space: nowrap; max-width: 100%; text-overflow: ellipsis; }
+
+    /* STEPPERS */
+    .score-block {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      background: var(--dim); padding: 4px; border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-step {
+      width: 32px; height: 28px; background: var(--white); color: var(--black);
+      border: none; font-size: 16px; font-weight: 900; cursor: pointer;
+    }
+    .btn-step:active { background: var(--teal); }
+    .input-score {
+      width: 32px; height: 32px; background: transparent; border: none;
+      color: var(--lime); font-size: 24px; font-family: 'Archivo Black';
+      text-align: center;
+    }
+
+    .score-block.locked { border-color: transparent; background: transparent; }
+    .score-block.locked .btn-step { display: none; }
+    .score-block.locked .input-score { color: var(--white); }
+    
+    .vs { font-family: 'Archivo Black'; font-size: 14px; opacity: 0.5; padding: 0 4px; }
+
+    /* SAVE BAR */
     .bottom-bar {
-      position: fixed; bottom: 0; left: 0; width: 100%; padding: 20px;
-      background: rgba(10,10,46,0.95); backdrop-filter: blur(10px);
-      border-top: 1px solid rgba(255,255,255,0.05); z-index: 50; display: flex; justify-content: center;
+      position: fixed; bottom: 0; left: 0; width: 100%; background: var(--black);
+      padding: 16px; border-top: 4px solid var(--lime); z-index: 50;
     }
     .btn-save {
-      background: linear-gradient(135deg, var(--turquoise) 0%, var(--blue) 50%, var(--purple) 100%);
-      background-size: 200% 200%; animation: gradShift 4s ease infinite;
-      color: #003D33; border: none; padding: 16px 40px; border-radius: 30px;
-      font-size: 17px; font-weight: 900; cursor: pointer; width: 100%; max-width: 400px;
-      text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 24px rgba(0,230,195,0.25);
+      width: 100%; max-width: 450px; margin: 0 auto; display: block;
+      background: var(--lime); color: var(--black); border: none;
+      padding: 16px; font-family: 'Archivo Black'; font-size: 18px; cursor: pointer;
     }
-    .btn-save:active { transform: scale(0.98); }
-    .btn-save.loading { opacity: 0.7; pointer-events: none; }
-    @keyframes gradShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
-
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-      background: var(--turquoise); color: #003D33; padding: 15px 30px; border-radius: 30px;
-      font-weight: 900; z-index: 100; transition: transform 0.4s; box-shadow: 0 4px 24px rgba(0,230,195,0.3); }
+    .btn-save:active { background: var(--white); }
+    
+    .toast {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: var(--white); color: var(--black); padding: 12px 24px;
+      font-family: 'Archivo Black'; font-size: 14px; z-index: 100; transition: 0.3s;
+      border: 4px solid var(--black);
+    }
     .toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
-  <div class="toast" id="toast">✅ Pronosticos Guardados!</div>
+  <div class="toast" id="toast">¡GUARDADO!</div>
 
-  <div class="header">
-    <div class="header-tag">⚽ FIFA WORLD CUP 2026</div>
-    <h1>FASE DE GRUPOS</h1>
-    <div class="subtitle">Pronostica los resultados del Mundial</div>
-  </div>
+  <div class="app-container">
+    <div class="header-box">
+      <div class="badge-26">FASE DE GRUPOS</div>
+      <h1>MIS<br>PRONOSTICOS</h1>
+    </div>
 
-  <div class="container">
-    ${groupsHtml}
+    <div>
+      ${groupsHtml}
+    </div>
   </div>
 
   <div class="bottom-bar">
-    <button class="btn-save" id="btnSave" onclick="save()">GUARDAR MIS PRONOSTICOS</button>
+    <button class="btn-save" id="btnSave" onclick="save()">GUARDAR TODO</button>
   </div>
 
   <script>
+    // Open first group by default
+    const firstGroup = document.querySelector('.group-block');
+    if (firstGroup) firstGroup.classList.add('open');
+
     function step(btn, amount) {
       const input = btn.parentElement.querySelector('input');
       let val = parseInt(input.value);
@@ -263,7 +283,6 @@ export default async function handler(req) {
     async function save() {
       const btn = document.getElementById('btnSave');
       btn.innerHTML = 'GUARDANDO...';
-      btn.classList.add('loading');
       const payload = [];
       document.querySelectorAll('.match-row').forEach(row => {
         if (row.getAttribute('data-locked') === 'true') return;
@@ -277,7 +296,8 @@ export default async function handler(req) {
           });
         }
       });
-      if (payload.length === 0) { btn.innerHTML = 'GUARDAR MIS PRONOSTICOS'; btn.classList.remove('loading'); return; }
+      if (payload.length === 0) { btn.innerHTML = 'GUARDAR TODO'; return; }
+      
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const userId = urlParams.get('user_id') || 'GUEST';
@@ -285,17 +305,16 @@ export default async function handler(req) {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
         });
         if (res.ok) {
-          const toast = document.getElementById('toast');
-          toast.classList.add('show');
-          setTimeout(() => toast.classList.remove('show'), 3000);
-        } else { alert('Error al guardar.'); }
+          const t = document.getElementById('toast');
+          t.classList.add('show');
+          setTimeout(() => t.classList.remove('show'), 2000);
+        } else alert('Error al guardar.');
       } catch (err) { alert('Error de red.'); }
-      btn.innerHTML = 'GUARDAR MIS PRONOSTICOS';
-      btn.classList.remove('loading');
+      btn.innerHTML = 'GUARDAR TODO';
     }
   </script>
 </body>
-</html>`;
+</html>\`;
 
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }

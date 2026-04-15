@@ -5,155 +5,178 @@ export const config = {
 const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
 
-const FLAGS = {"MEXICO":"🇲🇽","ESTADOS UNIDOS":"🇺🇸","CANADA":"🇨🇦","BRASIL":"🇧🇷","ARGENTINA":"🇦🇷","ECUADOR":"🇪🇨","COLOMBIA":"🇨🇴","PERU":"🇵🇪","CHILE":"🇨🇱","URUGUAY":"🇺🇾","PARAGUAY":"🇵🇾","BOLIVIA":"🇧🇴","VENEZUELA":"🇻🇪","ALEMANIA":"🇩🇪","ESPANA":"🇪🇸","ESPAÑA":"🇪🇸","FRANCIA":"🇫🇷","ITALIA":"🇮🇹","PORTUGAL":"🇵🇹","PAISES BAJOS":"🇳🇱","BELGICA":"🇧🇪","CROACIA":"🇭🇷","SERBIA":"🇷🇸","SUIZA":"🇨🇭","DINAMARCA":"🇩🇰","AUSTRIA":"🇦🇹","UCRANIA":"🇺🇦","TURQUIA":"🇹🇷","HUNGRIA":"🇭🇺","REPUBLICA CHECA":"🇨🇿","GRECIA":"🇬🇷","JAPON":"🇯🇵","REPUBLICA DE COREA":"🇰🇷","COREA DEL SUR":"🇰🇷","AUSTRALIA":"🇦🇺","IRAN":"🇮🇷","ARABIA SAUDITA":"🇸🇦","QATAR":"🇶🇦","MARRUECOS":"🇲🇦","SENEGAL":"🇸🇳","GHANA":"🇬🇭","CAMERUN":"🇨🇲","NIGERIA":"🇳🇬","TUNEZ":"🇹🇳","SUDAFRICA":"🇿🇦","EGIPTO":"🇪🇬","COSTA RICA":"🇨🇷","PANAMA":"🇵🇦","HONDURAS":"🇭🇳","JAMAICA":"🇯🇲","INDONESIA":"🇮🇩","NUEVA ZELANDA":"🇳🇿","GALES":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","ESCOCIA":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","INGLATERRA":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","POLONIA":"🇵🇱","RUMANIA":"🇷🇴","ESLOVENIA":"🇸🇮","ESLOVAQUIA":"🇸🇰","ALBANIA":"🇦🇱","ARGELIA":"🇩🇿","COSTA DE MARFIL":"🇨🇮","NORUEGA":"🇳🇴","SUECIA":"🇸🇪","IRLANDA":"🇮🇪"};
-function flag(n) { return FLAGS[(n||'').toUpperCase()] || '🏳️'; }
+const FLAGS = {"MEXICO":"🇲🇽","ESTADOS UNIDOS":"🇺🇸","CANADA":"🇨🇦","BRASIL":"🇧🇷","ARGENTINA":"🇦🇷","ECUADOR":"🇪🇨","COLOMBIA":"🇨🇴","PERU":"🇵🇪","CHILE":"🇨🇱","URUGUAY":"🇺🇾","PARAGUAY":"🇵🇾","BOLIVIA":"🇧🇴","VENEZUELA":"🇻🇪","ALEMANIA":"🇩🇪","ESPANA":"🇪🇸","ESPAÑA":"🇪🇸","FRANCIA":"🇫🇷","ITALIA":"🇮🇹","PORTUGAL":"🇵🇹","PAISES BAJOS":"🇳🇱","BELGICA":"🇧🇪","CROACIA":"🇭🇷","SERBIA":"🇷🇸","SUIZA":"🇨🇭","DINAMARCA":"🇩🇰","AUSTRIA":"🇦🇹","UCRANIA":"🇺🇦","TURQUIA":"🇹🇷","HUNGRIA":"🇭🇺","REPUBLICA CHECA":"🇨🇿","GRECIA":"🇬🇷","JAPON":"🇯🇵","REPUBLICA DE COREA":"🇰🇷","COREA DEL SUR":"🇰🇷","AUSTRALIA":"🇦🇺","IRAN":"🇮🇷","ARABIA SAUDITA":"🇸🇦","QATAR":"🇶🇦","MARRUECOS":"🇲🇦","SENEGAL":"🇸🇳","GHANA":"🇬🇭","CAMERUN":"🇨🇲","NIGERIA":"🇳🇬","TUNEZ":"🇹🇳","SUDAFRICA":"🇿🇦","EGIPTO":"🇪🇬","COSTA RICA":"🇨🇷","PANAMA":"🇵🇦","HONDURAS":"🇭🇳","JAMAICA":"🇯🇲","INDONESIA":"🇮🇩","NUEVA ZELANDA":"🇳🇿","GALES":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","ESCOCIA":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","INGLATERRA":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","POLONIA":"🇵🇱","RUMANIA":"🇷🇴","ESLOVENIA":"🇸🇮","ESLOVAQUIA":"🇸🇰","ALBANIA":"🇦🇱","ARGELIA":"🇩🇿","COSTA DE MARFIL":"🇨🇮","NORUEGA":"🇳🇴","SUECIA":"🇸🇪","IRLANDA":"🇮🇪","TRINIDAD Y TOBAGO":"🇹🇹","EL SALVADOR":"🇸🇻","GUATEMALA":"🇬🇹"};
+function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
 
-async function fetchMatches() {
-  try {
-    const res = await fetch(BASE_URL, { headers: { 'X-Api-Key': API_KEY } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data.items || []);
-  } catch (e) { return []; }
+function buildStandings(matches) {
+  const table = {};
+  matches.forEach(m => {
+    let grp = m.Fase_o_Grupo || "X";
+    if (grp.length > 1) return;
+    const l = m.equipo_local, v = m.equipo_visitante;
+    const rl = parseInt(m.resulltado_local || 0);
+    const rv = parseInt(m.resultado_visitante || 0);
+
+    if (!table[grp]) table[grp] = {};
+    if (!table[grp][l]) table[grp][l] = { team: l, pts:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, gd:0 };
+    if (!table[grp][v]) table[grp][v] = { team: v, pts:0, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, gd:0 };
+
+    if (!m.fecha) return; 
+
+    table[grp][l].pj++; table[grp][v].pj++;
+    table[grp][l].gf += rl; table[grp][l].gc += rv; table[grp][l].gd += (rl - rv);
+    table[grp][v].gf += rv; table[grp][v].gc += rl; table[grp][v].gd += (rv - rl);
+
+    if (rl > rv) { table[grp][l].pts += 3; table[grp][l].pg++; table[grp][v].pp++; }
+    else if (rl < rv) { table[grp][v].pts += 3; table[grp][v].pg++; table[grp][l].pp++; }
+    else { table[grp][l].pts++; table[grp][v].pts++; table[grp][l].pe++; table[grp][v].pe++; }
+  });
+
+  const finalRes = {};
+  Object.keys(table).sort().forEach(g => {
+    const arr = Object.values(table[g]);
+    arr.sort((a,b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.gd !== a.gd) return b.gd - a.gd;
+      return b.gf - a.gf;
+    });
+    finalRes[g] = arr;
+  });
+  return finalRes;
 }
 
 export default async function handler(req) {
+  let rawMatches = [];
+  try {
+    const res = await fetch(BASE_URL, { headers: { "X-Api-Key": API_KEY } });
+    if (res.ok) {
+      const dbdata = await res.json();
+      rawMatches = dbdata.items || [];
+    }
+  } catch (e) {}
+
   const url = new URL(req.url);
   const paramFecha = url.searchParams.get('fecha');
-  const fechaSimulada = paramFecha || "2026-06-11";
-  const matches = await fetchMatches();
+  const fechaSimulada = paramFecha || "2100-01-01"; 
 
-  const standingsByGroup = {};
-  matches.forEach(m => {
-    const g = m.Fase_o_Grupo;
-    if (!g || g.length > 1) return;
-    if (!standingsByGroup[g]) standingsByGroup[g] = {};
-    const gs = standingsByGroup[g];
-    [m.equipo_local, m.equipo_visitante].forEach(team => {
-      if (!gs[team]) gs[team] = { equipo: team, PJ:0, PG:0, PE:0, PP:0, GF:0, GC:0, DG:0, Pts:0 };
+  const validMatches = rawMatches.filter(m => m.fecha && m.fecha < fechaSimulada && m.resulltado_local !== null);
+  const standings = buildStandings(validMatches);
+
+  let htmlBody = '';
+  Object.keys(standings).forEach(grp => {
+    let rows = '';
+    standings[grp].forEach((t, i) => {
+      // Top 2 usually qualify
+      const qClass = (i < 2) ? 'qualify' : '';
+      rows += \`
+        <div class="t-row \${qClass}">
+          <div class="c-pos">\${i+1}</div>
+          <div class="c-team">
+            <span class="t-flag">\${flag(t.team)}</span>
+            <span class="t-name">\${t.team}</span>
+          </div>
+          <div class="c-st">\${t.pj}</div>
+          <div class="c-st bold">\${t.gd > 0 ? '+' : ''}\${t.gd}</div>
+          <div class="c-st lime">\${t.pts}</div>
+        </div>
+      \`;
     });
-    if (m.fecha < fechaSimulada) {
-      const gL = m.resulltado_local || 0; const gV = m.resultado_visitante || 0;
-      const tL = gs[m.equipo_local]; const tV = gs[m.equipo_visitante];
-      tL.PJ++; tV.PJ++; tL.GF += gL; tL.GC += gV; tV.GF += gV; tV.GC += gL;
-      if (gL > gV) { tL.PG++; tL.Pts += 3; tV.PP++; }
-      else if (gV > gL) { tV.PG++; tV.Pts += 3; tL.PP++; }
-      else { tL.PE++; tL.Pts += 1; tV.PE++; tV.Pts += 1; }
-    }
+
+    htmlBody += \`
+      <div class="group-table">
+        <div class="g-header">GRUPO \${grp}</div>
+        <div class="t-head">
+          <div class="c-pos">#</div>
+          <div class="c-team">SELECCIÓN</div>
+          <div class="c-st">PJ</div>
+          <div class="c-st">DG</div>
+          <div class="c-st lime">PTS</div>
+        </div>
+        <div class="t-body">\${rows}</div>
+      </div>
+    \`;
   });
 
-  const sortedStandings = {};
-  const groupKeys = Object.keys(standingsByGroup).sort();
-  groupKeys.forEach(g => {
-    const arr = Object.values(standingsByGroup[g]);
-    arr.forEach(s => s.DG = s.GF - s.GC);
-    arr.sort((a,b) => { if(b.Pts!==a.Pts) return b.Pts-a.Pts; if(b.DG!==a.DG) return b.DG-a.DG; return b.GF-a.GF; });
-    sortedStandings[g] = arr;
-  });
-
-  // Build tables with flags
-  let tablesHtml = '';
-  groupKeys.forEach(gk => {
-    const rows = sortedStandings[gk];
-    let tbody = '';
-    rows.forEach((row, idx) => {
-      const posClass = idx < 2 ? 'qualify' : '';
-      tbody +=
-        "<tr>" +
-          "<td class='pos-col " + posClass + "'>" + (idx+1) + "</td>" +
-          "<td class='team-col'><span class='tbl-flag'>" + flag(row.equipo) + "</span> " + row.equipo + "</td>" +
-          "<td class='num-col'>" + row.PJ + "</td>" +
-          "<td class='num-col'>" + row.PG + "</td>" +
-          "<td class='num-col'>" + row.PE + "</td>" +
-          "<td class='num-col'>" + row.PP + "</td>" +
-          "<td class='num-col'>" + (row.DG > 0 ? '+' : '') + row.DG + "</td>" +
-          "<td class='pts-col'>" + row.Pts + "</td>" +
-        "</tr>";
-    });
-    tablesHtml +=
-      "<div class='table-container'>" +
-        "<div class='group-title'>GRUPO " + gk + "</div>" +
-        "<table><thead><tr><th>#</th><th style='text-align:left;'>Seleccion</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>PTS</th></tr></thead>" +
-        "<tbody>" + tbody + "</tbody></table>" +
-      "</div>";
-  });
-
-  const html = `<!DOCTYPE html>
+  const html = \`<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Posiciones - Quiniela 2026</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <title>Posiciones - World Cup 26</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
+    /* WORLD CUP 2026 BRUTALIST AESTHETIC */
     :root {
-      --navy: #0A0A2E; --navy-light: #141440; --navy-surface: #1C1C50;
-      --turquoise: #00E6C3; --magenta: #E835A0; --purple: #7B61FF;
-      --blue: #3B82F6; --yellow: #FFD100;
-      --text: #FFFFFF; --text-secondary: rgba(255,255,255,0.6); --text-muted: rgba(255,255,255,0.35);
+      --black: #000000;
+      --white: #FFFFFF;
+      --lime: #C9FF24;
+      --magenta: #FF0055;
+      --teal: #00FFCC;
+      --dim: #1F1F1F;
+      --table-border: #333333;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: var(--navy); color: var(--text); min-height: 100vh; padding-bottom: 40px;
-      background-image:
-        radial-gradient(ellipse at 100% 0%, rgba(123,97,255,0.12) 0%, transparent 50%),
-        radial-gradient(ellipse at 0% 100%, rgba(0,230,195,0.08) 0%, transparent 50%);
+      background-color: var(--black); color: var(--white);
+      font-family: 'Inter', sans-serif; padding-bottom: 60px;
+    }
+    .app-container {
+      width: 100%; max-width: 450px; margin: 0 auto; padding: 0 16px;
     }
 
-    .header {
-      padding: 30px 20px 20px;
-      background: linear-gradient(180deg, rgba(123,97,255,0.2) 0%, transparent 100%);
-      position: sticky; top: 0; z-index: 10; backdrop-filter: blur(12px); text-align: center;
+    .header-box {
+      margin-top: 40px; margin-bottom: 30px;
+      border-bottom: 4px solid var(--white); padding-bottom: 10px;
     }
-    .header-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,230,195,0.12);
-      border: 1px solid rgba(0,230,195,0.25); padding: 4px 14px; border-radius: 20px;
-      color: var(--turquoise); font-size: 10px; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; }
-    h1 { font-size: 26px; font-weight: 900;
-      background: linear-gradient(135deg, #FFF 0%, var(--turquoise) 60%, var(--magenta) 100%);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-    .subtitle { color: var(--text-secondary); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-top: 4px; }
-
-    .container { padding: 0 20px; max-width: 600px; margin: 0 auto; }
-
-    .table-container {
-      background: var(--navy-light); border-radius: 20px; margin-top: 20px;
-      border: 1px solid rgba(255,255,255,0.06); overflow: hidden;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    .badge-26 {
+      display: inline-block; background: var(--magenta); color: var(--white);
+      font-weight: 900; font-size: 14px; padding: 4px 8px; margin-bottom: 12px;
     }
-    .group-title {
-      padding: 14px 20px; background: var(--navy-surface); font-size: 16px; font-weight: 800;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-      background-image: linear-gradient(90deg, var(--turquoise), var(--purple));
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    h1 { font-family: 'Archivo Black', sans-serif; font-size: 40px; line-height: 0.9; letter-spacing: -2px; }
+
+    /* EDITORIAL TABLES */
+    .group-table {
+      margin-bottom: 32px; border: 2px solid var(--table-border); background: var(--black);
     }
+    .g-header {
+      font-family: 'Archivo Black'; font-size: 24px; padding: 12px 16px;
+      background: var(--white); color: var(--black); letter-spacing: -1px;
+    }
+    
+    .t-head {
+      display: flex; background: var(--dim); padding: 8px 16px;
+      font-size: 10px; font-weight: 800; letter-spacing: 1px; color: rgba(255,255,255,0.6);
+      border-bottom: 2px solid var(--table-border);
+    }
+    .t-row {
+      display: flex; padding: 12px 16px; border-bottom: 1px solid var(--table-border);
+      align-items: center; transition: 0.2s;
+    }
+    .t-row:last-child { border-bottom: none; }
+    .t-row.qualify { background: rgba(201,255,36,0.05); } /* Subtle lime tint for top 2 */
+    .t-row.qualify .c-pos { color: var(--lime); font-family: 'Archivo Black'; }
 
-    table { width: 100%; border-collapse: collapse; text-align: center; font-size: 12px; }
-    th { color: var(--text-muted); font-weight: 700; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-    td { padding: 12px 4px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-    tr:last-child td { border-bottom: none; }
-
-    .team-col { text-align: left; font-weight: 700; font-size: 13px; padding-left: 12px; white-space: nowrap; }
-    .tbl-flag { font-size: 16px; margin-right: 4px; vertical-align: middle; }
-    .pos-col { width: 28px; font-weight: 900; color: var(--text-muted); }
-    .pos-col.qualify { color: var(--turquoise); }
-    .num-col { color: var(--text-secondary); font-size: 12px; }
-    .pts-col { font-weight: 900; color: #FFF; font-size: 14px; }
+    .c-pos { width: 30px; font-weight: 800; }
+    .c-team { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .t-flag { font-size: 20px; }
+    .t-name { font-weight: 900; font-size: 14px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .c-st { width: 40px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; }
+    .c-st.bold { font-weight: 800; }
+    .c-st.lime { color: var(--lime); font-family: 'Archivo Black'; font-size: 16px;}
   </style>
 </head>
 <body>
+  <div class="app-container">
+    <div class="header-box">
+      <div class="badge-26">FASE DE GRUPOS</div>
+      <h1>TABLAS DE<br>POSICIONES</h1>
+    </div>
 
-  <div class="header">
-    <div class="header-tag">⚽ FIFA WORLD CUP 2026</div>
-    <h1>TABLA DE POSICIONES</h1>
-    <div class="subtitle">Clasificacion oficial en vivo</div>
+    <div>\${htmlBody}</div>
   </div>
-
-  <div class="container">
-    ${tablesHtml}
-  </div>
-
 </body>
-</html>`;
+</html>\`;
 
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }

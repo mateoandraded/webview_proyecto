@@ -106,7 +106,7 @@ export default async function handler(req) {
       bracketHtml += "<div class='podium-grid'>" + podiumHtml + "</div>";
     }
   } else {
-    bracketHtml = "<div class='empty-msg'>BRACKET NO DISPONIBLE</div>";
+    bracketHtml = "<div class='empty-msg'>CLASIFICADOS NO DISPONIBLES</div>";
   }
 
   const html = `<!DOCTYPE html>
@@ -114,7 +114,7 @@ export default async function handler(req) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mi Perfil - World Cup 26</title>
+  <title>Mi Perfil - Jelou Mundial 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
     /* 
@@ -282,7 +282,7 @@ export default async function handler(req) {
           <div class="val">${profile.puntos_goles || 0}</div>
         </div>
         <div class="pd-box secondary">
-          <div class="lbl">BRACKETS</div>
+          <div class="lbl">CLASIFICADOS</div>
           <div class="val">${profile.puntos_brackets || 0}</div>
         </div>
       </div>
@@ -291,7 +291,7 @@ export default async function handler(req) {
     <div class="section-title">HISTORIAL</div>
     <div style="margin-bottom: 40px">${matchHistoryHtml}</div>
 
-    <div class="section-title">MI BRACKET</div>
+    <div class="section-title">MIS CLASIFICADOS</div>
     <div>${bracketHtml}</div>
   </div>
 </body>

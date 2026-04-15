@@ -16,6 +16,7 @@ async function fetchDB(coll, query='') {
 export default async function handler(req) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'GUEST';
+  const executionId = url.searchParams.get('executionId') || '';
 
   let profile = { nombre: 'Invitado', apellido: '', total_puntos: 0, puntos_goles: 0, puntos_brackets: 0, pronosticos_correctos: 0 };
   if (userId !== 'GUEST') {
@@ -92,8 +93,7 @@ export default async function handler(req) {
     const podiumItems = [
       { key: 'campeon', label: 'CAMPEÓN', cls: 'podium-champ' },
       { key: 'subcampeon', label: 'SUB', cls: 'podium-sub' },
-      { key: 'tercer_lugar', label: 'TERCERO', cls: 'podium-third' },
-      { key: 'cuarto_lugar', label: 'CUARTO', cls: 'podium-fourth' }
+      { key: 'tercer_lugar', label: 'TERCERO', cls: 'podium-third' }
     ];
     let podiumHtml = '';
     podiumItems.forEach(pi => {
@@ -117,12 +117,6 @@ export default async function handler(req) {
   <title>Mi Perfil - Jelou Mundial 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
-    /* 
-      DESIGN SKILL: frontend-design / bencium
-      Brutalist, High-Contrast World Cup 2026 Theme
-      Strictly 9:16 responsive mobile-first UI
-      No subtle glassmorphism. Flat, vibrant, pure black.
-    */
     :root {
       --black: #000000;
       --white: #FFFFFF;
@@ -140,18 +134,15 @@ export default async function handler(req) {
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
       display: flex; justify-content: center;
-      /* Subtle noise pattern */
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
     }
 
-    /* 9:16 Mobile Constraint container */
     .app-container {
       width: 100%; max-width: 450px;
-      padding: 0 16px 60px;
+      padding: 0 16px 120px;
       margin: 0 auto;
     }
 
-    /* TYPOGRAPHY */
     h1, .display-font { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; line-height: 0.9; }
 
     .header-box {
@@ -166,11 +157,9 @@ export default async function handler(req) {
     }
     .header-box h1 { font-size: 48px; letter-spacing: -2px; }
 
-    /* PROFILE OVERVIEW */
     .profile-hero {
       background: var(--lime); color: var(--black);
       padding: 24px;
-      border-radius: 0; /* Brutalist sharp corners */
       margin-bottom: 32px;
       position: relative; overflow: hidden;
     }
@@ -181,83 +170,58 @@ export default async function handler(req) {
       line-height: 1; pointer-events: none;
     }
     .p-name { font-family: 'Archivo Black'; font-size: 28px; letter-spacing: -1px; margin-bottom: 4px; }
-    .p-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; position: z-index: 2; }
+    .p-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; z-index: 2; }
     
     .lbl { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: rgba(0,0,0,0.6); }
     .val { font-size: 36px; font-family: 'Archivo Black'; letter-spacing: -1px; }
 
-    .points-detail {
-      display: flex; gap: 8px; margin-top: 16px;
-    }
-    .pd-box {
-      flex: 1; background: var(--black); color: var(--white);
-      padding: 12px;
-    }
+    .points-detail { display: flex; gap: 8px; margin-top: 16px; }
+    .pd-box { flex: 1; background: var(--black); color: var(--white); padding: 12px; }
     .pd-box .lbl { color: rgba(255,255,255,0.6); }
     .pd-box .val { color: var(--lime); font-size: 24px; }
     .pd-box.secondary .val { color: var(--teal); }
 
-    /* SECTION TITLES */
     .section-title {
       font-family: 'Archivo Black'; font-size: 24px; margin-bottom: 16px; 
       letter-spacing: -0.5px; border-left: 8px solid var(--magenta); padding-left: 12px;
     }
 
-    /* MATCH HISTORY (BRUTALIST ROWS) */
-    .hist-row {
-      background: var(--dim);
-      display: flex; align-items: stretch; margin-bottom: 8px;
-    }
-    .hist-teams {
-      flex: 1; padding: 12px; font-weight: 900; font-size: 14px;
-      display: flex; flex-direction: column; justify-content: center; gap: 4px;
-    }
-    .hist-scores {
-      padding: 12px; font-size: 11px; font-weight: 800; border-left: 2px solid var(--black);
-      display: flex; flex-direction: column; justify-content: center;
-    }
+    .hist-row { background: var(--dim); display: flex; align-items: stretch; margin-bottom: 8px; }
+    .hist-teams { flex: 1; padding: 12px; font-weight: 900; font-size: 14px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+    .hist-scores { padding: 12px; font-size: 11px; font-weight: 800; border-left: 2px solid var(--black); display: flex; flex-direction: column; justify-content: center; }
     .pred-score { color: var(--white); }
     .real-score { color: rgba(255,255,255,0.5); margin-top: 4px; }
     
-    .hist-state {
-      width: 40px; writing-mode: vertical-rl; text-align: center; font-weight: 900; font-size: 10px;
-      letter-spacing: 2px;
-    }
+    .hist-state { width: 40px; writing-mode: vertical-rl; text-align: center; font-weight: 900; font-size: 10px; letter-spacing: 2px; }
     .status-exact { background: var(--teal); color: var(--black); }
     .status-partial { background: var(--lime); color: var(--black); }
     .status-lost { background: var(--magenta); color: var(--white); }
     .status-pending { background: #333; color: var(--white); }
 
-    /* BRACKETS */
     .bracket-phase { margin-bottom: 24px; }
     .phase-label { font-family: 'Archivo Black'; font-size: 16px; color: var(--teal); margin-bottom: 8px; }
     .chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip {
-      background: var(--dim); padding: 8px 12px; font-weight: 800; font-size: 12px; letter-spacing: -0.5px;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
+    .chip { background: var(--dim); padding: 8px 12px; font-weight: 800; font-size: 12px; letter-spacing: -0.5px; border: 1px solid rgba(255,255,255,0.1); }
     .podium-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
     .podium-item { padding: 16px; }
     .podium-champ { background: var(--lime); color: var(--black); grid-column: 1 / -1; }
     .podium-sub { background: var(--purple); color: var(--white); }
     .podium-third { background: var(--teal); color: var(--black); }
-    .podium-fourth { background: var(--dim); color: var(--white); }
     
     .p-label { font-size: 10px; font-weight: 900; opacity: 0.8; margin-bottom: 4px; }
     .p-team { font-family: 'Archivo Black'; font-size: 18px; }
 
-    .empty-msg {
-      background: var(--dim); padding: 24px; text-align: center;
-      font-weight: 900; font-size: 12px; color: rgba(255,255,255,0.4);
-      border: 1px dashed rgba(255,255,255,0.2);
-    }
+    .empty-msg { background: var(--dim); padding: 24px; text-align: center; font-weight: 900; font-size: 12px; color: rgba(255,255,255,0.4); border: 1px dashed rgba(255,255,255,0.2); }
 
+    .bottom-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--black); padding: 16px; border-top: 4px solid var(--lime); z-index: 50; }
+    .btn-volver { width: 100%; max-width: 450px; margin: 0 auto; display: block; background: var(--white); color: var(--black); border: none; padding: 16px; font-family: 'Archivo Black'; font-size: 18px; cursor: pointer; letter-spacing: 1px; }
+    .btn-volver:active { background: var(--teal); }
   </style>
 </head>
 <body>
   <div class="app-container">
     <div class="header-box">
-      <div class="badge-26">FIFA WORLD CUP 26&trade;</div>
+      <div class="badge-26">JELOU MUNDIAL 2026</div>
       <h1>RESUMEN GLOBAL</h1>
     </div>
 
@@ -294,6 +258,26 @@ export default async function handler(req) {
     <div class="section-title">MIS CLASIFICADOS</div>
     <div>${bracketHtml}</div>
   </div>
+
+  <div class="bottom-bar">
+    <button class="btn-volver" id="btn-volver" onclick="volver()">VOLVER</button>
+  </div>
+
+  <script>
+    function volver(){
+      var exId = new URLSearchParams(window.location.search).get("executionId") || "";
+      var btn = document.getElementById("btn-volver");
+      btn.innerText = "Saliendo...";
+      var cbBody = { executionId: exId, success: true, data: { action: "volver" } };
+      fetch("https://workflows.jelou.ai/v1/webview/callback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cbBody)
+      }).finally(function() {
+        window.location.href = "https://wa.me/13239183195";
+      });
+    }
+  </script>
 </body>
 </html>`;
 

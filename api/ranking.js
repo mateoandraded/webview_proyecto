@@ -179,7 +179,7 @@ export default function handler(req) {
       '<div class="section-label">\uD83C\uDFC6 RANKING TOP 5</div>' +
       '<div class="rank-list">' + listHtml + '</div>' +
       '<div class="footer-bar">' +
-        '<button class="btn-back" id="btn-volver" onclick="volverMenu()">VOLVER AL MEN\u00DA</button>' +
+        '<button class="btn-back" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
       '</div>' +
       '<div class="footer"><strong>WE ARE 26</strong>FIFA WORLD CUP 2026 \u00B7 QUINIELA OFICIAL</div>' +
     '</div>' +
@@ -187,11 +187,10 @@ export default function handler(req) {
       'function volverMenu(){' +
         'var execId="' + esc(executionId) + '";' +
         'var btn=document.getElementById("btn-volver");' +
-        'if(!execId){btn.innerText="Cerrando...";setTimeout(function(){if(window.JelouApi&&window.JelouApi.close)window.JelouApi.close();},500);return;}' +
-        'btn.innerText="Volviendo...";btn.disabled=true;' +
-        'fetch("https://workflows.jelou.ai/v1/webview/callback?executionId="+execId,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({executionId:execId,success:true,data:{action:"volver_menu"}})})' +
-          '.then(function(){if(window.JelouApi&&window.JelouApi.close)window.JelouApi.close();try{window.close();}catch(e){}setTimeout(function(){window.history.go(-(window.history.length));},300);setTimeout(function(){window.location.href="about:blank";},600);})' +
-          '.catch(function(e){console.error(e);btn.innerText="Error al cerrar";btn.disabled=false;});' +
+        'btn.innerText="Saliendo...";btn.disabled=true;' +
+        'var cbBody={executionId:execId,success:true,data:{action:"volver"}};' +
+        'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+          '.finally(function(){ window.location.href="https://wa.me/13239183195"; });' +
       '}' +
     '<\/script>' +
     '</body></html>';

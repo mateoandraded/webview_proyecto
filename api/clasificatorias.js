@@ -23,6 +23,7 @@ async function fetchDatum(collection, method, body, id, query) {
 export default async function handler(req) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'GUEST';
+  const executionId = url.searchParams.get('executionId') || '';
 
   if (req.method === 'POST') {
     try {
@@ -62,7 +63,6 @@ export default async function handler(req) {
     } catch(e) {}
   }
 
-  // Safely embed JSON data into HTML
   const savedJson = JSON.stringify(uBracket);
   const teamsJson = JSON.stringify(WC_TEAMS);
   const flagsJson = JSON.stringify(FLAGS_MAP);
@@ -76,7 +76,7 @@ export default async function handler(req) {
 '<style>' +
 ':root{--black:#000;--white:#fff;--lime:#C9FF24;--mag:#FF0055;--teal:#00FFCC;--purple:#6200EA;--dim:#181818;--dim2:#222;--bd:rgba(255,255,255,.12)}' +
 '*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}' +
-'body{background:var(--black);color:var(--white);font-family:Inter,sans-serif;padding-bottom:100px}' +
+'body{background:var(--black);color:var(--white);font-family:Inter,sans-serif;padding-bottom:140px}' +
 '.app{max-width:450px;margin:auto;padding:0 16px}' +
 '.header-box{margin:40px 0 20px;border-bottom:4px solid var(--white);padding-bottom:10px}' +
 '.badge-26{display:inline-block;background:var(--purple);color:var(--white);font-weight:900;font-size:14px;padding:4px 10px;margin-bottom:12px}' +
@@ -103,9 +103,11 @@ export default async function handler(req) {
 '.podio-label{font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,.45);margin-bottom:10px;text-transform:uppercase;padding:6px 0;border-bottom:1px solid var(--bd)}' +
 '.podio-chips{display:flex;flex-wrap:wrap;gap:8px}' +
 '.podio-chips .chip{min-width:130px}' +
-'.bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:16px;border-top:4px solid var(--purple);z-index:50}' +
+'.bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:16px;border-top:4px solid var(--purple);z-index:50;display:flex;flex-direction:column;gap:10px}' +
 '.btn-save{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--lime);color:var(--black);border:none;padding:16px;font-family:"Archivo Black",sans-serif;font-size:18px;cursor:pointer;letter-spacing:1px}' +
 '.btn-save:active{background:var(--white)}' +
+'.btn-volver{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--white);color:var(--black);border:none;padding:12px;font-family:"Archivo Black",sans-serif;font-size:14px;cursor:pointer;text-align:center;letter-spacing:1px}' +
+'.btn-volver:active{background:var(--teal)}' +
 '.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--white);color:var(--black);padding:12px 24px;font-family:"Archivo Black",sans-serif;font-size:14px;z-index:100;transition:.3s;border:4px solid var(--black)}' +
 '.toast.show{transform:translateX(-50%) translateY(0)}' +
 '</style></head><body>' +
@@ -128,11 +130,11 @@ export default async function handler(req) {
   '<div id="panel3" class="phase-panel"></div>' +
   '<div id="panel4" class="phase-panel"></div>' +
 '</div>' +
-'<div class="bottom-bar"><button class="btn-save" id="btnSave" onclick="guardar()">' +
-'GUARDAR CLASIFICADOS</button></div>' +
-// Inject data as JSON — browser reads these variables
+'<div class="bottom-bar">' +
+  '<button class="btn-save" id="btnSave" onclick="guardar()">GUARDAR CLASIFICADOS</button>' +
+  '<button class="btn-volver" onclick="volver()">VOLVER</button>' +
+'</div>' +
 '<script>var ALL_TEAMS=' + teamsJson + ';var FLAGS=' + flagsJson + ';var SAVED=' + savedJson + ';</script>' +
-// Browser JS uses real template literals — safe from Vercel compiler
 '<script>' +
 'var state={d16:[],d8:[],d4:[],semis:[],campeon:"",sub:"",tercero:""};' +
 '(function initState(){' +
@@ -158,61 +160,53 @@ export default async function handler(req) {
 '    h+="<div class=\\"instr\\">Elige los 32 que clasifican a 16avos</div>";' +
 '    h+="<div class=\\"counter\\">"+sel.length+" <em>/ "+max+"</em></div>";' +
 '    h+="<div class=\\"chip-grid\\">";' +
-'    ALL_TEAMS.forEach(function(t){' +
-'      var isSel=sel.indexOf(t)>=0;' +
-'      var isDim=!isSel&&sel.length>=max;' +
-'      h+=chip(t,isSel,isDim,"toggle16(\'"+t+"\')");' +
-'    });' +
+'    ALL_TEAMS.forEach(function(t){var isSel=sel.indexOf(t)>=0;var isDim=!isSel&&sel.length>=max;h+=chip(t,isSel,isDim,"toggle16(\'"+t+"\')");});' +
 '    h+="</div>";' +
 '  }else if(idx===1){' +
 '    var max=16,src=state.d16,sel=state.d8;' +
 '    h+="<div class=\\"instr\\">De los 32, elige 16 para 8vos</div>";' +
-'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"margin-top:8px;border-color:var(--mag)\\">Primero elige en 16VOS</div>";}' +
+'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero elige en 16VOS</div>";}' +
 '    else{h+="<div class=\\"counter\\">"+sel.length+" <em>/ "+max+"</em></div><div class=\\"chip-grid\\">";src.forEach(function(t){var isSel=sel.indexOf(t)>=0;var isDim=!isSel&&sel.length>=max;h+=chip(t,isSel,isDim,"toggle8(\'"+t+"\')");});h+="</div>";}' +
 '  }else if(idx===2){' +
 '    var max=8,src=state.d8,sel=state.d4;' +
 '    h+="<div class=\\"instr\\">De los 16, elige 8 para cuartos</div>";' +
-'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"margin-top:8px;border-color:var(--mag)\\">Primero elige en 8VOS</div>";}' +
+'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero elige en 8VOS</div>";}' +
 '    else{h+="<div class=\\"counter\\">"+sel.length+" <em>/ "+max+"</em></div><div class=\\"chip-grid\\">";src.forEach(function(t){var isSel=sel.indexOf(t)>=0;var isDim=!isSel&&sel.length>=max;h+=chip(t,isSel,isDim,"toggle4(\'"+t+"\')");});h+="</div>";}' +
 '  }else if(idx===3){' +
 '    var max=4,src=state.d4,sel=state.semis;' +
 '    h+="<div class=\\"instr\\">De los 8, elige los 4 semifinalistas</div>";' +
-'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"margin-top:8px;border-color:var(--mag)\\">Primero elige en 4TOS</div>";}' +
+'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero elige en 4VOS</div>";}' +
 '    else{h+="<div class=\\"counter\\">"+sel.length+" <em>/ "+max+"</em></div><div class=\\"chip-grid\\">";src.forEach(function(t){var isSel=sel.indexOf(t)>=0;var isDim=!isSel&&sel.length>=max;h+=chip(t,isSel,isDim,"toggleSemi(\'"+t+"\')");});h+="</div>";}' +
 '  }else if(idx===4){' +
 '    var src=state.semis;' +
-'    h+="<div class=\\"instr\\">Solo de los semifinalistas</div>";' +
-'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"margin-top:8px;border-color:var(--mag)\\">Primero elige en SEMIS</div>";}' +
+'    h+="<div class=\\"instr\\">Selecciona los ganadores finales</div>";' +
+'    if(src.length===0){h+="<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero elige en SEMIS</div>";}' +
 '    else{' +
-'      function podio(key,label,stateKey){' +
-'        var sel=state[stateKey];' +
-'        var part="<div class=\\"podio-section\\"><div class=\\"podio-label\\">"+label+"</div><div class=\\"podio-chips\\">";' +
-'        src.forEach(function(t){var isSel=t===sel;part+=chip(t,isSel,false,"pickFinal(\'"+stateKey+"\',\'"+t+"\')");});' +
-'        part+="</div></div>";return part;' +
+'      function podio(label,sk){' +
+'        var sel=state[sk];' +
+'        var html="<div class=\\"podio-section\\"><div class=\\"podio-label\\">"+label+"</div><div class=\\"podio-chips\\">";' +
+'        src.forEach(function(t){html+=chip(t,t===sel,false,"pickFinal(\'"+sk+"\',\'"+t+"\')");});' +
+'        html+="</div></div>";return html;' +
 '      }' +
-'      h+=podio("campeon","\uD83C\uDFC6 CAMPE\u00D3N MUNDIAL","campeon");' +
-'      h+=podio("sub","SUBCAMPE\u00D3N (2\u00B0 puesto)","sub");' +
-'      h+=podio("tercero","TERCER LUGAR (3\u00B0 puesto)","tercero");' +
+'      h+=podio("\uD83C\uDFC6 CAMPE\u00D3N MUNDIAL","campeon");' +
+'      h+=podio("SUBCAMPE\u00D3N (2\u00B0 PUESTO)","sub");' +
+'      h+=podio("TERCER LUGAR (3er PUESTO)","tercero");' +
 '    }' +
 '  }' +
 '  p.innerHTML=h;' +
 '}' +
-'function rerender(){buildPhase(0);buildPhase(1);buildPhase(2);buildPhase(3);buildPhase(4);}' +
-'function clearDownstream(from){' +
-'  var order=["d16","d8","d4","semis"];' +
-'  var i=order.indexOf(from)+1;' +
-'  for(;i<order.length;i++){' +
-'    var prev=state[order[i-1]];' +
-'    state[order[i]]=state[order[i]].filter(function(t){return prev.indexOf(t)>=0;});' +
-'  }' +
+'function rerender(){for(var i=0;i<5;i++)buildPhase(i);}' +
+'function clearDown(k){' +
+'  var o=["d16","d8","d4","semis"];var i=o.indexOf(k)+1;' +
+'  for(;i<o.length;i++){state[o[i]]=state[o[i]].filter(function(t){return state[o[i-1]].indexOf(t)>=0;});}' +
 '  state.campeon="";state.sub="";state.tercero="";' +
 '}' +
-'function toggleArr(arr,team,max){var i=arr.indexOf(team);i>=0?arr.splice(i,1):(arr.length<max&&arr.push(team));}' +
-'window.toggle16=function(t){toggleArr(state.d16,t,32);clearDownstream("d16");rerender();};' +
-'window.toggle8=function(t){toggleArr(state.d8,t,16);clearDownstream("d8");rerender();};' +
-'window.toggle4=function(t){toggleArr(state.d4,t,8);clearDownstream("d4");rerender();};' +
-'window.toggleSemi=function(t){toggleArr(state.semis,t,4);clearDownstream("semis");rerender();};' +
-'window.pickFinal=function(key,team){state[key]=team;buildPhase(4);};' +
+'function toggleArr(a,t,m){var i=a.indexOf(t);i>=0?a.splice(i,1):(a.length<m&&a.push(t));}' +
+'window.toggle16=function(t){toggleArr(state.d16,t,32);clearDown("d16");rerender();};' +
+'window.toggle8=function(t){toggleArr(state.d8,t,16);clearDown("d8");rerender();};' +
+'window.toggle4=function(t){toggleArr(state.d4,t,8);clearDown("d4");rerender();};' +
+'window.toggleSemi=function(t){toggleArr(state.semis,t,4);clearDown("semis");rerender();};' +
+'window.pickFinal=function(k,t){state[k]=t;buildPhase(4);};' +
 'function showPhase(idx){' +
 '  document.querySelectorAll(".phase-tab").forEach(function(el,i){el.classList.toggle("active",i===idx);});' +
 '  document.querySelectorAll(".phase-panel").forEach(function(el,i){el.classList.toggle("active",i===idx);});' +
@@ -221,10 +215,22 @@ export default async function handler(req) {
 '  var btn=document.getElementById("btnSave");btn.innerText="GUARDANDO...";' +
 '  var payload={dieciseisavos:state.d16,octavos:state.d8,cuartos:state.d4,semis:state.semis,campeon:state.campeon,subcampeon:state.sub,tercer_lugar:state.tercero,cuarto_lugar:""};' +
 '  var uid=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
+'  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
 '  fetch("/api/clasificatorias?user_id="+uid,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})' +
-'    .then(function(r){if(r.ok){var t=document.getElementById("toast");t.classList.add("show");setTimeout(function(){t.classList.remove("show");},2500);}else{alert("Error al guardar");}})' +
-'    .catch(function(){alert("Error de red");})' +
-'    .finally(function(){btn.innerText="GUARDAR CLASIFICADOS";});' +
+'    .then(function(r){' +
+'      if(r.ok){' +
+'        var t=document.getElementById("toast");t.classList.add("show");' +
+'        var cbBody={executionId:exId,success:true,data:{action:"save_clasificados",summary:payload}};' +
+'        fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+'        .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/13239183195";},1500); });' +
+'      }else{alert("Error al guardar");}' +
+'    }).catch(function(){alert("Error de red");}).finally(function(){btn.innerText="GUARDAR CLASIFICADOS";});' +
+'};' +
+'window.volver=function(){' +
+'  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
+'  var cbBody={executionId:exId,success:true,data:{action:"volver"}}; ' +
+'  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+'    .finally(function(){ window.location.href="https://wa.me/13239183195"; });' +
 '};' +
 'rerender();' +
 '<\/script>' +

@@ -114,6 +114,9 @@ export default async function handler(req) {
     .c-st{width:40px;text-align:center;font-weight:600;font-size:14px}
     .c-st.bold{font-weight:800}
     .c-st.lime{color:var(--lime);font-family:'Archivo Black';font-size:16px}
+    .bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:16px;border-top:4px solid var(--lime);z-index:50}
+    .btn-volver{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--white);color:var(--black);border:none;padding:16px;font-family:'Archivo Black';font-size:18px;cursor:pointer;text-align:center;letter-spacing:1px}
+    .btn-volver:active{background:var(--teal)}
   `;
 
   const html = '<!DOCTYPE html><html lang="es"><head>' +
@@ -130,6 +133,18 @@ export default async function handler(req) {
       '</div>' +
       '<div>' + htmlBody + '</div>' +
     '</div>' +
+    '<div class="bottom-bar">' +
+    '  <button class="btn-volver" id="btnVolver" onclick="volver()">VOLVER</button>' +
+    '</div>' +
+    '<script>' +
+    'function volver(){' +
+    '  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
+    '  var btn=document.getElementById("btnVolver");if(btn)btn.innerText="SALIENDO...";' +
+    '  var cbBody={executionId:exId,success:true,data:{action:"volver"}};' +
+    '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+    '    .finally(function(){ window.location.href="https://wa.me/13239183195"; });' +
+    '}' +
+    '<\/script>' +
     '</body></html>';
 
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });

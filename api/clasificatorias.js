@@ -219,10 +219,10 @@ export default async function handler(req) {
     ];
 
     var R16_DEF = [
-      { id:89, a:74, b:77 }, { id:90, a:73, b:75 }, { id:91, a:78, b:79 }, { id:92, a:80, b:81 },
-      { id:93, a:82, b:83 }, { id:94, a:84, b:85 }, { id:95, a:86, b:87 }, { id:96, a:88, b:76 }
+      { id:89, a:74, b:77 }, { id:90, a:73, b:75 }, { id:91, a:76, b:78 }, { id:92, a:79, b:80 },
+      { id:93, a:83, b:84 }, { id:94, a:81, b:82 }, { id:95, a:86, b:88 }, { id:96, a:85, b:87 }
     ];
-    var QF_DEF = [{ id:97, a:89, b:90 }, { id:98, a:91, b:92 }, { id:99, a:93, b:94 }, { id:100, a:95, b:96 }];
+    var QF_DEF = [{ id:97, a:89, b:90 }, { id:98, a:93, b:94 }, { id:99, a:91, b:92 }, { id:100, a:95, b:96 }];
     var SF_DEF = [{ id:101, a:97, b:98 }, { id:102, a:99, b:100 }];
 
     var callbackSent = false;

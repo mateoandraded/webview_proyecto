@@ -65,8 +65,9 @@ export default async function handler(req) {
     } catch (e) { }
   }
 
-  const paramFecha = url.searchParams.get('fecha');
-  const fechaSimulada = paramFecha || "2026-06-11";
+  const FECHA_CORTE = "2026-06-11";
+  const hoy = new Date().toISOString().split('T')[0];
+  const isFrozenGlobal = hoy >= FECHA_CORTE;
 
   const groups = {};
   rawMatches.forEach(function (m) {
@@ -74,26 +75,41 @@ export default async function handler(req) {
     if (g.length > 1) return;
     if (!groups[g]) groups[g] = [];
     const up = userPredictions.find(function (pr) { return pr.match_id === m.id_partido; });
-    const isLocked = m.fecha < fechaSimulada;
+    const hasRealResult = m.resulltado_local !== null && m.resulltado_local !== undefined &&
+      m.resultado_visitante !== null && m.resultado_visitante !== undefined;
+    const hasPrediction = !!(up && up.pronostico_local !== null && up.pronostico_local !== undefined &&
+      up.pronostico_visitante !== null && up.pronostico_visitante !== undefined);
+
+    const displayLocal = hasRealResult ? m.resulltado_local : (hasPrediction ? up.pronostico_local : "");
+    const displayVisitante = hasRealResult ? m.resultado_visitante : (hasPrediction ? up.pronostico_visitante : "");
+
     groups[g].push({
       id: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
-      fecha: m.fecha, real_l: m.resulltado_local || 0, real_v: m.resultado_visitante || 0,
+      fecha: m.fecha, real_l: m.resulltado_local, real_v: m.resultado_visitante,
       pred_l: up ? up.pronostico_local : null, pred_v: up ? up.pronostico_visitante : null,
-      locked: isLocked
+      display_l: displayLocal, display_v: displayVisitante,
+      hasReal: hasRealResult, hasPred: hasPrediction,
+      locked: isFrozenGlobal
     });
   });
   const groupKeys = Object.keys(groups).sort();
 
   let groupsHtml = '';
   groupKeys.forEach(function (gk) {
+    const totalMatches = groups[gk].length;
+    const predictedMatches = groups[gk].filter(function (m) { return m.hasPred; }).length;
+    const progressPct = totalMatches > 0 ? Math.round((predictedMatches / totalMatches) * 100) : 0;
     let matchHtml = '';
     groups[gk].forEach(function (m) {
-      let valL = '', valV = '';
-      if (m.locked) { valL = m.real_l; valV = m.real_v; }
-      else { valL = m.pred_l !== null ? m.pred_l : ''; valV = m.pred_v !== null ? m.pred_v : ''; }
+      const valL = m.display_l;
+      const valV = m.display_v;
       const lockClass = m.locked ? 'locked' : '';
       const lockData = m.locked ? "data-locked='true'" : "";
-      const st = m.locked ? "<span class='lock-badge'>FIN</span>" : "";
+      const st = m.locked ? ("<span class='lock-badge'>" + (m.hasReal ? "FINALIZADO" : "CONGELADO") + "</span>") : "";
+      let subline = "";
+      if (m.locked && m.hasPred) {
+        subline = "<div class='pred-note'>PRONÓSTICO: " + m.pred_l + " - " + m.pred_v + "</div>";
+      }
 
       matchHtml +=
         "<div class='match-row' " + lockData + " data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
@@ -119,12 +135,13 @@ export default async function handler(req) {
         "<div class='t-name'>" + m.visitante + "</div>" +
         "</div>" +
         "</div>" +
+        subline +
         "</div>";
     });
 
     groupsHtml +=
       "<div class='group-block'>" +
-      "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\">GRUPO " + gk + "</div>" +
+      "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\"><span class='gh-title'>GRUPO " + gk + "</span><span class='gh-progress'>" + progressPct + "%</span></div>" +
       "<div class='group-content'>" + matchHtml + "</div>" +
       "</div>";
   });
@@ -138,8 +155,10 @@ export default async function handler(req) {
     .badge-26{background:var(--teal);color:var(--black);font-weight:900;font-size:14px;padding:4px 8px;margin-bottom:12px;display:inline-block}
     h1{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:.9;letter-spacing:-2px}
     .group-block{border:2px solid var(--white);margin-bottom:16px;background:var(--black)}
-    .group-header{font-family:'Archivo Black';font-size:28px;padding:16px;background:var(--white);color:var(--black);cursor:pointer;position:relative}
+    .group-header{font-family:'Archivo Black';font-size:28px;padding:16px;padding-right:56px;background:var(--white);color:var(--black);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .group-header::after{content:'+';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-weight:900;font-size:32px}
+    .gh-title{line-height:1}
+    .gh-progress{font-family:'Archivo Black';font-size:16px;line-height:1;background:var(--black);color:var(--white);padding:4px 8px;letter-spacing:0}
     .group-block.open .group-header{background:var(--magenta);color:var(--white)}
     .group-block.open .group-header::after{content:'-'}
     .group-content{display:none;padding:0}
@@ -147,6 +166,7 @@ export default async function handler(req) {
     .match-row{border-top:2px solid var(--white);padding:16px 12px}
     .match-meta{font-size:10px;font-weight:800;color:rgba(255,255,255,.6);display:flex;justify-content:space-between;margin-bottom:12px;letter-spacing:1px}
     .lock-badge{background:var(--purple);color:var(--white);padding:2px 6px;font-size:9px}
+    .pred-note{margin-top:8px;font-size:10px;color:rgba(255,255,255,.55);font-weight:700;letter-spacing:.4px}
     .match-body{display:flex;align-items:center;justify-content:space-between;gap:4px}
     .team-side{flex:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0;overflow:hidden}
     .team-side.right{align-items:flex-end}
@@ -172,7 +192,7 @@ export default async function handler(req) {
   `;
 
   const jsCode =
-    'var firstGroup=document.querySelector(".group-block");if(firstGroup)firstGroup.classList.add("open");' +
+    'var IS_FROZEN_GLOBAL=' + (isFrozenGlobal ? 'true' : 'false') + ';' +
     'let callbackSent=false;' +
     'document.addEventListener("visibilitychange",function(){' +
     'if(document.visibilityState==="hidden"&&!callbackSent){' +
@@ -185,6 +205,7 @@ export default async function handler(req) {
     'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
     'function save(){' +
     'var btn=document.getElementById("btnSave");btn.innerHTML="GUARDANDO...";' +
+    'if(IS_FROZEN_GLOBAL){btn.innerHTML="CONGELADO";setTimeout(function(){btn.innerHTML="GUARDAR TODO";},900);return;}' +
     'var payload=[];' +
     'document.querySelectorAll(".match-row").forEach(function(row){' +
     'if(row.getAttribute("data-locked")==="true")return;' +

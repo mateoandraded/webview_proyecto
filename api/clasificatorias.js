@@ -17,22 +17,27 @@ const FLAGS_MAP = {
   "SENEGAL": "\uD83C\uDDF8\uD83C\uDDF3", "NIGERIA": "\uD83C\uDDF3\uD83C\uDDEC", "CAMERUN": "\uD83C\uDDE8\uD83C\uDDF2", "COSTA DE MARFIL": "\uD83C\uDDE8\uD83C\uDDEE",
   "EGIPTO": "\uD83C\uDDEA\uD83C\uDDEC", "GHANA": "\uD83C\uDDEC\uD83C\uDDED", "TUNEZ": "\uD83C\uDDF9\uD83C\uDDF3", "JAPON": "\uD83C\uDDEF\uD83C\uDDF5",
   "COREA DEL SUR": "\uD83C\uDDF0\uD83C\uDDF7", "AUSTRALIA": "\uD83C\uDDE6\uD83C\uDDFA", "IRAN": "\uD83C\uDDEE\uD83C\uDDF7", "ARABIA SAUDITA": "\uD83C\uDDF8\uD83C\uDDE6",
-  "INDONESIA": "\uD83C\uDDEE\uD83C\uDDE9", "COSTA RICA": "\uD83C\uDDE8\uD83C\uDDF7", "PANAMA": "\uD83C\uDDF5\uD83C\uDDE6", "JAMAICA": "\uD83C\uDDEF\uD83C\uDDF2"
+  "INDONESIA": "\uD83C\uDDEE\uD83C\uDDE9", "COSTA RICA": "\uD83C\uDDE8\uD83C\uDDF7", "PANAMA": "\uD83C\uDDF5\uD83C\uDDE6", "JAMAICA": "\uD83C\uDDEF\uD83C\uDDF2",
+  "SUDAFRICA": "\uD83C\uDDFF\uD83C\uDDE6", "REPUBLICA CHECA": "\uD83C\uDDE8\uD83C\uDDFF", "BOSNIA": "\uD83C\uDDE7\uD83C\uDDE6", "QATAR": "\uD83C\uDDF6\uD83C\uDDE6",
+  "HAITI": "\uD83C\uDDED\uD83C\uDDF9", "ESCOCIA": "\uD83C\uDDEC\uD83C\uDDE7", "CURAZAO": "\uD83C\uDDE8\uD83C\uDDFC", "SUECIA": "\uD83C\uDDF8\uD83C\uDDEA",
+  "NUEVA ZELANDA": "\uD83C\uDDF3\uD83C\uDDFF", "CABO VERDE": "\uD83C\uDDE8\uD83C\uDDFB", "IRAK": "\uD83C\uDDEE\uD83C\uDDF6", "NORUEGA": "\uD83C\uDDF3\uD83C\uDDF4",
+  "ARGELIA": "\uD83C\uDDE9\uD83C\uDDFF", "JORDANIA": "\uD83C\uDDEF\uD83C\uDDF4", "RD CONGO": "\uD83C\uDDE8\uD83C\uDDE9", "UZBEKISTAN": "\uD83C\uDDFA\uD83C\uDDFF",
+  "INGLATERRA": "\uD83C\uDDEC\uD83C\uDDE7"
 };
 
 const GROUP_TEAMS = {
-  A: ["MEXICO", "ESTADOS UNIDOS", "CANADA", "BRASIL"],
-  B: ["ARGENTINA", "ECUADOR", "COLOMBIA", "URUGUAY"],
-  C: ["PARAGUAY", "CHILE", "PERU", "VENEZUELA"],
-  D: ["ALEMANIA", "ESPA\u00D1A", "FRANCIA", "PORTUGAL"],
-  E: ["BELGICA", "PAISES BAJOS", "CROACIA", "SERBIA"],
-  F: ["SUIZA", "TURQUIA", "DINAMARCA", "AUSTRIA"],
-  G: ["POLONIA", "RUMANIA", "ESLOVENIA", "ESLOVAQUIA"],
-  H: ["ALBANIA", "UCRANIA", "GRECIA", "MARRUECOS"],
-  I: ["SENEGAL", "NIGERIA", "CAMERUN", "COSTA DE MARFIL"],
-  J: ["EGIPTO", "GHANA", "TUNEZ", "JAPON"],
-  K: ["COREA DEL SUR", "AUSTRALIA", "IRAN", "ARABIA SAUDITA"],
-  L: ["INDONESIA", "COSTA RICA", "PANAMA", "JAMAICA"]
+  A: ["MEXICO", "SUDAFRICA", "COREA DEL SUR", "REPUBLICA CHECA"],
+  B: ["CANADA", "BOSNIA", "QATAR", "SUIZA"],
+  C: ["BRASIL", "MARRUECOS", "HAITI", "ESCOCIA"],
+  D: ["ESTADOS UNIDOS", "PARAGUAY", "AUSTRALIA", "TURQUIA"],
+  E: ["ALEMANIA", "CURAZAO", "COSTA DE MARFIL", "ECUADOR"],
+  F: ["PAISES BAJOS", "JAPON", "SUECIA", "TUNEZ"],
+  G: ["BELGICA", "EGIPTO", "IRAN", "NUEVA ZELANDA"],
+  H: ["ESPA\u00D1A", "CABO VERDE", "ARABIA SAUDITA", "URUGUAY"],
+  I: ["FRANCIA", "SENEGAL", "IRAK", "NORUEGA"],
+  J: ["ARGENTINA", "ARGELIA", "AUSTRIA", "JORDANIA"],
+  K: ["PORTUGAL", "RD CONGO", "UZBEKISTAN", "COLOMBIA"],
+  L: ["INGLATERRA", "CROACIA", "GHANA", "PANAMA"]
 };
 
 async function fetchDatum(collection, method, body, id, query) {
@@ -133,6 +138,9 @@ export default async function handler(req) {
     .match-card{background:var(--dim);border:2px solid var(--bd);padding:8px}
     .match-head{font-size:10px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,.55);margin-bottom:8px;text-transform:uppercase}
     .match-pick{display:flex;flex-direction:column;gap:6px}
+    .next-wrap{margin-top:12px;display:flex;justify-content:flex-end}
+    .btn-next-phase{background:var(--dim2);color:var(--white);border:2px solid var(--bd);padding:8px 12px;font-family:"Archivo Black",sans-serif;font-size:11px;letter-spacing:.5px;cursor:pointer}
+    .btn-next-phase:active{background:var(--teal);color:var(--black);border-color:var(--teal)}
     .podio-section{margin-bottom:20px}
     .podio-label{font-size:10px;font-weight:900;letter-spacing:2px;color:rgba(255,255,255,.45);margin-bottom:10px;text-transform:uppercase;padding:6px 0;border-bottom:1px solid var(--bd)}
     .podio-chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -467,6 +475,10 @@ export default async function handler(req) {
       return h;
     }
 
+    function nextShortcut(targetIdx, label){
+      return "<div class=\\"next-wrap\\"><button type=\\"button\\" class=\\"btn-next-phase\\" onclick=\\"showPhase(" + targetIdx + ")\\">" + label + "</button></div>";
+    }
+
     function buildPanel(idx){
       var p = document.getElementById("panel" + idx);
       if(!p) return;
@@ -488,18 +500,33 @@ export default async function handler(req) {
           h += "</div></div>";
         });
         h += "</div>";
+        if(derived.placements.groupsReady){
+          h += nextShortcut(1, "IR A 16VOS");
+        }
       } else if(idx === 1){
         if(!derived.placements.groupsReady){
           h += "<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Completa GRUPOS para armar 16VOS</div>";
         } else {
           h += renderMatchList(derived.r32, "r32", "Selecciona el ganador de cada partido de 16VOS");
+          if(winnersCount(state.winners.r32) === 16){
+            h += nextShortcut(2, "IR A 8VOS");
+          }
         }
       } else if(idx === 2){
         h += renderMatchList(derived.r16, "r16", "Selecciona el ganador de cada partido de 8VOS");
+        if(winnersCount(state.winners.r16) === 8){
+          h += nextShortcut(3, "IR A 4TOS");
+        }
       } else if(idx === 3){
         h += renderMatchList(derived.qf, "qf", "Selecciona el ganador de cada partido de 4TOS");
+        if(winnersCount(state.winners.qf) === 4){
+          h += nextShortcut(4, "IR A SEMIS");
+        }
       } else if(idx === 4){
         h += renderMatchList(derived.sf, "sf", "Selecciona el ganador de cada semifinal");
+        if(winnersCount(state.winners.sf) === 2){
+          h += nextShortcut(5, "IR A PODIO");
+        }
       } else {
         var m101 = derived.sf.find(function(m){ return m.id === 101; });
         var m102 = derived.sf.find(function(m){ return m.id === 102; });

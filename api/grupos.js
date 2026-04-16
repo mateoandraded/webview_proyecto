@@ -241,18 +241,14 @@ export default async function handler(req) {
     '});' +
     'function step(btn,amount){var row=btn.closest(".match-row");if(row)row.setAttribute("data-dirty","1");var input=btn.parentElement.querySelector("input");var val=parseInt(input.value,10);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
     'function summaryForCallback(payload){' +
-    'var MAX=1024;var partidos=[];var i,trial,s,out;' +
+    'var MAX=1024;var out=[];var i,trial,s;' +
     'for(i=0;i<payload.length;i++){' +
-    'trial={partidos:partidos.concat([payload[i]])};' +
+    'trial=out.concat([payload[i]]);' +
     's=JSON.stringify(trial);' +
     'if(s.length>MAX)break;' +
-    'partidos.push(payload[i]);' +
+    'out.push(payload[i]);' +
     '}' +
-    'out={partidos:partidos};' +
-    'if(partidos.length<payload.length)out.truncado=true;' +
-    'while(JSON.stringify(out).length>MAX&&partidos.length>0){partidos.pop();out={partidos:partidos,truncado:true};}' +
-    'if(partidos.length===0&&payload.length>0){out={partidos:[],truncado:true,total:payload.length};}' +
-    'if(JSON.stringify(out).length>MAX)out={total:payload.length,truncado:true};' +
+    'while(JSON.stringify(out).length>MAX&&out.length>0)out.pop();' +
     'return out;' +
     '}' +
     'function save(){' +

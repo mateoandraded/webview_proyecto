@@ -2,6 +2,34 @@ export const config = {
   runtime: 'edge',
 };
 
+const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
+
+function fallbackHoyYMD() {
+  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  var y = parts.find(function (p) { return p.type === 'year'; }).value;
+  var mo = parts.find(function (p) { return p.type === 'month'; }).value;
+  var d = parts.find(function (p) { return p.type === 'day'; }).value;
+  return y + '-' + mo + '-' + d;
+}
+
+async function fetchFechaTorneoDesdeJelou() {
+  try {
+    var ctrl = new AbortController();
+    var tid = setTimeout(function () { ctrl.abort(); }, 5000);
+    var res = await fetch(JELOU_ESTADO_TORNEO_URL, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: { Accept: 'application/json' }
+    });
+    clearTimeout(tid);
+    if (!res.ok) return fallbackHoyYMD();
+    var data = await res.json();
+    var f = data && data.fecha_simulada_hoy;
+    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
+  } catch (e) { /* timeout / red */ }
+  return fallbackHoyYMD();
+}
+
 const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
 
@@ -53,10 +81,18 @@ export default async function handler(req) {
   }
 
   let rawMatches = [];
+  let hoy;
   try {
-    const dataMatches = await fetchDatum('pbc_631836067', 'GET', null, '', '');
+    const [dataMatches, fechaSim] = await Promise.all([
+      fetchDatum('pbc_631836067', 'GET', null, '', ''),
+      fetchFechaTorneoDesdeJelou()
+    ]);
     rawMatches = Array.isArray(dataMatches) ? dataMatches : (dataMatches.items || []);
-  } catch (e) { rawMatches = []; }
+    hoy = fechaSim;
+  } catch (e) {
+    rawMatches = [];
+    hoy = await fetchFechaTorneoDesdeJelou();
+  }
 
   let userPredictions = [];
   if (userId !== 'GUEST') {
@@ -67,7 +103,6 @@ export default async function handler(req) {
   }
 
   const FECHA_CORTE = "2026-06-11";
-  const hoy = new Date().toISOString().split('T')[0];
   const isFrozenGlobal = hoy >= FECHA_CORTE;
 
   const groups = {};

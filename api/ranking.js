@@ -2,6 +2,35 @@ export const config = {
   runtime: 'edge',
 };
 
+/** Misma fuente que torneo-libertadores (secrets FECHA_HOY). Copiable suelto a otro repo. */
+const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
+
+function fallbackHoyYMD() {
+  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  var y = parts.find(function (p) { return p.type === 'year'; }).value;
+  var mo = parts.find(function (p) { return p.type === 'month'; }).value;
+  var d = parts.find(function (p) { return p.type === 'day'; }).value;
+  return y + '-' + mo + '-' + d;
+}
+
+async function fetchFechaTorneoDesdeJelou() {
+  try {
+    var ctrl = new AbortController();
+    var tid = setTimeout(function () { ctrl.abort(); }, 5000);
+    var res = await fetch(JELOU_ESTADO_TORNEO_URL, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: { Accept: 'application/json' }
+    });
+    clearTimeout(tid);
+    if (!res.ok) return fallbackHoyYMD();
+    var data = await res.json();
+    var f = data && data.fecha_simulada_hoy;
+    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
+  } catch (e) { /* timeout / red */ }
+  return fallbackHoyYMD();
+}
+
 const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL_COLL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
 const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
@@ -33,6 +62,40 @@ function silentPatch(coll, id, payload) {
   }).catch(() => {});
 }
 
+/** Inicio fase de grupos Mundial 2026 (Datum + grupos.js). */
+const FECHA_INICIO_TORNEO = '2026-06-11';
+
+function normalizeMatchDate(fechaRaw) {
+  if (fechaRaw == null || fechaRaw === '') return null;
+  var s = String(fechaRaw).trim();
+  var m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  var m2 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m2) {
+    var dd = m2[1].length === 1 ? '0' + m2[1] : m2[1];
+    var mm = m2[2].length === 1 ? '0' + m2[2] : m2[2];
+    return m2[3] + '-' + mm + '-' + dd;
+  }
+  return null;
+}
+
+/** Resultado real cargado en Datum (null/undefined/'' = aún no hay marcador oficial). */
+function hasResultadoMarcado(m) {
+  var gl = m.gl;
+  var gv = m.gv;
+  if (gl === null || gl === undefined || gl === '') return false;
+  if (gv === null || gv === undefined || gv === '') return false;
+  return true;
+}
+
+function partidoPuedeCalificar(m, hoyStr) {
+  var fd = normalizeMatchDate(m.fecha);
+  if (!fd) return false;
+  if (fd < FECHA_INICIO_TORNEO) return false;
+  if (fd > hoyStr) return false;
+  return hasResultadoMarcado(m);
+}
+
 export default async function handler(req) {
   const url = new URL(req.url);
   const searchParams = url.searchParams;
@@ -40,13 +103,16 @@ export default async function handler(req) {
   const loggedUserId = searchParams.get('user_id') || 'GUEST';
   const executionId = searchParams.get('executionId') || '';
 
-  // 1. Fetch todo en paralelo para máxima velocidad
-  const [rawMatches, profiles, predictions, brackets] = await Promise.all([
+  // 1. Fetch Datum + fecha simulada desde Jelou Functions (mismos secrets que FECHA_HOY)
+  const [rawMatches, profiles, predictions, brackets, hoy] = await Promise.all([
     fetch(BASE_URL_MATCHES, { headers: {"X-Api-Key": API_KEY} }).then(r=>r.ok?r.json().then(d=>d.items||[]):[]).catch(()=>[]),
     fetchDB('pbc_3271891893'), // Perfiles/Ranking
     fetchDB('pbc_1944158292'), // Pronosticos Goles
-    fetchDB('pbc_3221812075')  // Pronosticos Brackets
+    fetchDB('pbc_3221812075'), // Pronosticos Brackets
+    fetchFechaTorneoDesdeJelou()
   ]);
+
+  const torneoIniciado = hoy >= FECHA_INICIO_TORNEO;
 
   // 1.5 Evaluar Fase Oficial de los Partidos Reales
   const mappedMatches = rawMatches.map(m => ({
@@ -60,53 +126,71 @@ export default async function handler(req) {
 
   // Determinar quienes jugaron fases (heurística basada en 'Fase_o_Grupo' u otro asumiendo estructura de Mundial 26)
   // Como la DB puede no tener la fase bien escrita, nos basamos en nombre.
-  const r16M = mappedMatches.filter(m => String(m.ronda).toLowerCase() === 'round of 16' || String(m.ronda).toLowerCase() === 'octavos');
-  r16M.forEach(m => { real16.add(m.local); real16.add(m.visitante); });
-  const r8M = mappedMatches.filter(m => String(m.ronda).toLowerCase() === 'quarter-finals' || String(m.ronda).toLowerCase() === 'cuartos');
-  r8M.forEach(m => { real8.add(m.local); real8.add(m.visitante); });
-  const r4M = mappedMatches.filter(m => String(m.ronda).toLowerCase() === 'semi-finals' || String(m.ronda).toLowerCase() === 'semis');
-  r4M.forEach(m => { real4.add(m.local); real4.add(m.visitante); });
-  
-  const finalM = mappedMatches.find(m => String(m.ronda).toLowerCase() === 'final' && m.gl !== null);
-  if (finalM) {
-    campeonReal = finalM.ganador || '';
-    subcampeonReal = (campeonReal === finalM.local) ? finalM.visitante : finalM.local;
-  }
-  const thirdM = mappedMatches.find(m => String(m.ronda).toLowerCase().includes('third') && m.gl !== null);
-  if (thirdM) {
-    terceroReal = thirdM.ganador || '';
-    cuartoReal = (terceroReal === thirdM.local) ? thirdM.visitante : thirdM.local;
+  if (torneoIniciado) {
+    const r16M = mappedMatches.filter(function (m) {
+      return (String(m.ronda).toLowerCase() === 'round of 16' || String(m.ronda).toLowerCase() === 'octavos') && partidoPuedeCalificar(m, hoy);
+    });
+    r16M.forEach(m => { real16.add(m.local); real16.add(m.visitante); });
+    const r8M = mappedMatches.filter(function (m) {
+      return (String(m.ronda).toLowerCase() === 'quarter-finals' || String(m.ronda).toLowerCase() === 'cuartos') && partidoPuedeCalificar(m, hoy);
+    });
+    r8M.forEach(m => { real8.add(m.local); real8.add(m.visitante); });
+    const r4M = mappedMatches.filter(function (m) {
+      return (String(m.ronda).toLowerCase() === 'semi-finals' || String(m.ronda).toLowerCase() === 'semis') && partidoPuedeCalificar(m, hoy);
+    });
+    r4M.forEach(m => { real4.add(m.local); real4.add(m.visitante); });
+
+    const finalM = mappedMatches.find(function (m) {
+      return String(m.ronda).toLowerCase() === 'final' && partidoPuedeCalificar(m, hoy);
+    });
+    if (finalM) {
+      campeonReal = finalM.ganador || '';
+      subcampeonReal = (campeonReal === finalM.local) ? finalM.visitante : finalM.local;
+    }
+    const thirdM = mappedMatches.find(function (m) {
+      return String(m.ronda).toLowerCase().includes('third') && partidoPuedeCalificar(m, hoy);
+    });
+    if (thirdM) {
+      terceroReal = thirdM.ganador || '';
+      cuartoReal = (terceroReal === thirdM.local) ? thirdM.visitante : thirdM.local;
+    }
   }
 
-  // 2. Calcular los puntajes de todos dinámicamente y sincronizar DB si varió
+  // 2. Calcular puntajes solo si el torneo ya empezó según fecha Jelou; si no, mostrar Datum sin PATCH
   const calculatedUsers = profiles.map(pr => {
+    if (!torneoIniciado) {
+      return {
+        nombre: String(pr.nombre).trim(),
+        total_puntos: Number(pr.total_puntos) || 0,
+        aciertos: Number(pr.pronosticos_correctos) || 0,
+        isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre).trim().toLowerCase() === loggedUser)
+      };
+    }
+
     let ptsGoles = 0; let aciertos = 0;
-    
-    // Goles
+
     const userPreds = predictions.filter(p => p.user_id === pr.user_id);
     userPreds.forEach(p => {
       const match = mappedMatches.find(m => m.id_partido === p.match_id);
-      if (match && match.gl !== null && match.gl !== undefined) {
-        let pt = 0;
-        if (p.pronostico_local === match.gl && p.pronostico_visitante === match.gv) { pt = 2; aciertos++; }
-        else if (p.pronostico_local === match.gl || p.pronostico_visitante === match.gv) { pt = 1; }
-        ptsGoles += pt;
-        
-        // Sincronizar el partido en DB si sigue PENDIENTE
-        if (p.estado === 'PENDIENTE') {
-          silentPatch('pbc_1944158292', p.id, {
-            puntos_ganados: pt, estado: (pt===2) ? 'GANADO_EXACTO' : (pt===1 ? 'GANADO_PARCIAL' : 'PERDIDO'),
-            resultado_real_local: match.gl, resultado_real_visitante: match.gv
-          });
-        }
+      if (!match || !partidoPuedeCalificar(match, hoy)) return;
+
+      let pt = 0;
+      if (p.pronostico_local === match.gl && p.pronostico_visitante === match.gv) { pt = 2; aciertos++; }
+      else if (p.pronostico_local === match.gl || p.pronostico_visitante === match.gv) { pt = 1; }
+      ptsGoles += pt;
+
+      if (p.estado === 'PENDIENTE') {
+        silentPatch('pbc_1944158292', p.id, {
+          puntos_ganados: pt, estado: (pt === 2) ? 'GANADO_EXACTO' : (pt === 1 ? 'GANADO_PARCIAL' : 'PERDIDO'),
+          resultado_real_local: match.gl, resultado_real_visitante: match.gv
+        });
       }
     });
 
-    // Brackets
     let ptsBrackets = 0;
     const b = brackets.find(br => br.user_id === pr.user_id);
     if (b) {
-      const check = (arr, setRef, val) => { if(arr && Array.isArray(arr)) arr.forEach(t => { if(setRef.has(t)) ptsBrackets += val; }); }
+      const check = (arr, setRef, val) => { if (arr && Array.isArray(arr)) arr.forEach(t => { if (setRef.has(t)) ptsBrackets += val; }); };
       check(b.octavos, real16, 2);
       check(b.cuartos, real8, 3);
       check(b.semis, real4, 3);
@@ -118,7 +202,6 @@ export default async function handler(req) {
 
     const totalCalculado = ptsGoles + ptsBrackets;
 
-    // Actualizar Base de datos maestrament si cambio el total
     if (totalCalculado !== pr.total_puntos || aciertos !== pr.pronosticos_correctos) {
       silentPatch('pbc_3271891893', pr.id, {
         total_puntos: totalCalculado, puntos_goles: ptsGoles, puntos_brackets: ptsBrackets, pronosticos_correctos: aciertos

@@ -6,6 +6,34 @@ const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
 const BASE_URL_COLL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
 const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
 
+const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
+
+function fallbackHoyYMD() {
+  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  var y = parts.find(function (p) { return p.type === 'year'; }).value;
+  var mo = parts.find(function (p) { return p.type === 'month'; }).value;
+  var d = parts.find(function (p) { return p.type === 'day'; }).value;
+  return y + '-' + mo + '-' + d;
+}
+
+async function fetchFechaTorneoDesdeJelou() {
+  try {
+    var ctrl = new AbortController();
+    var tid = setTimeout(function () { ctrl.abort(); }, 5000);
+    var res = await fetch(JELOU_ESTADO_TORNEO_URL, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: { Accept: 'application/json' }
+    });
+    clearTimeout(tid);
+    if (!res.ok) return fallbackHoyYMD();
+    var data = await res.json();
+    var f = data && data.fecha_simulada_hoy;
+    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
+  } catch (e) { /* timeout / red */ }
+  return fallbackHoyYMD();
+}
+
 const FLAGS = {"MEXICO":"🇲🇽","ESTADOS UNIDOS":"🇺🇸","CANADA":"🇨🇦","BRASIL":"🇧🇷","ARGENTINA":"🇦🇷","ECUADOR":"🇪🇨","COLOMBIA":"🇨🇴","PERU":"🇵🇪","CHILE":"🇨🇱","URUGUAY":"🇺🇾","PARAGUAY":"🇵🇾","BOLIVIA":"🇧🇴","VENEZUELA":"🇻🇪","ALEMANIA":"🇩🇪","ESPAÑA":"🇪🇸","FRANCIA":"🇫🇷","ITALIA":"🇮🇹","PORTUGAL":"🇵🇹","PAISES BAJOS":"🇳🇱","BELGICA":"🇧🇪","CROACIA":"🇭🇷","SERBIA":"🇷🇸","SUIZA":"🇨🇭","DINAMARCA":"🇩🇰","AUSTRIA":"🇦🇹","UCRANIA":"🇺🇦","TURQUIA":"🇹🇷","HUNGRIA":"🇭🇺","REPUBLICA CHECA":"🇨🇿","GRECIA":"🇬🇷","JAPON":"🇯🇵","COREA DEL SUR":"🇰🇷","AUSTRALIA":"🇦🇺","IRAN":"🇮🇷","ARABIA SAUDITA":"🇸🇦","QATAR":"🇶🇦","MARRUECOS":"🇲🇦","SENEGAL":"🇸🇳","GHANA":"🇬🇭","CAMERUN":"🇨🇲","NIGERIA":"🇳🇬","TUNEZ":"🇹🇳","SUDAFRICA":"🇿🇦","EGIPTO":"🇪🇬","COSTA RICA":"🇨🇷","PANAMA":"🇵🇦","HONDURAS":"🇭🇳","JAMAICA":"🇯🇲","INDONESIA":"🇮🇩","NUEVA ZELANDA":"🇳🇿","INGLATERRA":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","POLONIA":"🇵🇱","RUMANIA":"🇷🇴","ESLOVENIA":"🇸🇮","ESLOVAQUIA":"🇸🇰","ALBANIA":"🇦🇱","COSTA DE MARFIL":"🇨🇮"};
 function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
 
@@ -73,20 +101,21 @@ export default async function handler(req) {
   const url = new URL(req.url);
   const paramFecha = url.searchParams.get('fecha');
   const executionId = url.searchParams.get('executionId') || '';
-  
-  // En Jelou, podemos setear una fecha manual para pruebas, o usar hoy
-  const hoyReal = new Date().toISOString().split('T')[0];
-  const fechaSimulada = paramFecha || hoyReal;
 
   let rawMatches = [];
+  let fechaSimulada;
   try {
-    const res = await fetch(BASE_URL_MATCHES, { headers: { "X-Api-Key": API_KEY } });
+    const [res, fh] = await Promise.all([
+      fetch(BASE_URL_MATCHES, { headers: { "X-Api-Key": API_KEY } }),
+      fetchFechaTorneoDesdeJelou()
+    ]);
+    fechaSimulada = paramFecha || fh;
     if (res.ok) {
       const dbdata = await res.json();
       rawMatches = dbdata.items || [];
     }
   } catch (e) {
-    console.error("Error fetching matches:", e);
+    fechaSimulada = paramFecha || await fetchFechaTorneoDesdeJelou();
   }
 
   // --- LOGICA DE SINCRONIZACIÓN AUTOMÁTICA ---

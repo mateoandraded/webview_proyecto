@@ -296,6 +296,6 @@ export default async function handler(req) {
         renderPanel(0);
     </script>
 </body>
-</html>\`;
+</html>`;
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }

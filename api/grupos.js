@@ -173,6 +173,15 @@ export default async function handler(req) {
 
   const jsCode =
     'var firstGroup=document.querySelector(".group-block");if(firstGroup)firstGroup.classList.add("open");' +
+    'let callbackSent=false;' +
+    'document.addEventListener("visibilitychange",function(){' +
+    'if(document.visibilityState==="hidden"&&!callbackSent){' +
+    'callbackSent=true;' +
+    'var exId=new URLSearchParams(window.location.search).get("executionId")||"' + executionId + '";' +
+    'var cbBody={executionId:exId,success:true,data:{action:"volver"}};' +
+    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
+    '}' +
+    '});' +
     'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
     'function save(){' +
     'var btn=document.getElementById("btnSave");btn.innerHTML="GUARDANDO...";' +
@@ -190,6 +199,7 @@ export default async function handler(req) {
     '.then(function(res){' +
     '  if(res.ok){' +
     '    var t=document.getElementById("toast");t.classList.add("show");' +
+    '    callbackSent=true;' +
     '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
     '    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
     '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/13239183195";},1500); });' +
@@ -199,6 +209,8 @@ export default async function handler(req) {
     '.finally(function(){btn.innerHTML="GUARDAR TODO";});' +
     '}' +
     'window.volver=function(){' +
+    '  if(callbackSent)return;' +
+    '  callbackSent=true;' +
     '  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
     '  var cbBody={executionId:exId,success:true,data:{action:"volver"}}; ' +
     '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +

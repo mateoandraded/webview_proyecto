@@ -264,7 +264,23 @@ export default async function handler(req) {
   </div>
 
   <script>
+    var callbackSent = false;
+    document.addEventListener("visibilitychange", function() {
+      if (document.visibilityState === "hidden" && !callbackSent) {
+        callbackSent = true;
+        var exId = new URLSearchParams(window.location.search).get("executionId") || "${executionId}";
+        var cbBody = { executionId: exId, success: true, data: { action: "volver" } };
+        fetch("https://workflows.jelou.ai/v1/webview/callback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cbBody),
+          keepalive: true
+        });
+      }
+    });
     function volver(){
+      if (callbackSent) return;
+      callbackSent = true;
       var exId = new URLSearchParams(window.location.search).get("executionId") || "";
       var btn = document.getElementById("btn-volver");
       btn.innerText = "Saliendo...";

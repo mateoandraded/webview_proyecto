@@ -177,7 +177,23 @@ export default async function handler(req) {
         <button class="btn-volver" id="btnVolver" onclick="volver()">VOLVER AL MENÚ</button>
     </div>
     <script>
+    let callbackSent = false;
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden" && !callbackSent) {
+            callbackSent = true;
+            const exId = new URLSearchParams(window.location.search).get("executionId") || "${executionId}";
+            const cbBody = { executionId: exId, success: true, data: { action: "volver" } };
+            fetch("https://workflows.jelou.ai/v1/webview/callback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(cbBody),
+                keepalive: true
+            });
+        }
+    });
     function volver(){
+        if (callbackSent) return;
+        callbackSent = true;
         const exId = "${executionId}";
         const btn = document.getElementById("btnVolver");
         if(btn) { btn.innerText = "SALIENDO..."; btn.disabled = true; }

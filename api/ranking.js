@@ -273,7 +273,18 @@ export default async function handler(req) {
       '<button class="btn-volver" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
     '</div>' +
     '<script>' +
+      'var callbackSent=false;' +
+      'document.addEventListener("visibilitychange",function(){' +
+        'if(document.visibilityState==="hidden"&&!callbackSent){' +
+          'callbackSent=true;' +
+          'var execId=new URLSearchParams(window.location.search).get("executionId")||"' + esc(executionId) + '";' +
+          'var cbBody={executionId:execId,success:true,data:{action:"volver"}};' +
+          'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
+        '}' +
+      '});' +
       'function volverMenu(){' +
+        'if(callbackSent)return;' +
+        'callbackSent=true;' +
         'var execId="' + esc(executionId) + '";' +
         'var btn=document.getElementById("btn-volver");' +
         'btn.innerText="Saliendo...";btn.disabled=true;' +

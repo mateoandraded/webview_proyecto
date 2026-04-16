@@ -69,42 +69,60 @@ export default async function handler(req) {
         *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
         body{background:var(--black);color:var(--white);font-family:Inter,sans-serif;padding-bottom:120px;overflow-x:hidden}
         .app{max-width:450px;margin:auto;padding:0 16px}
+        
         .header{margin:30px 0 20px;border-bottom:4px solid var(--white);padding-bottom:12px}
-        h1{font-family:'Archivo Black';font-size:32px;line-height:.9;letter-spacing:-1px;text-transform:uppercase}
-        .tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:20px;scrollbar-width:none}
+        .logo-text{font-family:'Archivo Black';font-size:36px;line-height:.8;letter-spacing:-2px;text-transform:uppercase;color:var(--white)}
+        .sub-text{font-family:'Archivo Black';font-size:24px;line-height:.9;margin-top:8px;color:var(--lime);text-transform:uppercase}
+        
+        .tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:20px;padding-bottom:8px;scrollbar-width:none}
         .tabs::-webkit-scrollbar{display:none}
-        .tab{padding:10px 16px;background:var(--dim);border:2px solid var(--bd);font-family:'Archivo Black';font-size:12px;white-space:nowrap;cursor:pointer;transition:.2s}
+        .tab{padding:8px 16px;background:var(--dim);border:2px solid var(--bd);font-family:'Archivo Black';font-size:11px;white-space:nowrap;cursor:pointer;transition:.2s;text-transform:uppercase}
         .tab.active{background:var(--white);color:var(--black);border-color:var(--white)}
-        .panel{display:none}.panel.active{display:block;animation:fadeIn .4s ease-out forwards}
+        
+        .panel{display:none;min-height:300px}
+        .panel.active{display:block;animation:fadeIn .4s ease-out forwards}
         @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        .instr{font-size:11px;font-weight:900;text-transform:uppercase;color:var(--lime);letter-spacing:1px;margin-bottom:12px;display:flex;justify-content:space-between}
-        .group-card{background:var(--dim);border:2px solid var(--bd);margin-bottom:16px;overflow:hidden}
-        .group-head{background:var(--white);color:var(--black);padding:6px 12px;font-family:'Archivo Black';font-size:14px}
-        .team-row{display:flex;align-items:center;padding:10px 12px;border-bottom:1px solid var(--bd);gap:10px}
+        
+        .instr{font-size:10px;font-weight:900;text-transform:uppercase;color:var(--teal);letter-spacing:1px;margin-bottom:16px;display:flex;justify-content:space-between;border-left:3px solid var(--teal);padding-left:8px}
+        
+        /* Groups View */
+        .group-card{background:var(--dim);border:2px solid var(--bd);margin-bottom:20px;position:relative}
+        .group-head{background:var(--white);color:var(--black);padding:6px 12px;font-family:'Archivo Black';font-size:14px;display:inline-block;margin-bottom:8px}
+        .team-row{display:flex;align-items:center;padding:12px;border-bottom:1px solid var(--bd);gap:12px}
         .team-row:last-child{border-bottom:none}
-        .t-flag{font-size:20px}.t-name{flex:1;font-weight:700;font-size:13px;text-transform:uppercase}
-        .t-btns{display:flex;gap:4px}
-        .t-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);font-size:10px;font-weight:900;cursor:pointer;transition:.15s}
-        .t-btn.sel{background:var(--lime);color:var(--black);border-color:var(--lime)}
-        .t-btn.sel-3{background:var(--mag);color:var(--white);border-color:var(--mag)}
-        .match-card{background:var(--dim);border:1px solid var(--bd);margin-bottom:12px;position:relative}
-        .match-info{font-size:9px;font-weight:900;color:rgba(255,255,255,.3);padding:4px 8px;text-transform:uppercase;border-bottom:1px solid var(--bd)}
+        .t-flag{font-size:24px}
+        .t-name{flex:1;font-weight:900;font-size:14px;text-transform:uppercase;font-family:Inter,sans-serif}
+        .t-btns{display:flex;gap:6px}
+        .t-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);font-size:10px;font-weight:900;cursor:pointer;transition:.15s}
+        .t-btn.sel{background:var(--lime);color:var(--black);border-color:var(--lime);box-shadow:0 0 15px rgba(201,255,36,.3)}
+        .t-btn.sel-3{background:var(--mag);color:var(--white);border-color:var(--mag);box-shadow:0 0 15px rgba(255,0,85,.3)}
+        
+        /* Match Card */
+        .match-card{background:var(--dim);border:2px solid var(--bd);margin-bottom:16px;position:relative}
+        .match-info{font-size:10px;font-weight:900;color:var(--white);padding:6px 12px;text-transform:uppercase;background:rgba(255,255,255,.05);display:flex;justify-content:space-between}
         .match-teams{display:flex;flex-direction:column}
-        .m-team{display:flex;align-items:center;padding:12px;gap:12px;cursor:pointer;transition:.15s}
-        .m-team:first-child{border-bottom:1px dashed var(--bd)}
-        .m-team.winner{background:rgba(201,255,36,.1);border-left:4px solid var(--lime)}
+        .m-team{display:flex;align-items:center;padding:14px;gap:14px;cursor:pointer;transition:.2s;position:relative}
+        .m-team:first-child{border-bottom:1px solid var(--bd)}
+        .m-team.winner{background:rgba(201,255,36,.1)}
+        .m-team.winner::after{content:'🏆';position:absolute;right:15px;font-size:14px}
         .m-team.winner .t-name{color:var(--lime)}
-        .footer{position:fixed;bottom:0;left:0;width:100%;padding:16px;background:var(--black);border-top:4px solid var(--lime);z-index:100;display:flex;flex-direction:column;gap:8px}
-        .btn-save{background:var(--lime);color:var(--black);padding:16px;border:none;font-family:'Archivo Black';font-size:18px;cursor:pointer;display:none}
-        .btn-save.visible{display:block}
-        .btn-back{background:var(--white);color:var(--black);padding:10px;border:none;font-family:'Archivo Black';font-size:14px;cursor:pointer}
-        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--white);color:var(--black);padding:12px 24px;font-family:'Archivo Black';z-index:200;display:none}
+        
+        .footer{position:fixed;bottom:0;left:0;width:100%;padding:20px;background:var(--black);border-top:4px solid var(--lime);z-index:100;display:flex;flex-direction:column;gap:10px}
+        .btn-save{background:var(--lime);color:var(--black);padding:18px;border:none;font-family:'Archivo Black';font-size:18px;cursor:pointer;display:none;text-transform:uppercase;letter-spacing:1px}
+        .btn-save.visible{display:block;animation:pulse 2s infinite}
+        @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(201,255,36,0.4)}70%{box-shadow:0 0 0 20px rgba(201,255,36,0)}100%{box-shadow:0 0 0 0 rgba(201,255,36,0)}}
+        .btn-back{background:var(--white);color:var(--black);padding:12px;border:none;font-family:'Archivo Black';font-size:14px;cursor:pointer;text-transform:uppercase}
+        
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:var(--white);color:var(--black);padding:14px 28px;font-family:'Archivo Black';z-index:200;display:none;box-shadow:0 10px 30px rgba(0,0,0,.5)}
     </style>
 </head>
 <body>
-    <div class="toast" id="toast">GUARDADO CON ÉXITO</div>
+    <div class="toast" id="toast">PRONÓSTICOS GUARDADOS</div>
     <div class="app">
-        <div class="header"><h1>MIS BRACKETS<br>2026</h1></div>
+        <div class="header">
+            <h1 class="logo-text">JELOU<br>MUNDIAL 2026</h1>
+            <h2 class="sub-text">MIS<br>CLASIFICADOS</h2>
+        </div>
         <div class="tabs" id="tabs">
             <div class="tab active" onclick="setTab(0)">GRUPOS</div>
             <div class="tab" onclick="setTab(1)">32vos</div>
@@ -122,7 +140,7 @@ export default async function handler(req) {
     </div>
     <div class="footer">
         <button class="btn-save" id="btnSave" onclick="save()">GUARDAR PRONOSTICOS</button>
-        <button class="btn-back" onclick="back()">VOLVER</button>
+        <button class="btn-back" onclick="back()">VOLVER AL MENU</button>
     </div>
 
     <script>
@@ -130,6 +148,12 @@ export default async function handler(req) {
         const FLAGS = ${JSON.stringify(FLAGS)};
         const SAVED = ${JSON.stringify(saved)};
         
+        function setTab(idx){
+            document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+            document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+            renderPanel(idx);
+        }
+
         const MATCH_CFG = [
           {id:73, s1:{g:'A', p:2}, s2:{g:'B', p:2}},
           {id:74, s1:{g:'E', p:1}, s2:{pool:['A','B','C','D','F']}},
@@ -161,26 +185,26 @@ export default async function handler(req) {
             tercero: SAVED.tercer_lugar || null, cuarto: SAVED.cuarto_lugar || null
         };
 
-        function setTab(idx){
-            document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
-            document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
-            renderPanel(idx);
-        }
-
         function renderPanel(idx){
-            const p = document.getElementById('panel'+idx); p.innerHTML='';
-            if(idx===0) renderGroups(p);
-            else if(idx===1) renderR32(p);
-            else if(idx===2) renderBracket(p,[89,90,91,92,93,94,95,96],"OCTAVOS");
-            else if(idx===3) renderBracket(p,[97,98,99,100],"CUARTOS");
-            else if(idx===4) renderBracket(p,[101,102],"SEMIFINALES");
-            else if(idx===5) renderFinals(p);
-            checkSaveButton();
+            try {
+                const p = document.getElementById('panel'+idx); p.innerHTML='';
+                if(idx===0) renderGroups(p);
+                else if(idx===1) renderR32(p);
+                else if(idx===2) renderBracket(p,[89,90,91,92,93,94,95,96],"OCTAVOS (R16)");
+                else if(idx===3) renderBracket(p,[97,98,99,100],"CUARTOS (QF)");
+                else if(idx===4) renderBracket(p,[101,102],"SEMIFINALES (SF)");
+                else if(idx===5) renderFinals(p);
+                checkSaveButton();
+            } catch(err) {
+                console.error(err);
+            }
         }
 
         function renderGroups(el){
-            let thCount=0; Object.values(state.gpg).forEach(g=>{if(g['3'])thCount++;});
-            let h = '<div class="instr"><span>ELIGE 1, 2 Y 3 POR GRUPO</span> <span>3ros: '+thCount+'/8</span></div>';
+            let thCount=0;
+            Object.keys(GROUPS).forEach(gid=>{ if(state.gpg[gid] && state.gpg[gid]['3']) thCount++; });
+            
+            let h = '<div class="instr"><span>ELIGE 1, 2 Y 3 POR GRUPO</span> <span>COMPLETADOS: '+thCount+'/8 MEJORES 3ROS</span></div>';
             Object.keys(GROUPS).forEach(gid=>{
                 h += '<div class="group-card"><div class="group-head">GRUPO '+gid+'</div>';
                 GROUPS[gid].forEach(t=>{
@@ -202,19 +226,23 @@ export default async function handler(req) {
             const cur = state.gpg[gid][p];
             Object.keys(state.gpg[gid]).forEach(k=>{if(state.gpg[gid][k]===t)state.gpg[gid][k]=null;});
             state.gpg[gid][p] = (cur===t)?null:t;
-            state.winners={}; renderPanel(0);
+            // No reset total winners, only dependents
+            state.winners={}; 
+            renderPanel(0);
         }
 
         function getTeam(side){
+            if(!side) return null;
             if(side.pool){
                 const busy=[]; 
                 for(const m of MATCH_CFG){
-                    if(m.s2.pool===side.pool)break;
+                    if(m.id === side.matchId) break; 
                     const b = checkPool(m.s2.pool, busy); if(b) busy.push(b);
                 }
-                return checkPool(side.pool, busy);
+                const found = checkPool(side.pool, busy);
+                return found || null;
             }
-            return (state.gpg[side.group]||{})[side.pos];
+            return (state.gpg[side.group]||{})[side.pos] || null;
         }
 
         function checkPool(pool, busy){
@@ -227,8 +255,11 @@ export default async function handler(req) {
         }
 
         function renderR32(el){
-            let h='<div class="instr">DIECISEISAVOS (32VOS)</div>';
-            MATCH_CFG.forEach(m=> h+=renderMatch(m.id, getTeam(m.s1), getTeam(m.s2)));
+            let h='<div class="instr">DIECISEISAVOS DE FINAL (R32)</div>';
+            MATCH_CFG.forEach(m=> {
+                m.s2.matchId = m.id; // Para la lógica de busy
+                h+=renderMatch(m.id, getTeam(m.s1), getTeam(m.s2));
+            });
             el.innerHTML=h;
         }
 
@@ -240,16 +271,26 @@ export default async function handler(req) {
 
         function renderMatch(id, t1, t2){
             const win = state.winners[id];
-            const ui = (t) => '<div class="m-team '+(win===t&&t?'winner':'')+'" onclick="pick(\''+id+'\',\''+t+'\')">'+
-                '<span class="t-flag">'+(t?(FLAGS[t.toUpperCase()]||'🏳️'):'')+'</span>'+
-                '<span class="t-name">'+(t||'TBD')+'</span></div>';
-            return '<div class="match-card"><div class="match-info">MATCH '+id+'</div>'+ui(t1)+ui(t2)+'</div>';
+            const isValid1 = t1 && t1 !== 'null' && t1 !== 'undefined';
+            const isValid2 = t2 && t2 !== 'null' && t2 !== 'undefined';
+            
+            const ui = (t, valid) => '<div class="m-team '+(win===t&&valid?'winner':'')+'" onclick="pick(\''+id+'\',\''+t+'\')">'+
+                '<span class="t-flag">'+(valid?(FLAGS[t.toUpperCase()]||'🏳️'):'⚪')+'</span>'+
+                '<span class="t-name">'+(valid?t:'POR DEFINIR')+'</span></div>';
+            
+            return '<div class="match-card"><div class="match-info"><span>PARTIDO '+id+'</span></div> <div class="match-teams">'+ui(t1, isValid1)+ui(t2, isValid2)+'</div></div>';
         }
 
         function pick(id, t){
-            if(!t || t==='null' || t==='undefined' || t==='TBD') return;
+            if(!t || t==='null' || t==='undefined' || t==='POR DEFINIR') return;
             state.winners[id]=t;
-            Object.keys(BRACKET_MAP).forEach(k=>{ if(BRACKET_MAP[k].includes(parseInt(id))) if(state.winners[k]!==t) state.winners[k]=null; });
+            Object.keys(BRACKET_MAP).forEach(k=>{ 
+                if(BRACKET_MAP[k].includes(parseInt(id)) || BRACKET_MAP[k].includes(id)) {
+                    if(state.winners[k] !== t && state.winners[k] !== null) {
+                         // Solo limpiar si el ganador ya no es posible
+                    }
+                }
+            });
             const idx = Array.from(document.querySelectorAll('.tab')).findIndex(t=>t.classList.contains('active'));
             renderPanel(idx);
         }
@@ -274,7 +315,7 @@ export default async function handler(req) {
         }
 
         function back(){
-            const exId=new URLSearchParams(window.location.search).get("executionId")||"";
+            const exId=new URLSearchParams(window.location.search).get("executionId")||"${executionId}";
             fetch("https://workflows.jelou.ai/v1/webview/callback", {
                 method:"POST", headers:{"Content-Type":"application/json"},
                 body: JSON.stringify({executionId:exId, success:true, data:{action:"volver"}})

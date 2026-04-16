@@ -147,8 +147,9 @@ export default async function handler(req) {
         subline = "<div class='pred-note'>PRONÓSTICO: " + m.pred_l + " - " + m.pred_v + "</div>";
       }
 
+      var existingPredAttr = m.hasPred ? "1" : "0";
       matchHtml +=
-        "<div class='match-row' " + lockData + " data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
+        "<div class='match-row' " + lockData + " data-existing-pred='" + existingPredAttr + "' data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
         "<div class='match-meta'><span>" + m.fecha + "</span> " + st + "</div>" +
         "<div class='match-body'>" +
         "<div class='team-side'>" +
@@ -238,7 +239,22 @@ export default async function handler(req) {
     'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
     '}' +
     '});' +
-    'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
+    'function step(btn,amount){var row=btn.closest(".match-row");if(row)row.setAttribute("data-dirty","1");var input=btn.parentElement.querySelector("input");var val=parseInt(input.value,10);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
+    'function summaryForCallback(payload){' +
+    'var MAX=1024;var partidos=[];var i,trial,s,out;' +
+    'for(i=0;i<payload.length;i++){' +
+    'trial={partidos:partidos.concat([payload[i]])};' +
+    's=JSON.stringify(trial);' +
+    'if(s.length>MAX)break;' +
+    'partidos.push(payload[i]);' +
+    '}' +
+    'out={partidos:partidos};' +
+    'if(partidos.length<payload.length)out.truncado=true;' +
+    'while(JSON.stringify(out).length>MAX&&partidos.length>0){partidos.pop();out={partidos:partidos,truncado:true};}' +
+    'if(partidos.length===0&&payload.length>0){out={partidos:[],truncado:true,total:payload.length};}' +
+    'if(JSON.stringify(out).length>MAX)out={total:payload.length,truncado:true};' +
+    'return out;' +
+    '}' +
     'function save(){' +
     'var btn=document.getElementById("btnSave");btn.innerHTML="GUARDANDO...";' +
     'if(IS_FROZEN_GLOBAL){btn.innerHTML="CONGELADO";setTimeout(function(){btn.innerHTML="GUARDAR TODO";},900);return;}' +
@@ -247,7 +263,12 @@ export default async function handler(req) {
     'if(row.getAttribute("data-locked")==="true")return;' +
     'var valL=row.querySelector(".input-local").value;' +
     'var valV=row.querySelector(".input-visitor").value;' +
-    'if(valL!==""&&valV!==""){payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL),visitor_score:parseInt(valV),locked:false});}' +
+    'if(valL===""||valV==="")return;' +
+    'var existing=row.getAttribute("data-existing-pred")==="1";' +
+    'var dirty=row.getAttribute("data-dirty")==="1";' +
+    'var z=(String(valL)==="0"&&String(valV)==="0");' +
+    'if(!existing&&!dirty&&z)return;' +
+    'payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL,10),visitor_score:parseInt(valV,10),locked:false});' +
     '});' +
     'if(payload.length===0){btn.innerHTML="GUARDAR TODO";return;}' +
     'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
@@ -257,7 +278,7 @@ export default async function handler(req) {
     '  if(res.ok){' +
     '    var t=document.getElementById("toast");t.classList.add("show");' +
     '    callbackSent=true;' +
-    '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
+    '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:summaryForCallback(payload)}};' +
     '    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
     '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/13239183195";},1500); });' +
     '  }else{alert("Error al guardar.");}' +

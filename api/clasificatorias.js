@@ -585,6 +585,42 @@ export default async function handler(req) {
       return ids.map(function(id){ return map[id] || map[String(id)] || ""; }).filter(Boolean);
     }
 
+    /** Callback Brain: summary ≤ 1024 chars; quita desde el final arrays completos o entradas sueltas. */
+    function bracketSummaryForCallback(p) {
+      var MAX = 1024;
+      var base = {
+        campeon: p.campeon || "",
+        subcampeon: p.subcampeon || "",
+        tercer_lugar: p.tercer_lugar || "",
+        cuarto_lugar: p.cuarto_lugar || "",
+        dieciseisavos: [],
+        octavos: [],
+        cuartos: [],
+        semis: []
+      };
+      var order = [
+        ["dieciseisavos", p.dieciseisavos || []],
+        ["octavos", p.octavos || []],
+        ["cuartos", p.cuartos || []],
+        ["semis", p.semis || []]
+      ];
+      var ki, j, key, arr, trial;
+      for (ki = 0; ki < order.length; ki++) {
+        key = order[ki][0];
+        arr = order[ki][1];
+        for (j = 0; j < arr.length; j++) {
+          base[key].push(arr[j]);
+          trial = JSON.stringify(base);
+          if (trial.length > MAX) {
+            base[key].pop();
+            base.truncado = true;
+            return base;
+          }
+        }
+      }
+      return base;
+    }
+
     function guardar(){
       var btn = document.getElementById("btnSave");
       btn.innerText = "GUARDANDO...";
@@ -609,7 +645,7 @@ export default async function handler(req) {
         if(r.ok){
           document.getElementById("toast").classList.add("show");
           callbackSent = true;
-          var cbBody = { executionId: exId, success: true, data: { action: "save_clasificados", summary: payload } };
+          var cbBody = { executionId: exId, success: true, data: { action: "save_clasificados", summary: bracketSummaryForCallback(payload) } };
           fetch("https://workflows.jelou.ai/v1/webview/callback", {
             method:"POST",
             headers:{"Content-Type":"application/json"},

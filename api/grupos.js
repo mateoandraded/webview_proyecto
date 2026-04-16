@@ -22,6 +22,7 @@ async function fetchDatum(collection, method, body, id, query) {
 export default async function handler(req) {
   const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'GUEST';
+  const executionId = url.searchParams.get('executionId') || '';
 
   if (req.method === 'POST') {
     try {
@@ -197,7 +198,7 @@ export default async function handler(req) {
     'document.addEventListener("visibilitychange",function(){' +
     'if(document.visibilityState==="hidden"&&!callbackSent){' +
     'callbackSent=true;' +
-    'var exId=new URLSearchParams(window.location.search).get("executionId")||"' + executionId + '";' +
+    'var exId=new URLSearchParams(window.location.search).get("executionId")||' + JSON.stringify(executionId) + ';' +
     'var cbBody={executionId:exId,success:true,data:{action:"volver"}};' +
     'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
     '}' +

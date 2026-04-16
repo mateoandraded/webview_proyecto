@@ -207,10 +207,11 @@ export default async function handler(req) {
     '  var ok = state.d16.length === 32 && state.d8.length === 16 && state.d4.length === 8 && state.semis.length === 4 && state.campeon && state.sub && state.tercero && state.cuarto;' +
     '  document.getElementById("btnSave").classList.toggle("visible", !!ok);' +
     '}' +
-    'window.addEventListener("pagehide", () => {' +
-    '  if (callbackSent) return;' +
-    '  const exId = new URLSearchParams(window.location.search).get("executionId") || "' + executionId + '";' +
-    '  fetch("https://workflows.jelou.ai/v1/webview/callback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ executionId: exId, success: true, data: { action: "volver" } }), keepalive: true });' +
+    'document.addEventListener("visibilitychange", () => {' +
+    '  if (document.visibilityState === "hidden" && !callbackSent) {' +
+    '    const exId = new URLSearchParams(window.location.search).get("executionId") || "' + executionId + '";' +
+    '    fetch("https://workflows.jelou.ai/v1/webview/callback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ executionId: exId, success: true, data: { action: "volver" } }), keepalive: true });' +
+    '  }' +
     '});' +
     'function rerender(){for(var i=0;i<5;i++)buildPhase(i);}' +
     'function clearDown(k){' +

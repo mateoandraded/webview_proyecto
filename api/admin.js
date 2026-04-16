@@ -11,35 +11,133 @@ const COLLECTIONS = [
   { id: "pbc_3221812075", name: "brackets/clasificados" },
 ];
 
-const WC_TEAMS = ["MEXICO","ESTADOS UNIDOS","CANADA","BRASIL","ARGENTINA","ECUADOR","COLOMBIA","URUGUAY","PARAGUAY","CHILE","PERU","VENEZUELA","ALEMANIA","ESPAÑA","FRANCIA","PORTUGAL","BELGICA","PAISES BAJOS","CROACIA","SERBIA","SUIZA","TURQUIA","DINAMARCA","AUSTRIA","POLONIA","RUMANIA","ESLOVENIA","ESLOVAQUIA","ALBANIA","UCRANIA","GRECIA","MARRUECOS","SENEGAL","NIGERIA","CAMERUN","COSTA DE MARFIL","EGIPTO","GHANA","TUNEZ","JAPON","COREA DEL SUR","AUSTRALIA","IRAN","ARABIA SAUDITA","INDONESIA","COSTA RICA","PANAMA","JAMAICA"];
+const WC_TEAMS = [
+  "MEXICO","SUDAFRICA","COREA DEL SUR","REPUBLICA CHECA","CANADA","BOSNIA","QATAR","SUIZA",
+  "BRASIL","MARRUECOS","HAITI","ESCOCIA","ESTADOS UNIDOS","PARAGUAY","AUSTRALIA","TURQUIA",
+  "ALEMANIA","CURAZAO","COSTA DE MARFIL","ECUADOR","PAISES BAJOS","JAPON","SUECIA","TUNEZ",
+  "BELGICA","EGIPTO","IRAN","NUEVA ZELANDA","ESPAÑA","CABO VERDE","ARABIA SAUDITA","URUGUAY",
+  "FRANCIA","SENEGAL","IRAK","NORUEGA","ARGENTINA","ARGELIA","AUSTRIA","JORDANIA",
+  "PORTUGAL","RD CONGO","UZBEKISTAN","COLOMBIA","INGLATERRA","CROACIA","GHANA","PANAMA"
+];
 
-async function fetchDB(coll, query = '') {
-  const url = `${BASE_URL}/${coll}/records?perPage=500${query}`;
-  const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" } });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.items || [];
+const NOMBRES = [
+  "Maria","Juan","Pedro","Ana","Luis","Sofia","Diego","Camila","Mateo","Valentina",
+  "Carlos","Lucia","Andres","Elena","Javier","Paula","Martin","Isabella","Nicolas","Julieta",
+  "Fernando","Gabriela","Samuel","Marta","Daniel","Emilia","Rafael","Agustina","Ricardo","Carolina"
+];
+
+const APELLIDOS = [
+  "Gomez","Fernandez","Rodriguez","Perez","Lopez","Martinez","Gonzalez","Sanchez","Ramirez","Torres",
+  "Flores","Diaz","Romero","Herrera","Castro","Vargas","Rojas","Navarro","Mendoza","Silva"
+];
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function apiRequest(path, method = 'GET', body = null, attempt = 0) {
+  const url = `${BASE_URL}/${path}`;
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "X-Api-Key": API_KEY,
+        "Accept": "application/json",
+        ...(body ? { "Content-Type": "application/json" } : {})
+      },
+      ...(body ? { body: JSON.stringify(body) } : {})
+    });
+
+    if ((res.status === 429 || res.status >= 500) && attempt < 3) {
+      await sleep(250 * Math.pow(2, attempt));
+      return apiRequest(path, method, body, attempt + 1);
+    }
+
+    const text = await res.text();
+    let json = null;
+    try { json = text ? JSON.parse(text) : null; } catch (_) {}
+    return { ok: res.ok, status: res.status, data: json, raw: text };
+  } catch (err) {
+    if (attempt < 3) {
+      await sleep(250 * Math.pow(2, attempt));
+      return apiRequest(path, method, body, attempt + 1);
+    }
+    return { ok: false, status: 0, error: String(err) };
+  }
+}
+
+async function fetchAllRecords(coll) {
+  const out = [];
+  const perPage = 200;
+  let page = 1;
+  while (true) {
+    const res = await apiRequest(`${coll}/records?perPage=${perPage}&page=${page}`);
+    if (!res.ok) break;
+    const items = (res.data && res.data.items) ? res.data.items : [];
+    if (!Array.isArray(items) || items.length === 0) break;
+    out.push(...items);
+    if (items.length < perPage) break;
+    page++;
+  }
+  return out;
 }
 
 async function deleteRecord(coll, id) {
-  const url = `${BASE_URL}/${coll}/records/${id}`;
-  const res = await fetch(url, { method: 'DELETE', headers: { "X-Api-Key": API_KEY } });
-  return res.status === 204 || res.ok;
+  const res = await apiRequest(`${coll}/records/${id}`, 'DELETE');
+  return res.ok || res.status === 204 || res.status === 404;
 }
 
 async function createRecord(coll, body) {
-  const url = `${BASE_URL}/${coll}/records`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  return res.ok;
+  const res = await apiRequest(`${coll}/records`, 'POST', body);
+  return { ok: !!res.ok, status: res.status, data: res.data, raw: res.raw, error: res.error };
 }
 
 function getRandomItems(arr, n) {
-  const shuffled = [...arr].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, n);
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+async function nukeCollections() {
+  let totalDeleted = 0;
+  const errors = [];
+
+  for (const coll of COLLECTIONS) {
+    // Segundo pase de verificación para evitar residuos por paginación/carrera.
+    for (let pass = 1; pass <= 2; pass++) {
+      const items = await fetchAllRecords(coll.id);
+      if (items.length === 0) break;
+      for (const item of items) {
+        const ok = await deleteRecord(coll.id, item.id);
+        if (ok) totalDeleted++;
+        else errors.push(`No se pudo eliminar ${coll.name}:${item.id}`);
+      }
+      const remaining = await fetchAllRecords(coll.id);
+      if (remaining.length === 0) break;
+    }
+  }
+
+  const remainingByCollection = {};
+  for (const coll of COLLECTIONS) {
+    const rem = await fetchAllRecords(coll.id);
+    remainingByCollection[coll.name] = rem.length;
+  }
+
+  return { totalDeleted, errors, remainingByCollection };
+}
+
+function buildRandomUser(i, seedTs) {
+  const nombre = NOMBRES[Math.floor(Math.random() * NOMBRES.length)];
+  const apellido = APELLIDOS[Math.floor(Math.random() * APELLIDOS.length)];
+  const slugNombre = nombre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return {
+    user_id: `user_${seedTs}_${i}_${slugNombre}`,
+    nombre,
+    apellido
+  };
 }
 
 export default async function handler(req) {
@@ -48,63 +146,114 @@ export default async function handler(req) {
 
   if (req.method === 'POST') {
     if (action === 'nuke') {
-      let totalDeleted = 0;
-      for (const coll of COLLECTIONS) {
-        let items = [];
-        let page = 1;
-        while (true) {
-          const fetched = await fetchDB(coll.id, `&page=${page}`);
-          if (fetched.length === 0) break;
-          for (const item of fetched) {
-            const ok = await deleteRecord(coll.id, item.id);
-            if (ok) totalDeleted++;
-          }
-          if (fetched.length < 500) break;
-          page++;
-        }
-      }
-      return new Response(JSON.stringify({ success: true, message: `☢️ TODO LIMPIO. Eliminados ${totalDeleted} registros.` }));
+      const cleanup = await nukeCollections();
+      const leftovers = Object.entries(cleanup.remainingByCollection)
+        .map(([name, count]) => `${name}:${count}`)
+        .join(' | ');
+
+      return new Response(JSON.stringify({
+        success: cleanup.errors.length === 0 && Object.values(cleanup.remainingByCollection).every((x) => x === 0),
+        message: `☢️ LIMPIEZA COMPLETA. Eliminados ${cleanup.totalDeleted}. Restantes -> ${leftovers}`,
+        deleted: cleanup.totalDeleted,
+        remaining: cleanup.remainingByCollection,
+        errors: cleanup.errors
+      }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (action === 'seed') {
-      const matches = await fetchDB('pbc_631836067'); // Partidos base
-      if (matches.length === 0) return new Response(JSON.stringify({ error: "No hay partidos en pbc_631836067" }), { status: 400 });
+      // Seed robusto: primero limpia tablas objetivo.
+      const cleanup = await nukeCollections();
+      const matches = await fetchAllRecords('pbc_631836067');
+      if (matches.length === 0) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: "No hay partidos en pbc_631836067",
+          cleanup
+        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
 
-      for (let i = 1; i <= 20; i++) {
-        const userId = `dummy_user_${i}`;
-        const name = `Bot_${i}`;
-        
-        // 1. Perfil
-        await createRecord('pbc_3271891893', {
-          user_id: userId, nombre: name, apellido: "Tester",
-          total_puntos: 0, puntos_goles: 0, puntos_brackets: 0, pronosticos_correctos: 0
+      const subset = matches.slice(0, 12); // cobertura razonable y runtime estable
+      const seedTs = Date.now();
+      const usersToCreate = 20;
+
+      let profileOk = 0, profileFail = 0;
+      let predsOk = 0, predsFail = 0;
+      let bracketOk = 0, bracketFail = 0;
+      const errors = [];
+
+      for (let i = 1; i <= usersToCreate; i++) {
+        const u = buildRandomUser(i, seedTs);
+
+        const profileRes = await createRecord('pbc_3271891893', {
+          user_id: u.user_id,
+          nombre: u.nombre,
+          apellido: u.apellido,
+          total_puntos: 0,
+          puntos_goles: 0,
+          puntos_brackets: 0,
+          pronosticos_correctos: 0
         });
-
-        // 2. Goles (Limitamos a 10 partidos para no saturar el runtime)
-        const subset = matches.slice(0, 10);
-        for (const m of subset) {
-          await createRecord('pbc_1944158292', {
-            user_id: userId, match_id: m.id_partido,
-            equipo_local: m.equipo_local, equipo_visitante: m.equipo_visitante,
-            pronostico_local: Math.floor(Math.random() * 5),
-            pronostico_visitante: Math.floor(Math.random() * 5),
-            fecha_partido: m.fecha, estado: 'PENDIENTE'
-          });
+        if (profileRes.ok) profileOk++;
+        else {
+          profileFail++;
+          errors.push(`Perfil ${u.user_id}: status ${profileRes.status || 'N/A'}`);
         }
 
-        // 3. Brackets
+        for (const m of subset) {
+          const predRes = await createRecord('pbc_1944158292', {
+            user_id: u.user_id,
+            match_id: m.id_partido,
+            equipo_local: m.equipo_local,
+            equipo_visitante: m.equipo_visitante,
+            pronostico_local: Math.floor(Math.random() * 5),
+            pronostico_visitante: Math.floor(Math.random() * 5),
+            fecha_partido: m.fecha,
+            estado: 'PENDIENTE'
+          });
+          if (predRes.ok) predsOk++;
+          else {
+            predsFail++;
+            errors.push(`Pronóstico ${u.user_id}/${m.id_partido}: status ${predRes.status || 'N/A'}`);
+          }
+        }
+
         const d16 = getRandomItems(WC_TEAMS, 32);
         const d8 = getRandomItems(d16, 16);
         const d4 = getRandomItems(d8, 8);
         const semis = getRandomItems(d4, 4);
         const finals = getRandomItems(semis, 4);
-        
-        await createRecord('pbc_3221812075', {
-          user_id: userId, dieciseisavos: d16, octavos: d8, cuartos: d4, semis: semis,
-          campeon: finals[0], subcampeon: finals[1], tercer_lugar: finals[2], cuarto_lugar: finals[3]
+
+        const bracketRes = await createRecord('pbc_3221812075', {
+          user_id: u.user_id,
+          dieciseisavos: d16,
+          octavos: d8,
+          cuartos: d4,
+          semis: semis,
+          campeon: finals[0],
+          subcampeon: finals[1],
+          tercer_lugar: finals[2],
+          cuarto_lugar: finals[3]
         });
+        if (bracketRes.ok) bracketOk++;
+        else {
+          bracketFail++;
+          errors.push(`Bracket ${u.user_id}: status ${bracketRes.status || 'N/A'}`);
+        }
       }
-      return new Response(JSON.stringify({ success: true, message: "20 usuarios creados con éxito." }));
+
+      return new Response(JSON.stringify({
+        success: profileFail === 0 && predsFail === 0 && bracketFail === 0,
+        message: `Seed finalizado. Usuarios: ${profileOk}/${usersToCreate}, Pronósticos: ${predsOk}/${usersToCreate * subset.length}, Brackets: ${bracketOk}/${usersToCreate}.`,
+        cleanup,
+        stats: {
+          usersRequested: usersToCreate,
+          matchesPerUser: subset.length,
+          profileOk, profileFail,
+          predsOk, predsFail,
+          bracketOk, bracketFail
+        },
+        errors
+      }), { headers: { 'Content-Type': 'application/json' } });
     }
   }
 

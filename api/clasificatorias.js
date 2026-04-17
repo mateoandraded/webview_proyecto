@@ -1,3 +1,5 @@
+import { getRequestUrl } from '../lib/requestUrl.js';
+
 export const config = {
   runtime: 'edge',
 };
@@ -54,7 +56,7 @@ async function fetchDatum(collection, method, body, id, query) {
 }
 
 export default async function handler(req) {
-  const url = new URL(req.url);
+  const url = getRequestUrl(req);
   const userId = url.searchParams.get('user_id') || 'GUEST';
   const executionId = url.searchParams.get('executionId') || '';
 

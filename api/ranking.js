@@ -1,4 +1,5 @@
 import { hasPairOfDatumScores, parseDatumScore, scoreEqDatum } from '../lib/datumScore.js';
+import { getRequestUrl } from '../lib/requestUrl.js';
 
 export const config = {
   runtime: 'edge',
@@ -131,7 +132,7 @@ function isSemiFinals(r) {
 }
 
 export default async function handler(req) {
-  const url = new URL(req.url);
+  const url = getRequestUrl(req);
   const searchParams = url.searchParams;
   const loggedUser = searchParams.get('nombre') ? searchParams.get('nombre').trim().toLowerCase() : '';
   const loggedUserId = searchParams.get('user_id') || 'GUEST';

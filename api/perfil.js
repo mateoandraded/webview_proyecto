@@ -1,4 +1,5 @@
 import { parseDatumScore } from '../lib/datumScore.js';
+import { getRequestUrl } from '../lib/requestUrl.js';
 
 export const config = {
   runtime: 'edge',
@@ -16,7 +17,7 @@ async function fetchDB(coll, query='') {
 }
 
 export default async function handler(req) {
-  const url = new URL(req.url);
+  const url = getRequestUrl(req);
   const userId = url.searchParams.get('user_id') || 'GUEST';
   const executionId = url.searchParams.get('executionId') || '';
 

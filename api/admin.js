@@ -1,3 +1,5 @@
+import { getRequestUrl } from '../lib/requestUrl.js';
+
 export const config = {
   // Node permite maxDuration mayor; Edge (~25s) cortaba cargas largas a Datum (HTML "error", JSON inválido).
   runtime: 'nodejs',
@@ -481,7 +483,7 @@ async function cleanSimulacion() {
 //  HANDLER
 // ═══════════════════════════════════════════════════════════════════
 export default async function handler(req) {
-  const url = new URL(req.url);
+  const url = getRequestUrl(req);
   const action = url.searchParams.get('action');
 
   if (req.method === 'POST') {

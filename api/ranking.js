@@ -43,7 +43,7 @@ function esc(s) {
 }
 
 async function fetchDB(coll, query = '') {
-  const url = `${BASE_URL_COLL}/${coll}/records?perPage=500${query}`;
+  const url = `${BASE_URL}/${coll}/records?perPage=500${query}`;
   try {
     const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" } });
     if (!res.ok) return [];
@@ -56,7 +56,7 @@ async function fetchDB(coll, query = '') {
 
 // Background async patch so we don't hold the Edge request
 function silentPatch(coll, id, payload) {
-  const url = `${BASE_URL_COLL}/${coll}/records/${id}`;
+  const url = `${BASE_URL}/${coll}/records/${id}`;
   fetch(url, {
     method: 'PATCH',
     headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },

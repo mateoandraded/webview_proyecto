@@ -2,7 +2,8 @@ import { hasPairOfDatumScores, parseDatumScore } from '../lib/datumScore.js';
 import { getRequestUrl } from '../lib/requestUrl.js';
 
 export const config = {
-  runtime: 'edge',
+  runtime: 'nodejs',
+  maxDuration: 60,
 };
 
 const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';

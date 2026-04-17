@@ -1,8 +1,7 @@
 import { getRequestUrl } from '../lib/requestUrl.js';
 
 export const config = {
-  runtime: 'nodejs',
-  maxDuration: 60,
+  runtime: 'edge',
 };
 
 const API_KEY = process.env.API_KEY;

@@ -1,9 +1,7 @@
 import { getRequestUrl } from '../lib/requestUrl.js';
 
 export const config = {
-  // Node permite maxDuration mayor; Edge (~25s) cortaba cargas largas a Datum (HTML "error", JSON inválido).
-  runtime: 'nodejs',
-  maxDuration: 60,
+  runtime: 'edge',
 };
 
 const API_KEY = process.env.API_KEY;
@@ -242,33 +240,72 @@ function makeMatchId(local, visitante, fecha, faseExtra = '') {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  NUKE: Delete all 3 user-data collections
+//  NUKE por lotes (Edge): el cliente reenvía hasta vaciar cada colección
 // ═══════════════════════════════════════════════════════════════════
-async function nukeCollections() {
-  let totalDeleted = 0;
-  const errors = [];
+const NUKE_DELETES_LIMIT = 32;
+const NUKE_PARTIDOS_LIMIT = 32;
 
-  for (const coll of COLLECTIONS) {
-    for (let pass = 1; pass <= 2; pass++) {
-      const items = await fetchAllRecords(coll.id);
-      if (items.length === 0) break;
-      for (const item of items) {
-        const ok = await deleteRecord(coll.id, item.id);
-        if (ok) totalDeleted++;
-        else errors.push(`No se pudo eliminar ${coll.name}:${item.id}`);
-      }
-      const remaining = await fetchAllRecords(coll.id);
-      if (remaining.length === 0) break;
-    }
-  }
-
+async function nukeCollectionsFinalize() {
   const remainingByCollection = {};
   for (const coll of COLLECTIONS) {
     const rem = await fetchAllRecords(coll.id);
     remainingByCollection[coll.name] = rem.length;
   }
+  const ok = Object.values(remainingByCollection).every((x) => x === 0);
+  const leftovers = Object.entries(remainingByCollection).map(([n, c]) => `${n}:${c}`).join(' | ');
+  return {
+    done: true,
+    success: ok,
+    remainingByCollection,
+    message: ok ? `☢️ Nuke usuarios OK. ${leftovers}` : `☢️ Fin de lotes. Quedan -> ${leftovers}`,
+  };
+}
 
-  return { totalDeleted, errors, remainingByCollection };
+async function nukeCollectionsBatch(collIndex, limit = NUKE_DELETES_LIMIT) {
+  if (collIndex >= COLLECTIONS.length) {
+    return nukeCollectionsFinalize();
+  }
+  const coll = COLLECTIONS[collIndex];
+  const res = await apiRequest(`${coll.id}/records?perPage=${limit}&page=1`);
+  if (!res.ok) {
+    return {
+      done: false,
+      success: false,
+      collIndex,
+      advancedCollection: false,
+      message: `Error al leer ${coll.name} (HTTP ${res.status})`,
+      errors: [`fetch ${coll.name}`],
+    };
+  }
+  const items = (res.data && res.data.items) ? res.data.items : [];
+  if (items.length === 0) {
+    return {
+      done: false,
+      success: true,
+      collIndex: collIndex + 1,
+      advancedCollection: true,
+      deleted: 0,
+      message: `${coll.name} vacía → colección ${collIndex + 1}.`,
+      errors: [],
+    };
+  }
+  const errors = [];
+  let deleted = 0;
+  for (const item of items) {
+    const ok = await deleteRecord(coll.id, item.id);
+    if (ok) deleted++;
+    else errors.push(`No se pudo eliminar ${coll.name}:${item.id}`);
+    await sleep(6);
+  }
+  return {
+    done: false,
+    success: errors.length === 0,
+    collIndex,
+    advancedCollection: false,
+    deleted,
+    message: `☢️ ${coll.name}: -${deleted}/${items.length} en este lote.`,
+    errors,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -282,6 +319,86 @@ function buildRandomUser(i, seedTs) {
     user_id: `user_${seedTs}_${i}_${slugNombre}`,
     nombre,
     apellido
+  };
+}
+
+const SEED_USERS_TOTAL = 20;
+
+/** Un usuario por petición (Edge): el cliente llama i=1..20 con el mismo seedTs. */
+async function seedOneUser(i, seedTs) {
+  const matches = await fetchAllRecords(MATCHES_COLL);
+  if (matches.length === 0) {
+    return {
+      success: false,
+      message: 'No hay partidos en la BD. Primero usa CARGAR PARTIDOS.',
+      userIndex: i,
+      totalUsers: SEED_USERS_TOTAL,
+    };
+  }
+  const subset = matches.slice(0, 12);
+  const u = buildRandomUser(i, seedTs);
+  const errors = [];
+  let profileOk = 0;
+  let predsOk = 0;
+  let bracketOk = 0;
+
+  const profileRes = await createRecord('pbc_3271891893', {
+    user_id: u.user_id,
+    nombre: u.nombre,
+    apellido: u.apellido,
+    total_puntos: 0,
+    puntos_goles: 0,
+    puntos_brackets: 0,
+    pronosticos_correctos: 0
+  });
+  if (profileRes.ok) profileOk++;
+  else errors.push(`Perfil ${u.user_id}: ${profileRes.status}`);
+
+  for (const m of subset) {
+    const predRes = await createRecord('pbc_1944158292', {
+      user_id: u.user_id,
+      match_id: m.id_partido,
+      equipo_local: m.equipo_local,
+      equipo_visitante: m.equipo_visitante,
+      pronostico_local: Math.floor(Math.random() * 5),
+      pronostico_visitante: Math.floor(Math.random() * 5),
+      fecha_partido: m.fecha,
+      estado: 'PENDIENTE'
+    });
+    if (predRes.ok) predsOk++;
+    else errors.push(`Pred ${m.id_partido}: ${predRes.status}`);
+    await sleep(5);
+  }
+
+  const d16 = getRandomItems(WC_TEAMS, 32);
+  const d8 = getRandomItems(d16, 16);
+  const d4 = getRandomItems(d8, 8);
+  const semis = getRandomItems(d4, 4);
+  const finals = getRandomItems(semis, 4);
+
+  const bracketRes = await createRecord('pbc_3221812075', {
+    user_id: u.user_id,
+    dieciseisavos: d16,
+    octavos: d8,
+    cuartos: d4,
+    semis: semis,
+    campeon: finals[0],
+    subcampeon: finals[1],
+    tercer_lugar: finals[2],
+    cuarto_lugar: finals[3]
+  });
+  if (bracketRes.ok) bracketOk++;
+  else errors.push(`Bracket: ${bracketRes.status}`);
+
+  return {
+    success: errors.length === 0 && profileOk === 1 && predsOk === subset.length && bracketOk === 1,
+    message: `Seed ${i}/${SEED_USERS_TOTAL} · ${u.user_id}: perfil ${profileOk}, preds ${predsOk}/${subset.length}, bracket ${bracketOk}`,
+    userIndex: i,
+    totalUsers: SEED_USERS_TOTAL,
+    profileOk,
+    predsOk,
+    bracketOk,
+    errors,
   };
 }
 
@@ -337,29 +454,47 @@ async function cargarPartidos(offset = 0, limit = null) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  NUKE PARTIDOS: Clear the matches collection
+//  NUKE PARTIDOS por lotes
 // ═══════════════════════════════════════════════════════════════════
-async function nukePartidos() {
-  let totalDeleted = 0;
-  const errors = [];
-
-  for (let pass = 1; pass <= 2; pass++) {
-    const items = await fetchAllRecords(MATCHES_COLL);
-    if (items.length === 0) break;
-    for (const item of items) {
-      const ok = await deleteRecord(MATCHES_COLL, item.id);
-      if (ok) totalDeleted++;
-      else errors.push(`No se pudo eliminar partido ${item.id}`);
-    }
+async function nukePartidosBatch(limit = NUKE_PARTIDOS_LIMIT) {
+  const res = await apiRequest(`${MATCHES_COLL}/records?perPage=${limit}&page=1`);
+  if (!res.ok) {
+    return {
+      done: true,
+      success: false,
+      message: `Error al leer partidos (${res.status})`,
+      remaining: -1,
+      errors: ['fetch'],
+    };
   }
-
+  const items = (res.data && res.data.items) ? res.data.items : [];
+  if (items.length === 0) {
+    const remaining = await fetchAllRecords(MATCHES_COLL);
+    return {
+      done: true,
+      success: remaining.length === 0,
+      message: `💣 Partidos: vacío. Restantes: ${remaining.length}`,
+      totalDeleted: 0,
+      remaining: remaining.length,
+      errors: [],
+    };
+  }
+  const errors = [];
+  let totalDeleted = 0;
+  for (const item of items) {
+    const ok = await deleteRecord(MATCHES_COLL, item.id);
+    if (ok) totalDeleted++;
+    else errors.push(`No se pudo eliminar partido ${item.id}`);
+    await sleep(6);
+  }
   const remaining = await fetchAllRecords(MATCHES_COLL);
   return {
-    success: errors.length === 0 && remaining.length === 0,
-    message: `💣 Eliminados ${totalDeleted} partidos. Restantes: ${remaining.length}`,
+    done: remaining.length === 0,
+    success: errors.length === 0,
+    message: `💣 Lote: -${totalDeleted}. Restantes: ${remaining.length}`,
     totalDeleted,
     remaining: remaining.length,
-    errors
+    errors,
   };
 }
 
@@ -441,41 +576,84 @@ async function simularMundialKnockout(offset = 0, limit = null) {
   };
 }
 
+function rowHasScores(m) {
+  const a = m.resulltado_local;
+  const b = m.resultado_visitante;
+  if (a == null && b == null) return false;
+  if (String(a).trim() === '' && String(b).trim() === '') return false;
+  return true;
+}
+
 // ═══════════════════════════════════════════════════════════════════
-//  CLEAN SIMULACIÓN: Remove knockout, reset all scores to null
+//  CLEAN SIMULACIÓN por fases: KO por páginas, luego grupos con marcador
 // ═══════════════════════════════════════════════════════════════════
-async function cleanSimulacion() {
-  const allMatches = await fetchAllRecords(MATCHES_COLL);
-  let deletedKnockout = 0;
-  let resetGroups = 0;
+async function cleanSimulacionKnockoutPage(page) {
+  const res = await apiRequest(`${MATCHES_COLL}/records?perPage=25&page=${page}`);
+  if (!res.ok) {
+    return { phase: 'ko', done: true, success: false, deleted: 0, message: 'Error fetch KO', errors: [] };
+  }
+  const items = (res.data && res.data.items) ? res.data.items : [];
+  if (items.length === 0) {
+    return { phase: 'ko', done: true, success: true, deleted: 0, page, empty: true, message: 'KO: sin más páginas.' };
+  }
+  let deleted = 0;
   const errors = [];
-
-  for (const m of allMatches) {
+  for (const m of items) {
     const fase = m.Fase_o_Grupo || '';
-    const isGroup = fase.length === 1; // Single letter = group
-
+    const isGroup = fase.length === 1;
     if (!isGroup) {
-      // Delete knockout matches
       const ok = await deleteRecord(MATCHES_COLL, m.id);
-      if (ok) deletedKnockout++;
-      else errors.push(`No se pudo eliminar knockout ${m.id}`);
-    } else {
-      // Reset group match scores to null
-      const res = await patchRecord(MATCHES_COLL, m.id, {
+      if (ok) deleted++;
+      else errors.push(`KO ${m.id}`);
+      await sleep(6);
+    }
+  }
+  return {
+    phase: 'ko',
+    done: false,
+    success: errors.length === 0,
+    deleted,
+    page,
+    empty: false,
+    resetToPageOne: deleted > 0,
+    message: `🧹 KO p.${page}: eliminados ${deleted}.`,
+    errors,
+  };
+}
+
+async function cleanSimulacionGroupsPage(page) {
+  const res = await apiRequest(`${MATCHES_COLL}/records?perPage=30&page=${page}`);
+  if (!res.ok) {
+    return { phase: 'groups', done: true, success: false, patched: 0, message: 'Error fetch grupos', errors: [] };
+  }
+  const items = (res.data && res.data.items) ? res.data.items : [];
+  if (items.length === 0) {
+    return { phase: 'groups', done: true, success: true, patched: 0, page, message: 'Grupos: fin de paginación.' };
+  }
+  let patched = 0;
+  const errors = [];
+  for (const m of items) {
+    const fase = m.Fase_o_Grupo || '';
+    const isGroup = fase.length === 1;
+    if (isGroup && rowHasScores(m)) {
+      const pr = await patchRecord(MATCHES_COLL, m.id, {
         resulltado_local: null,
         resultado_visitante: null
       });
-      if (res.ok) resetGroups++;
-      else errors.push(`No se pudo resetear ${m.id}`);
+      if (pr.ok) patched++;
+      else errors.push(`reset ${m.id}`);
+      await sleep(6);
     }
   }
-
   return {
+    phase: 'groups',
+    done: false,
     success: errors.length === 0,
-    message: `🧹 Limpieza completa. ${deletedKnockout} partidos eliminatorios borrados. ${resetGroups} partidos de grupos reseteados a null.`,
-    deletedKnockout,
-    resetGroups,
-    errors
+    patched,
+    page,
+    advancePage: patched === 0,
+    message: `🧹 Grupos p.${page}: reseteados ${patched}.`,
+    errors,
   };
 }
 
@@ -487,113 +665,19 @@ export default async function handler(req) {
   const action = url.searchParams.get('action');
 
   if (req.method === 'POST') {
-    if (action === 'nuke') {
-      const result = await nukeCollections();
-      const leftovers = Object.entries(result.remainingByCollection)
-        .map(([name, count]) => `${name}:${count}`)
-        .join(' | ');
-      return new Response(JSON.stringify({
-        success: result.errors.length === 0 && Object.values(result.remainingByCollection).every((x) => x === 0),
-        message: `☢️ LIMPIEZA COMPLETA. Eliminados ${result.totalDeleted}. Restantes -> ${leftovers}`,
-        deleted: result.totalDeleted,
-        remaining: result.remainingByCollection,
-        errors: result.errors
-      }), { headers: { 'Content-Type': 'application/json' } });
+    if (action === 'nuke_batch') {
+      const collIndex = parseInt(url.searchParams.get('coll') || '0', 10);
+      const limRaw = url.searchParams.get('limit');
+      const limit = limRaw == null || limRaw === '' ? NUKE_DELETES_LIMIT : parseInt(limRaw, 10);
+      const result = await nukeCollectionsBatch(collIndex, limit);
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (action === 'seed') {
-      const cleanup = await nukeCollections();
-      const matches = await fetchAllRecords(MATCHES_COLL);
-      if (matches.length === 0) {
-        return new Response(JSON.stringify({
-          success: false,
-          message: "No hay partidos en la BD. Primero usa CARGAR PARTIDOS.",
-          cleanup
-        }), { status: 400, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      const subset = matches.slice(0, 12);
-      const seedTs = Date.now();
-      const usersToCreate = 20;
-
-      let profileOk = 0, profileFail = 0;
-      let predsOk = 0, predsFail = 0;
-      let bracketOk = 0, bracketFail = 0;
-      const errors = [];
-
-      for (let i = 1; i <= usersToCreate; i++) {
-        const u = buildRandomUser(i, seedTs);
-
-        const profileRes = await createRecord('pbc_3271891893', {
-          user_id: u.user_id,
-          nombre: u.nombre,
-          apellido: u.apellido,
-          total_puntos: 0,
-          puntos_goles: 0,
-          puntos_brackets: 0,
-          pronosticos_correctos: 0
-        });
-        if (profileRes.ok) profileOk++;
-        else {
-          profileFail++;
-          errors.push(`Perfil ${u.user_id}: status ${profileRes.status || 'N/A'}`);
-        }
-
-        for (const m of subset) {
-          const predRes = await createRecord('pbc_1944158292', {
-            user_id: u.user_id,
-            match_id: m.id_partido,
-            equipo_local: m.equipo_local,
-            equipo_visitante: m.equipo_visitante,
-            pronostico_local: Math.floor(Math.random() * 5),
-            pronostico_visitante: Math.floor(Math.random() * 5),
-            fecha_partido: m.fecha,
-            estado: 'PENDIENTE'
-          });
-          if (predRes.ok) predsOk++;
-          else {
-            predsFail++;
-            errors.push(`Pronóstico ${u.user_id}/${m.id_partido}: status ${predRes.status || 'N/A'}`);
-          }
-        }
-
-        const d16 = getRandomItems(WC_TEAMS, 32);
-        const d8 = getRandomItems(d16, 16);
-        const d4 = getRandomItems(d8, 8);
-        const semis = getRandomItems(d4, 4);
-        const finals = getRandomItems(semis, 4);
-
-        const bracketRes = await createRecord('pbc_3221812075', {
-          user_id: u.user_id,
-          dieciseisavos: d16,
-          octavos: d8,
-          cuartos: d4,
-          semis: semis,
-          campeon: finals[0],
-          subcampeon: finals[1],
-          tercer_lugar: finals[2],
-          cuarto_lugar: finals[3]
-        });
-        if (bracketRes.ok) bracketOk++;
-        else {
-          bracketFail++;
-          errors.push(`Bracket ${u.user_id}: status ${bracketRes.status || 'N/A'}`);
-        }
-      }
-
-      return new Response(JSON.stringify({
-        success: profileFail === 0 && predsFail === 0 && bracketFail === 0,
-        message: `Seed finalizado. Usuarios: ${profileOk}/${usersToCreate}, Pronósticos: ${predsOk}/${usersToCreate * subset.length}, Brackets: ${bracketOk}/${usersToCreate}.`,
-        cleanup,
-        stats: {
-          usersRequested: usersToCreate,
-          matchesPerUser: subset.length,
-          profileOk, profileFail,
-          predsOk, predsFail,
-          bracketOk, bracketFail
-        },
-        errors
-      }), { headers: { 'Content-Type': 'application/json' } });
+    if (action === 'seed_one') {
+      const i = parseInt(url.searchParams.get('i') || '1', 10);
+      const seedTs = parseInt(url.searchParams.get('seedTs') || '0', 10) || Date.now();
+      const result = await seedOneUser(i, seedTs);
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (action === 'cargar_partidos') {
@@ -604,8 +688,10 @@ export default async function handler(req) {
       return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (action === 'nuke_partidos') {
-      const result = await nukePartidos();
+    if (action === 'nuke_partidos_batch') {
+      const limRaw = url.searchParams.get('limit');
+      const limit = limRaw == null || limRaw === '' ? NUKE_PARTIDOS_LIMIT : parseInt(limRaw, 10);
+      const result = await nukePartidosBatch(limit);
       return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -632,8 +718,15 @@ export default async function handler(req) {
       }), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (action === 'clean_simulacion') {
-      const result = await cleanSimulacion();
+    if (action === 'clean_ko') {
+      const page = parseInt(url.searchParams.get('page') || '1', 10);
+      const result = await cleanSimulacionKnockoutPage(page);
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'clean_groups') {
+      const page = parseInt(url.searchParams.get('page') || '1', 10);
+      const result = await cleanSimulacionGroupsPage(page);
       return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
   }
@@ -693,6 +786,7 @@ export default async function handler(req) {
     </div>
 
     <script>
+        var SEED_TOTAL = 20;
         async function parseJsonSafe(res) {
             const text = await res.text();
             try {
@@ -701,17 +795,19 @@ export default async function handler(req) {
                 throw new Error('Respuesta no JSON (timeout o error de plataforma). HTTP ' + res.status + '. Inicio: ' + text.slice(0, 350));
             }
         }
+        function setBusy(on) {
+            document.querySelectorAll('.btn').forEach(function (b) { b.disabled = on; });
+        }
         async function runCargarPartidos() {
             const st = document.getElementById('status');
-            const btns = document.querySelectorAll('.btn');
-            btns.forEach(function (b) { b.disabled = true; });
+            setBusy(true);
             st.style.color = 'white';
             const chunk = 25;
             var offset = 0;
             var lines = [];
             try {
                 while (true) {
-                    st.innerText = 'Cargando partidos… desde índice ' + offset;
+                    st.innerText = 'Cargando partidos… índice ' + offset;
                     var res = await fetch('?action=cargar_partidos&offset=' + offset + '&limit=' + chunk, { method: 'POST' });
                     var data = await parseJsonSafe(res);
                     lines.push(data.message);
@@ -725,13 +821,12 @@ export default async function handler(req) {
                 st.innerText = String(e.message);
                 st.style.color = '#FF0055';
             } finally {
-                btns.forEach(function (b) { b.disabled = false; });
+                setBusy(false);
             }
         }
         async function runSimularCompleto() {
             const st = document.getElementById('status');
-            const btns = document.querySelectorAll('.btn');
-            btns.forEach(function (b) { b.disabled = true; });
+            setBusy(true);
             st.style.color = 'white';
             var lines = [];
             try {
@@ -739,9 +834,9 @@ export default async function handler(req) {
                 var r1 = await fetch('?action=simular_grupos', { method: 'POST' });
                 var d1 = await parseJsonSafe(r1);
                 lines.push(d1.message);
-                st.innerText = lines.join(' | ');
                 var off = 0;
                 var batch = 8;
+                var guard = 0;
                 while (true) {
                     st.innerText = lines.join(' | ') + ' — KO offset ' + off;
                     var r2 = await fetch('?action=simular_knockout&offset=' + off + '&limit=' + batch, { method: 'POST' });
@@ -750,6 +845,8 @@ export default async function handler(req) {
                     if (d2.errors && d2.errors.length) lines = lines.concat(d2.errors.slice(0, 4));
                     if (d2.done) break;
                     off = d2.nextOffset;
+                    guard++;
+                    if (guard > 200) throw new Error('Demasiadas iteraciones KO');
                 }
                 st.innerText = lines.join('\\n');
                 st.style.color = '#C9FF24';
@@ -757,15 +854,156 @@ export default async function handler(req) {
                 st.innerText = String(e.message);
                 st.style.color = '#FF0055';
             } finally {
-                btns.forEach(function (b) { b.disabled = false; });
+                setBusy(false);
+            }
+        }
+        async function runBatchedNuke() {
+            const st = document.getElementById('status');
+            setBusy(true);
+            st.style.color = 'white';
+                var lines = [];
+            var collIndex = 0;
+            var nukeGuard = 0;
+            try {
+                while (true) {
+                    st.innerText = 'NUKE usuarios · colección ' + collIndex + '…';
+                    var res = await fetch('?action=nuke_batch&coll=' + collIndex, { method: 'POST' });
+                    var data = await parseJsonSafe(res);
+                    lines.push(data.message);
+                    if (data.errors && data.errors.length) lines = lines.concat(data.errors.slice(0, 4));
+                    if (data.done) {
+                        st.innerText = lines.join('\\n') + '\\n' + (data.message || '');
+                        st.style.color = data.success ? '#C9FF24' : '#FF0055';
+                        return;
+                    }
+                    if (data.advancedCollection) collIndex = data.collIndex;
+                    nukeGuard++;
+                    if (nukeGuard > 800) throw new Error('Límite NUKE usuarios');
+                }
+            } catch (e) {
+                st.innerText = String(e.message);
+                st.style.color = '#FF0055';
+            } finally {
+                setBusy(false);
+            }
+        }
+        async function runBatchedNukePartidos() {
+            const st = document.getElementById('status');
+            setBusy(true);
+            st.style.color = 'white';
+            var lines = [];
+            var guard = 0;
+            try {
+                while (true) {
+                    st.innerText = 'NUKE partidos… lote ' + (guard + 1);
+                    var res = await fetch('?action=nuke_partidos_batch', { method: 'POST' });
+                    var data = await parseJsonSafe(res);
+                    lines.push(data.message);
+                    if (data.errors && data.errors.length) lines = lines.concat(data.errors.slice(0, 4));
+                    if (data.done) {
+                        st.innerText = lines.join('\\n');
+                        st.style.color = data.success ? '#C9FF24' : '#FF0055';
+                        return;
+                    }
+                    guard++;
+                    if (guard > 500) throw new Error('Demasiadas iteraciones nuke partidos');
+                }
+            } catch (e) {
+                st.innerText = String(e.message);
+                st.style.color = '#FF0055';
+            } finally {
+                setBusy(false);
+            }
+        }
+        async function runBatchedSeed() {
+            const st = document.getElementById('status');
+            setBusy(true);
+            st.style.color = 'white';
+            var lines = [];
+            var seedTs = Date.now();
+            try {
+                var collIndex = 0;
+                var sg = 0;
+                while (true) {
+                    st.innerText = 'Seed: limpiando usuarios · coll ' + collIndex + '…';
+                    var nr = await fetch('?action=nuke_batch&coll=' + collIndex, { method: 'POST' });
+                    var nd = await parseJsonSafe(nr);
+                    lines.push(nd.message);
+                    if (nd.done) break;
+                    if (nd.advancedCollection) collIndex = nd.collIndex;
+                    sg++;
+                    if (sg > 800) throw new Error('Límite NUKE en seed');
+                }
+                for (var i = 1; i <= SEED_TOTAL; i++) {
+                    st.innerText = 'Seed usuario ' + i + '/' + SEED_TOTAL + '…';
+                    var sr = await fetch('?action=seed_one&i=' + i + '&seedTs=' + seedTs, { method: 'POST' });
+                    var sd = await parseJsonSafe(sr);
+                    lines.push(sd.message);
+                    if (!sd.success && i === 1) {
+                        st.innerText = lines.join('\\n');
+                        st.style.color = '#FF0055';
+                        return;
+                    }
+                }
+                st.innerText = lines.join('\\n');
+                st.style.color = '#C9FF24';
+            } catch (e) {
+                st.innerText = String(e.message);
+                st.style.color = '#FF0055';
+            } finally {
+                setBusy(false);
+            }
+        }
+        async function runBatchedClean() {
+            const st = document.getElementById('status');
+            setBusy(true);
+            st.style.color = 'white';
+            var lines = [];
+            try {
+                var page = 1;
+                var g = 0;
+                st.innerText = 'Clean: fase eliminatoria (KO)…';
+                while (true) {
+                    var res = await fetch('?action=clean_ko&page=' + page, { method: 'POST' });
+                    var data = await parseJsonSafe(res);
+                    lines.push(data.message);
+                    if (data.done) break;
+                    if (data.resetToPageOne) page = 1;
+                    else page++;
+                    g++;
+                    if (g > 500) throw new Error('Límite clean KO');
+                }
+                page = 1;
+                g = 0;
+                st.innerText = 'Clean: grupos (marcadores)…';
+                while (true) {
+                    var res2 = await fetch('?action=clean_groups&page=' + page, { method: 'POST' });
+                    var d2 = await parseJsonSafe(res2);
+                    lines.push(d2.message);
+                    if (d2.done) break;
+                    if (d2.advancePage) page++;
+                    else page = 1;
+                    g++;
+                    if (g > 500) throw new Error('Límite clean grupos');
+                }
+                st.innerText = lines.join('\\n');
+                st.style.color = '#C9FF24';
+            } catch (e) {
+                st.innerText = String(e.message);
+                st.style.color = '#FF0055';
+            } finally {
+                setBusy(false);
             }
         }
         async function run(action) {
             if (action === 'cargar_partidos') return runCargarPartidos();
             if (action === 'simular') return runSimularCompleto();
+            if (action === 'nuke') return runBatchedNuke();
+            if (action === 'seed') return runBatchedSeed();
+            if (action === 'nuke_partidos') return runBatchedNukePartidos();
+            if (action === 'clean_simulacion') return runBatchedClean();
             const st = document.getElementById('status');
-            const btns = document.querySelectorAll('.btn');
-            btns.forEach(function (b) { b.disabled = true; });
+            setBusy(true);
             st.innerText = 'PROCESANDO...';
             st.style.color = 'white';
             try {
@@ -777,7 +1015,7 @@ export default async function handler(req) {
                 st.innerText = 'ERROR: ' + e.message;
                 st.style.color = '#FF0055';
             } finally {
-                btns.forEach(function (b) { b.disabled = false; });
+                setBusy(false);
             }
         }
     </script>

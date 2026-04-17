@@ -2,8 +2,7 @@ import { hasPairOfDatumScores, parseDatumScore, scoreEqDatum } from '../lib/datu
 import { getRequestUrl } from '../lib/requestUrl.js';
 
 export const config = {
-  runtime: 'nodejs',
-  maxDuration: 60,
+  runtime: 'edge',
 };
 
 /** Misma fuente que torneo-libertadores (secrets FECHA_HOY). Copiable suelto a otro repo. */

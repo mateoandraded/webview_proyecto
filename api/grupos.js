@@ -1,45 +1,11 @@
-import { hasPairOfDatumScores, parseDatumScore } from '../lib/datumScore.js';
-import { getRequestUrl } from '../lib/requestUrl.js';
-
 export const config = {
   runtime: 'edge',
 };
 
-const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
-
-function fallbackHoyYMD() {
-  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-  var y = parts.find(function (p) { return p.type === 'year'; }).value;
-  var mo = parts.find(function (p) { return p.type === 'month'; }).value;
-  var d = parts.find(function (p) { return p.type === 'day'; }).value;
-  return y + '-' + mo + '-' + d;
-}
-
-async function fetchFechaTorneoDesdeJelou() {
-  try {
-    var ctrl = new AbortController();
-    var tid = setTimeout(function () { ctrl.abort(); }, 5000);
-    var res = await fetch(JELOU_ESTADO_TORNEO_URL, {
-      method: 'GET',
-      signal: ctrl.signal,
-      headers: { Accept: 'application/json' }
-    });
-    clearTimeout(tid);
-    if (!res.ok) return fallbackHoyYMD();
-    var data = await res.json();
-    var f = data && data.fecha_simulada_hoy;
-    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
-  } catch (e) { /* timeout / red */ }
-  return fallbackHoyYMD();
-}
-
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
 
-const FLAGS = { "MEXICO": "\uD83C\uDDF2\uD83C\uDDFD", "ESTADOS UNIDOS": "\uD83C\uDDFA\uD83C\uDDF8", "CANADA": "\uD83C\uDDE8\uD83C\uDDE6", "BRASIL": "\uD83C\uDDE7\uD83C\uDDF7", "ARGENTINA": "\uD83C\uDDE6\uD83C\uDDF7", "ECUADOR": "\uD83C\uDDEA\uD83C\uDDE8", "COLOMBIA": "\uD83C\uDDE8\uD83C\uDDF4", "PERU": "\uD83C\uDDF5\uD83C\uDDEA", "CHILE": "\uD83C\uDDE8\uD83C\uDDF1", "URUGUAY": "\uD83C\uDDFA\uD83C\uDDFE", "PARAGUAY": "\uD83C\uDDF5\uD83C\uDDFE", "BOLIVIA": "\uD83C\uDDE7\uD83C\uDDF4", "VENEZUELA": "\uD83C\uDDFB\uD83C\uDDEA", "ALEMANIA": "\uD83C\uDDE9\uD83C\uDDEA", "ESPANA": "\uD83C\uDDEA\uD83C\uDDF8", "ESPAÑA": "\uD83C\uDDEA\uD83C\uDDF8", "FRANCIA": "\uD83C\uDDEB\uD83C\uDDF7", "ITALIA": "\uD83C\uDDEE\uD83C\uDDF9", "PORTUGAL": "\uD83C\uDDF5\uD83C\uDDF9", "PAISES BAJOS": "\uD83C\uDDF3\uD83C\uDDF1", "BELGICA": "\uD83C\uDDE7\uD83C\uDDEA", "CROACIA": "\uD83C\uDDED\uD83C\uDDF7", "SERBIA": "\uD83C\uDDF7\uD83C\uDDF8", "SUIZA": "\uD83C\uDDE8\uD83C\uDDED", "DINAMARCA": "\uD83C\uDDE9\uD83C\uDDF0", "AUSTRIA": "\uD83C\uDDE6\uD83C\uDDF9", "UCRANIA": "\uD83C\uDDFA\uD83C\uDDE6", "TURQUIA": "\uD83C\uDDF9\uD83C\uDDF7", "HUNGRIA": "\uD83C\uDDED\uD83C\uDDFA", "REPUBLICA CHECA": "\uD83C\uDDE8\uD83C\uDDFF", "GRECIA": "\uD83C\uDDEC\uD83C\uDDF7", "JAPON": "\uD83C\uDDEF\uD83C\uDDF5", "REPUBLICA DE COREA": "\uD83C\uDDF0\uD83C\uDDF7", "COREA DEL SUR": "\uD83C\uDDF0\uD83C\uDDF7", "AUSTRALIA": "\uD83C\uDDE6\uD83C\uDDFA", "IRAN": "\uD83C\uDDEE\uD83C\uDDF7", "ARABIA SAUDITA": "\uD83C\uDDF8\uD83C\uDDE6", "QATAR": "\uD83C\uDDF6\uD83C\uDDE6", "MARRUECOS": "\uD83C\uDDF2\uD83C\uDDE6", "SENEGAL": "\uD83C\uDDF8\uD83C\uDDF3", "GHANA": "\uD83C\uDDEC\uD83C\uDDED", "CAMERUN": "\uD83C\uDDE8\uD83C\uDDF2", "NIGERIA": "\uD83C\uDDF3\uD83C\uDDEC", "TUNEZ": "\uD83C\uDDF9\uD83C\uDDF3", "SUDAFRICA": "\uD83C\uDDFF\uD83C\uDDE6", "EGIPTO": "\uD83C\uDDEA\uD83C\uDDEC", "COSTA RICA": "\uD83C\uDDE8\uD83C\uDDF7", "PANAMA": "\uD83C\uDDF5\uD83C\uDDE6", "HONDURAS": "\uD83C\uDDED\uD83C\uDDF3", "JAMAICA": "\uD83C\uDDEF\uD83C\uDDF2", "INDONESIA": "\uD83C\uDDEE\uD83C\uDDE9", "NUEVA ZELANDA": "\uD83C\uDDF3\uD83C\uDDFF", "GALES": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73\uDB40\uDC7F", "ESCOCIA": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F", "INGLATERRA": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F", "POLONIA": "\uD83C\uDDF5\uD83C\uDDF1", "RUMANIA": "\uD83C\uDDF7\uD83C\uDDF4", "ESLOVENIA": "\uD83C\uDDF8\uD83C\uDDEE", "ESLOVAQUIA": "\uD83C\uDDF8\uD83C\uDDF0", "ALBANIA": "\uD83C\uDDE6\uD83C\uDDF1", "ARGELIA": "\uD83C\uDDE9\uD83C\uDDFF", "COSTA DE MARFIL": "\uD83C\uDDE8\uD83C\uDDEE", "NORUEGA": "\uD83C\uDDF3\uD83C\uDDF4", "SUECIA": "\uD83C\uDDF8\uD83C\uDDEA", "IRLANDA": "\uD83C\uDDEE\uD83C\uDDEA", "TRINIDAD Y TOBAGO": "\uD83C\uDDF9\uD83C\uDDF9", "EL SALVADOR": "\uD83C\uDDF8\uD83C\uDDFB", "GUATEMALA": "\uD83C\uDDEC\uD83C\uDDF9",
-  "BOSNIA Y HERZEGOVINA": "\uD83C\uDDE7\uD83C\uDDE6", "CABO VERDE": "\uD83C\uDDE8\uD83C\uDDFB", "JORDANIA": "\uD83C\uDDEF\uD83C\uDDF4", "CURAZAO": "\uD83C\uDDE8\uD83C\uDDFC",
-  "HAITI": "\uD83C\uDDED\uD83C\uDDF9", "IRAK": "\uD83C\uDDEE\uD83C\uDDF6", "UZBEKISTAN": "\uD83C\uDDFA\uD83C\uDDFF", "RD CONGO": "\uD83C\uDDE8\uD83C\uDDE9"
-};
+const FLAGS = { "MEXICO": "\uD83C\uDDF2\uD83C\uDDFD", "ESTADOS UNIDOS": "\uD83C\uDDFA\uD83C\uDDF8", "CANADA": "\uD83C\uDDE8\uD83C\uDDE6", "BRASIL": "\uD83C\uDDE7\uD83C\uDDF7", "ARGENTINA": "\uD83C\uDDE6\uD83C\uDDF7", "ECUADOR": "\uD83C\uDDEA\uD83C\uDDE8", "COLOMBIA": "\uD83C\uDDE8\uD83C\uDDF4", "PERU": "\uD83C\uDDF5\uD83C\uDDEA", "CHILE": "\uD83C\uDDE8\uD83C\uDDF1", "URUGUAY": "\uD83C\uDDFA\uD83C\uDDFE", "PARAGUAY": "\uD83C\uDDF5\uD83C\uDDFE", "BOLIVIA": "\uD83C\uDDE7\uD83C\uDDF4", "VENEZUELA": "\uD83C\uDDFB\uD83C\uDDEA", "ALEMANIA": "\uD83C\uDDE9\uD83C\uDDEA", "ESPANA": "\uD83C\uDDEA\uD83C\uDDF8", "ESPAÑA": "\uD83C\uDDEA\uD83C\uDDF8", "FRANCIA": "\uD83C\uDDEB\uD83C\uDDF7", "ITALIA": "\uD83C\uDDEE\uD83C\uDDF9", "PORTUGAL": "\uD83C\uDDF5\uD83C\uDDF9", "PAISES BAJOS": "\uD83C\uDDF3\uD83C\uDDF1", "BELGICA": "\uD83C\uDDE7\uD83C\uDDEA", "CROACIA": "\uD83C\uDDED\uD83C\uDDF7", "SERBIA": "\uD83C\uDDF7\uD83C\uDDF8", "SUIZA": "\uD83C\uDDE8\uD83C\uDDED", "DINAMARCA": "\uD83C\uDDE9\uD83C\uDDF0", "AUSTRIA": "\uD83C\uDDE6\uD83C\uDDF9", "UCRANIA": "\uD83C\uDDFA\uD83C\uDDE6", "TURQUIA": "\uD83C\uDDF9\uD83C\uDDF7", "HUNGRIA": "\uD83C\uDDED\uD83C\uDDFA", "REPUBLICA CHECA": "\uD83C\uDDE8\uD83C\uDDFF", "GRECIA": "\uD83C\uDDEC\uD83C\uDDF7", "JAPON": "\uD83C\uDDEF\uD83C\uDDF5", "REPUBLICA DE COREA": "\uD83C\uDDF0\uD83C\uDDF7", "COREA DEL SUR": "\uD83C\uDDF0\uD83C\uDDF7", "AUSTRALIA": "\uD83C\uDDE6\uD83C\uDDFA", "IRAN": "\uD83C\uDDEE\uD83C\uDDF7", "ARABIA SAUDITA": "\uD83C\uDDF8\uD83C\uDDE6", "QATAR": "\uD83C\uDDF6\uD83C\uDDE6", "MARRUECOS": "\uD83C\uDDF2\uD83C\uDDE6", "SENEGAL": "\uD83C\uDDF8\uD83C\uDDF3", "GHANA": "\uD83C\uDDEC\uD83C\uDDED", "CAMERUN": "\uD83C\uDDE8\uD83C\uDDF2", "NIGERIA": "\uD83C\uDDF3\uD83C\uDDEC", "TUNEZ": "\uD83C\uDDF9\uD83C\uDDF3", "SUDAFRICA": "\uD83C\uDDFF\uD83C\uDDE6", "EGIPTO": "\uD83C\uDDEA\uD83C\uDDEC", "COSTA RICA": "\uD83C\uDDE8\uD83C\uDDF7", "PANAMA": "\uD83C\uDDF5\uD83C\uDDE6", "HONDURAS": "\uD83C\uDDED\uD83C\uDDF3", "JAMAICA": "\uD83C\uDDEF\uD83C\uDDF2", "INDONESIA": "\uD83C\uDDEE\uD83C\uDDE9", "NUEVA ZELANDA": "\uD83C\uDDF3\uD83C\uDDFF", "GALES": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73\uDB40\uDC7F", "ESCOCIA": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F", "INGLATERRA": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F", "POLONIA": "\uD83C\uDDF5\uD83C\uDDF1", "RUMANIA": "\uD83C\uDDF7\uD83C\uDDF4", "ESLOVENIA": "\uD83C\uDDF8\uD83C\uDDEE", "ESLOVAQUIA": "\uD83C\uDDF8\uD83C\uDDF0", "ALBANIA": "\uD83C\uDDE6\uD83C\uDDF1", "ARGELIA": "\uD83C\uDDE9\uD83C\uDDFF", "COSTA DE MARFIL": "\uD83C\uDDE8\uD83C\uDDEE", "NORUEGA": "\uD83C\uDDF3\uD83C\uDDF4", "SUECIA": "\uD83C\uDDF8\uD83C\uDDEA", "IRLANDA": "\uD83C\uDDEE\uD83C\uDDEA", "TRINIDAD Y TOBAGO": "\uD83C\uDDF9\uD83C\uDDF9", "EL SALVADOR": "\uD83C\uDDF8\uD83C\uDDFB", "GUATEMALA": "\uD83C\uDDEC\uD83C\uDDF9" };
 function flag(n) { return FLAGS[(n || '').toUpperCase()] || '\uD83C\uDFF3\uFE0F'; }
 
 async function fetchDatum(collection, method, body, id, query) {
@@ -54,9 +20,8 @@ async function fetchDatum(collection, method, body, id, query) {
 }
 
 export default async function handler(req) {
-  const url = getRequestUrl(req);
+  const url = new URL(req.url);
   const userId = url.searchParams.get('user_id') || 'GUEST';
-  const executionId = url.searchParams.get('executionId') || '';
 
   if (req.method === 'POST') {
     try {
@@ -87,18 +52,10 @@ export default async function handler(req) {
   }
 
   let rawMatches = [];
-  let hoy;
   try {
-    const [dataMatches, fechaSim] = await Promise.all([
-      fetchDatum('pbc_631836067', 'GET', null, '', ''),
-      fetchFechaTorneoDesdeJelou()
-    ]);
+    const dataMatches = await fetchDatum('pbc_631836067', 'GET', null, '', '');
     rawMatches = Array.isArray(dataMatches) ? dataMatches : (dataMatches.items || []);
-    hoy = fechaSim;
-  } catch (e) {
-    rawMatches = [];
-    hoy = await fetchFechaTorneoDesdeJelou();
-  }
+  } catch (e) { rawMatches = []; }
 
   let userPredictions = [];
   if (userId !== 'GUEST') {
@@ -108,8 +65,8 @@ export default async function handler(req) {
     } catch (e) { }
   }
 
-  const FECHA_CORTE = "2026-06-11";
-  const isFrozenGlobal = hoy >= FECHA_CORTE;
+  const paramFecha = url.searchParams.get('fecha');
+  const fechaSimulada = paramFecha || "2026-06-11";
 
   const groups = {};
   rawMatches.forEach(function (m) {
@@ -117,46 +74,29 @@ export default async function handler(req) {
     if (g.length > 1) return;
     if (!groups[g]) groups[g] = [];
     const up = userPredictions.find(function (pr) { return pr.match_id === m.id_partido; });
-    const hasRealResult = hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante);
-    const hasPrediction = !!(up && parseDatumScore(up.pronostico_local) !== null &&
-      parseDatumScore(up.pronostico_visitante) !== null);
-
-    const glN = parseDatumScore(m.resulltado_local);
-    const gvN = parseDatumScore(m.resultado_visitante);
-    const displayLocal = hasRealResult ? String(glN) : (hasPrediction ? String(parseDatumScore(up.pronostico_local)) : "");
-    const displayVisitante = hasRealResult ? String(gvN) : (hasPrediction ? String(parseDatumScore(up.pronostico_visitante)) : "");
-
+    const isLocked = m.fecha < fechaSimulada;
     groups[g].push({
       id: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
-      fecha: m.fecha, real_l: hasRealResult ? glN : null, real_v: hasRealResult ? gvN : null,
+      fecha: m.fecha, real_l: m.resulltado_local || 0, real_v: m.resultado_visitante || 0,
       pred_l: up ? up.pronostico_local : null, pred_v: up ? up.pronostico_visitante : null,
-      display_l: displayLocal, display_v: displayVisitante,
-      hasReal: hasRealResult, hasPred: hasPrediction,
-      locked: isFrozenGlobal
+      locked: isLocked
     });
   });
   const groupKeys = Object.keys(groups).sort();
 
   let groupsHtml = '';
   groupKeys.forEach(function (gk) {
-    const totalMatches = groups[gk].length;
-    const predictedMatches = groups[gk].filter(function (m) { return m.hasPred; }).length;
-    const progressPct = totalMatches > 0 ? Math.round((predictedMatches / totalMatches) * 100) : 0;
     let matchHtml = '';
     groups[gk].forEach(function (m) {
-      const valL = m.display_l;
-      const valV = m.display_v;
+      let valL = '', valV = '';
+      if (m.locked) { valL = m.real_l; valV = m.real_v; }
+      else { valL = m.pred_l !== null ? m.pred_l : ''; valV = m.pred_v !== null ? m.pred_v : ''; }
       const lockClass = m.locked ? 'locked' : '';
       const lockData = m.locked ? "data-locked='true'" : "";
-      const st = m.locked ? ("<span class='lock-badge'>" + (m.hasReal ? "FINALIZADO" : "CONGELADO") + "</span>") : "";
-      let subline = "";
-      if (m.locked && m.hasPred) {
-        subline = "<div class='pred-note'>PRONÓSTICO: " + m.pred_l + " - " + m.pred_v + "</div>";
-      }
+      const st = m.locked ? "<span class='lock-badge'>FIN</span>" : "";
 
-      var existingPredAttr = m.hasPred ? "1" : "0";
       matchHtml +=
-        "<div class='match-row' " + lockData + " data-existing-pred='" + existingPredAttr + "' data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
+        "<div class='match-row' " + lockData + " data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
         "<div class='match-meta'><span>" + m.fecha + "</span> " + st + "</div>" +
         "<div class='match-body'>" +
         "<div class='team-side'>" +
@@ -179,13 +119,12 @@ export default async function handler(req) {
         "<div class='t-name'>" + m.visitante + "</div>" +
         "</div>" +
         "</div>" +
-        subline +
         "</div>";
     });
 
     groupsHtml +=
       "<div class='group-block'>" +
-      "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\"><span class='gh-title'>GRUPO " + gk + "</span><span class='gh-progress'>" + progressPct + "%</span></div>" +
+      "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\">GRUPO " + gk + "</div>" +
       "<div class='group-content'>" + matchHtml + "</div>" +
       "</div>";
   });
@@ -199,10 +138,8 @@ export default async function handler(req) {
     .badge-26{background:var(--teal);color:var(--black);font-weight:900;font-size:14px;padding:4px 8px;margin-bottom:12px;display:inline-block}
     h1{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:.9;letter-spacing:-2px}
     .group-block{border:2px solid var(--white);margin-bottom:16px;background:var(--black)}
-    .group-header{font-family:'Archivo Black';font-size:28px;padding:16px;padding-right:56px;background:var(--white);color:var(--black);cursor:pointer;position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .group-header{font-family:'Archivo Black';font-size:28px;padding:16px;background:var(--white);color:var(--black);cursor:pointer;position:relative}
     .group-header::after{content:'+';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-weight:900;font-size:32px}
-    .gh-title{line-height:1}
-    .gh-progress{font-family:'Archivo Black';font-size:16px;line-height:1;background:var(--black);color:var(--white);padding:4px 8px;letter-spacing:0}
     .group-block.open .group-header{background:var(--magenta);color:var(--white)}
     .group-block.open .group-header::after{content:'-'}
     .group-content{display:none;padding:0}
@@ -210,7 +147,6 @@ export default async function handler(req) {
     .match-row{border-top:2px solid var(--white);padding:16px 12px}
     .match-meta{font-size:10px;font-weight:800;color:rgba(255,255,255,.6);display:flex;justify-content:space-between;margin-bottom:12px;letter-spacing:1px}
     .lock-badge{background:var(--purple);color:var(--white);padding:2px 6px;font-size:9px}
-    .pred-note{margin-top:8px;font-size:10px;color:rgba(255,255,255,.55);font-weight:700;letter-spacing:.4px}
     .match-body{display:flex;align-items:center;justify-content:space-between;gap:4px}
     .team-side{flex:1;display:flex;flex-direction:column;align-items:flex-start;min-width:0;overflow:hidden}
     .team-side.right{align-items:flex-end}
@@ -236,42 +172,16 @@ export default async function handler(req) {
   `;
 
   const jsCode =
-    'var IS_FROZEN_GLOBAL=' + (isFrozenGlobal ? 'true' : 'false') + ';' +
-    'let callbackSent=false;' +
-    'document.addEventListener("visibilitychange",function(){' +
-    'if(document.visibilityState==="hidden"&&!callbackSent){' +
-    'callbackSent=true;' +
-    'var exId=new URLSearchParams(window.location.search).get("executionId")||' + JSON.stringify(executionId) + ';' +
-    'var cbBody={executionId:exId,success:true,data:{action:"volver"}};' +
-    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
-    '}' +
-    '});' +
-    'function step(btn,amount){var row=btn.closest(".match-row");var input=btn.parentElement.querySelector("input");var raw=String(input.value).trim();var val=parseInt(raw,10);if(isNaN(val)){if(amount>0)val=1;else return;}else{val+=amount;}if(val<0)val=0;if(val>20)val=20;if(row)row.setAttribute("data-dirty","1");input.value=val;}' +
-    'function summaryForCallback(payload){' +
-    'var MAX=1024;var out=[];var i,trial,s;' +
-    'for(i=0;i<payload.length;i++){' +
-    'trial=out.concat([payload[i]]);' +
-    's=JSON.stringify(trial);' +
-    'if(s.length>MAX)break;' +
-    'out.push(payload[i]);' +
-    '}' +
-    'while(JSON.stringify(out).length>MAX&&out.length>0)out.pop();' +
-    'return out;' +
-    '}' +
+    'var firstGroup=document.querySelector(".group-block");if(firstGroup)firstGroup.classList.add("open");' +
+    'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
     'function save(){' +
     'var btn=document.getElementById("btnSave");btn.innerHTML="GUARDANDO...";' +
-    'if(IS_FROZEN_GLOBAL){btn.innerHTML="CONGELADO";setTimeout(function(){btn.innerHTML="GUARDAR TODO";},900);return;}' +
     'var payload=[];' +
     'document.querySelectorAll(".match-row").forEach(function(row){' +
     'if(row.getAttribute("data-locked")==="true")return;' +
     'var valL=row.querySelector(".input-local").value;' +
     'var valV=row.querySelector(".input-visitor").value;' +
-    'if(valL===""||valV==="")return;' +
-    'var existing=row.getAttribute("data-existing-pred")==="1";' +
-    'var dirty=row.getAttribute("data-dirty")==="1";' +
-    'var z=(String(valL)==="0"&&String(valV)==="0");' +
-    'if(!existing&&!dirty&&z)return;' +
-    'payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL,10),visitor_score:parseInt(valV,10),locked:false});' +
+    'if(valL!==""&&valV!==""){payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL),visitor_score:parseInt(valV),locked:false});}' +
     '});' +
     'if(payload.length===0){btn.innerHTML="GUARDAR TODO";return;}' +
     'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
@@ -280,8 +190,7 @@ export default async function handler(req) {
     '.then(function(res){' +
     '  if(res.ok){' +
     '    var t=document.getElementById("toast");t.classList.add("show");' +
-    '    callbackSent=true;' +
-    '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:summaryForCallback(payload)}};' +
+    '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
     '    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
     '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/13239183195";},1500); });' +
     '  }else{alert("Error al guardar.");}' +
@@ -290,8 +199,6 @@ export default async function handler(req) {
     '.finally(function(){btn.innerHTML="GUARDAR TODO";});' +
     '}' +
     'window.volver=function(){' +
-    '  if(callbackSent)return;' +
-    '  callbackSent=true;' +
     '  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
     '  var cbBody={executionId:exId,success:true,data:{action:"volver"}}; ' +
     '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +

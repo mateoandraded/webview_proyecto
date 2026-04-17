@@ -1,5 +1,6 @@
 import { parseDatumScore } from '../lib/datumScore.js';
 import { getRequestUrl } from '../lib/requestUrl.js';
+import { buildRealBracketSets, teamInPhase } from '../lib/realBracketSets.js';
 
 export const config = {
   runtime: 'edge',
@@ -7,6 +8,30 @@ export const config = {
 
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
+
+const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
+
+function fallbackHoyYMD() {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === 'year').value;
+  const mo = parts.find((p) => p.type === 'month').value;
+  const d = parts.find((p) => p.type === 'day').value;
+  return `${y}-${mo}-${d}`;
+}
+
+async function fetchFechaTorneoDesdeJelou() {
+  try {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(JELOU_ESTADO_TORNEO_URL, { method: 'GET', signal: ctrl.signal, headers: { Accept: 'application/json' } });
+    clearTimeout(tid);
+    if (!res.ok) return fallbackHoyYMD();
+    const data = await res.json();
+    const f = data && data.fecha_simulada_hoy;
+    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
+  } catch (e) { /* */ }
+  return fallbackHoyYMD();
+}
 
 const FLAGS = {"MEXICO":"🇲🇽","ESTADOS UNIDOS":"🇺🇸","CANADA":"🇨🇦","BRASIL":"🇧🇷","ARGENTINA":"🇦🇷","ECUADOR":"🇪🇨","COLOMBIA":"🇨🇴","PERU":"🇵🇪","CHILE":"🇨🇱","URUGUAY":"🇺🇾","PARAGUAY":"🇵🇾","BOLIVIA":"🇧🇴","VENEZUELA":"🇻🇪","ALEMANIA":"🇩🇪","ESPANA":"🇪🇸","ESPAÑA":"🇪🇸","FRANCIA":"🇫🇷","ITALIA":"🇮🇹","PORTUGAL":"🇵🇹","PAISES BAJOS":"🇳🇱","BELGICA":"🇧🇪","CROACIA":"🇭🇷","SERBIA":"🇷🇸","SUIZA":"🇨🇭","DINAMARCA":"🇩🇰","AUSTRIA":"🇦🇹","UCRANIA":"🇺🇦","TURQUIA":"🇹🇷","HUNGRIA":"🇭🇺","REPUBLICA CHECA":"🇨🇿","GRECIA":"🇬🇷","JAPON":"🇯🇵","REPUBLICA DE COREA":"🇰🇷","COREA DEL SUR":"🇰🇷","AUSTRALIA":"🇦🇺","IRAN":"🇮🇷","ARABIA SAUDITA":"🇸🇦","QATAR":"🇶🇦","MARRUECOS":"🇲🇦","SENEGAL":"🇸🇳","GHANA":"🇬🇭","CAMERUN":"🇨🇲","NIGERIA":"🇳🇬","TUNEZ":"🇹🇳","SUDAFRICA":"🇿🇦","EGIPTO":"🇪🇬","COSTA RICA":"🇨🇷","PANAMA":"🇵🇦","HONDURAS":"🇭🇳","JAMAICA":"🇯🇲","INDONESIA":"🇮🇩","NUEVA ZELANDA":"🇳🇿","GALES":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","ESCOCIA":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","INGLATERRA":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","POLAND":"🇵🇱","POLONIA":"🇵🇱","RUMANIA":"🇷🇴","ESLOVENIA":"🇸🇮","ESLOVAQUIA":"🇸🇰","ALBANIA":"🇦🇱","ARGELIA":"🇩🇿","MALI":"🇲🇱","COSTA DE MARFIL":"🇨🇮","CONGO":"🇨🇬","UZBEKISTAN":"🇺🇿","CHINA":"🇨🇳","INDIA":"🇮🇳","BAHREIN":"🇧🇭","IRAK":"🇮🇶","TRINIDAD Y TOBAGO":"🇹🇹","EL SALVADOR":"🇸🇻","GUATEMALA":"🇬🇹","REPUBLICA DOMINICANA":"🇩🇴","HAITI":"🇭🇹","CURACAO":"🇨🇼","SURINAM":"🇸🇷","NORUEGA":"🇳🇴","SUECIA":"🇸🇪","FINLANDIA":"🇫🇮","ISLANDIA":"🇮🇸","IRLANDA":"🇮🇪"};
 function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
@@ -20,6 +45,12 @@ export default async function handler(req) {
   const url = getRequestUrl(req);
   const userId = url.searchParams.get('user_id') || 'GUEST';
   const executionId = url.searchParams.get('executionId') || '';
+
+  const [fechaServidor, rawMatches] = await Promise.all([
+    fetchFechaTorneoDesdeJelou(),
+    fetchDB('pbc_631836067', '').catch(() => [])
+  ]);
+  const reality = buildRealBracketSets(rawMatches, fechaServidor);
 
   let profile = { nombre: 'Invitado', apellido: '', total_puntos: 0, puntos_goles: 0, puntos_brackets: 0, pronosticos_correctos: 0 };
   if (userId !== 'GUEST') {
@@ -88,7 +119,13 @@ export default async function handler(req) {
       const teams = bracket[ph.key] || [];
       if (teams.length > 0) {
         let chips = '';
-        teams.forEach(t => { chips += "<span class='chip'>" + flag(t) + " " + t + "</span>"; });
+        teams.forEach(t => {
+          let extra = ' chip-neutral';
+          if (reality.torneoIniciado) {
+            extra = teamInPhase(t, ph.key, reality) ? ' chip-hit' : ' chip-miss';
+          }
+          chips += "<span class='chip" + extra + "'>" + flag(t) + " " + t + "</span>";
+        });
         bracketHtml +=
           "<div class='bracket-phase'>" +
             "<div class='phase-label'>" + ph.label + "</div>" +
@@ -103,10 +140,21 @@ export default async function handler(req) {
       { key: 'tercer_lugar', label: 'TERCERO', cls: 'podium-third' }
     ];
     let podiumHtml = '';
+    const realMap = {
+      campeon: reality.campeonReal,
+      subcampeon: reality.subcampeonReal,
+      tercer_lugar: reality.terceroReal,
+      cuarto_lugar: reality.cuartoReal
+    };
     podiumItems.forEach(pi => {
       const val = bracket[pi.key];
       if (val) {
-        podiumHtml += "<div class='podium-item " + pi.cls + "'><div class='p-label'>" + pi.label + "</div><div class='p-team'>" + flag(val) + " " + val + "</div></div>";
+        let pExtra = ' podium-neutral';
+        if (reality.torneoIniciado) {
+          const ok = realMap[pi.key] && val === realMap[pi.key];
+          pExtra = ok ? ' podium-hit' : ' podium-miss';
+        }
+        podiumHtml += "<div class='podium-item " + pi.cls + pExtra + "'><div class='p-label'>" + pi.label + "</div><div class='p-team'>" + flag(val) + " " + val + "</div></div>";
       }
     });
     if (podiumHtml) {
@@ -208,9 +256,15 @@ export default async function handler(req) {
     .bracket-phase { margin-bottom: 24px; }
     .phase-label { font-family: 'Archivo Black'; font-size: 16px; color: var(--teal); margin-bottom: 8px; }
     .chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
-    .chip { background: var(--dim); padding: 8px 12px; font-weight: 800; font-size: 12px; letter-spacing: -0.5px; border: 1px solid rgba(255,255,255,0.1); }
+    .chip { padding: 8px 12px; font-weight: 800; font-size: 12px; letter-spacing: -0.5px; border: 1px solid rgba(255,255,255,0.1); }
+    .chip-neutral { background: var(--dim); color: var(--white); }
+    .chip-hit { background: var(--teal); color: var(--black); border-color: var(--teal); }
+    .chip-miss { background: rgba(255,0,85,0.14); color: rgba(255,255,255,0.72); border-color: rgba(255,0,85,0.4); }
     .podium-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
-    .podium-item { padding: 16px; }
+    .podium-item { padding: 16px; border: 2px solid transparent; }
+    .podium-neutral { }
+    .podium-hit { box-shadow: inset 0 0 0 2px var(--lime); }
+    .podium-miss { opacity: 0.55; filter: grayscale(0.2); }
     .podium-champ { background: var(--lime); color: var(--black); grid-column: 1 / -1; }
     .podium-sub { background: var(--purple); color: var(--white); }
     .podium-third { background: var(--teal); color: var(--black); }

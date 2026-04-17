@@ -7,6 +7,50 @@ export const config = {
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
 
+const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
+const FECHA_LIMITE_PRONOSTICOS = '2026-06-10';
+
+function fallbackHoyYMD() {
+  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  var y = parts.find(function (p) { return p.type === 'year'; }).value;
+  var mo = parts.find(function (p) { return p.type === 'month'; }).value;
+  var d = parts.find(function (p) { return p.type === 'day'; }).value;
+  return y + '-' + mo + '-' + d;
+}
+
+async function fetchFechaTorneoDesdeJelou() {
+  try {
+    var ctrl = new AbortController();
+    var tid = setTimeout(function () { ctrl.abort(); }, 5000);
+    var res = await fetch(JELOU_ESTADO_TORNEO_URL, {
+      method: 'GET',
+      signal: ctrl.signal,
+      headers: { Accept: 'application/json' }
+    });
+    clearTimeout(tid);
+    if (!res.ok) return fallbackHoyYMD();
+    var data = await res.json();
+    var f = data && data.fecha_simulada_hoy;
+    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
+  } catch (e) { /* */ }
+  return fallbackHoyYMD();
+}
+
+function bracketPayloadsEqual(p, existing) {
+  var arrKeys = ['dieciseisavos', 'octavos', 'cuartos', 'semis'];
+  var i, k;
+  for (i = 0; i < arrKeys.length; i++) {
+    k = arrKeys[i];
+    if (JSON.stringify(p[k] || []) !== JSON.stringify(existing[k] || [])) return false;
+  }
+  var strKeys = ['campeon', 'subcampeon', 'tercer_lugar', 'cuarto_lugar'];
+  for (i = 0; i < strKeys.length; i++) {
+    k = strKeys[i];
+    if (String(p[k] || '') !== String(existing[k] || '')) return false;
+  }
+  return true;
+}
+
 const FLAGS_MAP = {
   "MEXICO": "\uD83C\uDDF2\uD83C\uDDFD", "ESTADOS UNIDOS": "\uD83C\uDDFA\uD83C\uDDF8", "CANADA": "\uD83C\uDDE8\uD83C\uDDE6", "BRASIL": "\uD83C\uDDE7\uD83C\uDDF7",
   "ARGENTINA": "\uD83C\uDDE6\uD83C\uDDF7", "ECUADOR": "\uD83C\uDDEA\uD83C\uDDE8", "COLOMBIA": "\uD83C\uDDE8\uD83C\uDDF4", "URUGUAY": "\uD83C\uDDFA\uD83C\uDDFE",
@@ -62,6 +106,10 @@ export default async function handler(req) {
 
   if (req.method === 'POST') {
     try {
+      var fechaPost = await fetchFechaTorneoDesdeJelou();
+      if (fechaPost > FECHA_LIMITE_PRONOSTICOS) {
+        return new Response(JSON.stringify({ error: 'Pronósticos cerrados' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+      }
       const data = await req.json();
       let existingItems = [];
       try {
@@ -82,16 +130,21 @@ export default async function handler(req) {
         cuarto_lugar: data.cuarto_lugar || ""
       };
       if (existingItems.length > 0) {
+        if (bracketPayloadsEqual(payload, existingItems[0])) {
+          return new Response(JSON.stringify({ success: true, unchanged: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
         await fetchDatum('pronosticos_brackets', 'PATCH', payload, existingItems[0].id, '');
       } else {
         await fetchDatum('pronosticos_brackets', 'POST', payload, '', '');
       }
-      return new Response(JSON.stringify({ success: true }), { status: 200 });
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     } catch (err) {
       return new Response(JSON.stringify({ error: err.message }), { status: 500 });
     }
   }
 
+  var fechaServidor = await fetchFechaTorneoDesdeJelou();
+  var puedeEditar = fechaServidor <= FECHA_LIMITE_PRONOSTICOS;
   let uBracket = {};
   if (userId !== 'GUEST') {
     try {
@@ -111,6 +164,10 @@ export default async function handler(req) {
     :root{--black:#000;--white:#fff;--lime:#C9FF24;--mag:#FF0055;--teal:#00FFCC;--purple:#6200EA;--dim:#181818;--dim2:#222;--bd:rgba(255,255,255,.12)}
     *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
     body{background:var(--black);color:var(--white);font-family:Inter,sans-serif;padding-bottom:140px}
+    body.bracket-readonly .chip{pointer-events:none;opacity:.52;filter:grayscale(.12)}
+    body.bracket-readonly .chip.sel{opacity:.62;border-color:rgba(255,255,255,.2)}
+    body.bracket-readonly .btn-next-phase{pointer-events:none;opacity:.42}
+    body.bracket-readonly .phase-tab{cursor:default;opacity:.85}
     .app{max-width:450px;margin:auto;padding:0 16px}
     .header-box{margin:40px 0 20px;border-bottom:4px solid var(--white);padding-bottom:10px}
     .badge-26{display:inline-block;background:var(--purple);color:var(--white);font-weight:900;font-size:14px;padding:4px 10px;margin-bottom:12px}
@@ -157,7 +214,7 @@ export default async function handler(req) {
     .toast.show{transform:translateX(-50%) translateY(0)}
   </style>
 </head>
-<body>
+<body${puedeEditar ? '' : ' class="bracket-readonly"'}>
   <div class="toast" id="toast">¡CLASIFICADOS GUARDADOS!</div>
   <div class="app">
     <div class="header-box">
@@ -187,6 +244,7 @@ export default async function handler(req) {
     var GROUPS=${JSON.stringify(GROUP_TEAMS)};
     var FLAGS=${JSON.stringify(FLAGS_MAP)};
     var SAVED=${JSON.stringify(uBracket)};
+    var PUEDE_EDITAR=${JSON.stringify(puedeEditar)};
     var SERVER_EXECUTION_ID=${JSON.stringify(executionId)};
 
     var GROUP_ORDER = Object.keys(GROUPS).sort();
@@ -415,6 +473,7 @@ export default async function handler(req) {
     }
 
     function toggleGroupTeam(group, team){
+      if(!PUEDE_EDITAR) return;
       var picks = state.groups[group];
       var idx = picks.indexOf(team);
       if(idx >= 0){
@@ -436,6 +495,7 @@ export default async function handler(req) {
     }
 
     function toggleWinner(stage, matchId, team){
+      if(!PUEDE_EDITAR) return;
       if(!team) return;
       var map = state.winners[stage];
       var key = String(matchId);
@@ -450,6 +510,7 @@ export default async function handler(req) {
     }
 
     function pickPodio(k, t){
+      if(!PUEDE_EDITAR) return;
       if(state.podium[k] === t) state.podium[k] = "";
       else state.podium[k] = t;
       if(k === "campeon"){ if(state.podium.sub === t) state.podium.sub = ""; }
@@ -624,6 +685,10 @@ export default async function handler(req) {
     }
 
     function guardar(){
+      if(!PUEDE_EDITAR){
+        alert("Los pron\\u00F3sticos ya est\\u00E1n cerrados.");
+        return;
+      }
       var btn = document.getElementById("btnSave");
       btn.innerText = "GUARDANDO...";
       var payload = {
@@ -644,6 +709,10 @@ export default async function handler(req) {
         body:JSON.stringify(payload)
       })
       .then(function(r){
+        if(r.status === 403){
+          alert("Los pron\\u00F3sticos ya est\\u00E1n cerrados.");
+          return;
+        }
         if(r.ok){
           document.getElementById("toast").classList.add("show");
           callbackSent = true;

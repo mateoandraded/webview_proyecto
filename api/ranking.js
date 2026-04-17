@@ -1,3 +1,5 @@
+import { hasPairOfDatumScores, parseDatumScore, scoreEqDatum } from '../lib/datumScore.js';
+
 export const config = {
   runtime: 'edge',
 };
@@ -31,8 +33,8 @@ async function fetchFechaTorneoDesdeJelou() {
   return fallbackHoyYMD();
 }
 
-const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
-const BASE_URL_COLL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const API_KEY = process.env.API_KEY;
+const BASE_URL = process.env.BASE_URL;
 const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
 
 function esc(s) {
@@ -79,13 +81,9 @@ function normalizeMatchDate(fechaRaw) {
   return null;
 }
 
-/** Resultado real cargado en Datum (null/undefined/'' = aún no hay marcador oficial). */
+/** Resultado real cargado en Datum (null, texto vacío o no numérico = sin marcador). */
 function hasResultadoMarcado(m) {
-  var gl = m.gl;
-  var gv = m.gv;
-  if (gl === null || gl === undefined || gl === '') return false;
-  if (gv === null || gv === undefined || gv === '') return false;
-  return true;
+  return hasPairOfDatumScores(m.gl, m.gv);
 }
 
 function partidoPuedeCalificar(m, hoyStr) {
@@ -94,6 +92,42 @@ function partidoPuedeCalificar(m, hoyStr) {
   if (fd < FECHA_INICIO_TORNEO) return false;
   if (fd > hoyStr) return false;
   return hasResultadoMarcado(m);
+}
+
+function normalizeRondaLabel(r) {
+  return String(r == null ? '' : r).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isRoundOf32(r) {
+  var x = normalizeRondaLabel(r);
+  if (!x) return false;
+  if (x === 'round of 32' || x === 'r32') return true;
+  if (x === 'dieciseisavos' || x === '16avos') return true;
+  return x.indexOf('round of 32') !== -1;
+}
+
+function isRoundOf16(r) {
+  var x = normalizeRondaLabel(r);
+  if (!x) return false;
+  if (x === 'round of 16' || x === 'r16' || x === 'octavos') return true;
+  if (x === '8vos' || x === '1/8') return true;
+  return x.indexOf('round of 16') !== -1;
+}
+
+function isQuarterFinals(r) {
+  var x = normalizeRondaLabel(r);
+  if (!x) return false;
+  if (x === 'quarter-finals' || x === 'quarterfinals' || x === 'quarter finals' || x === 'cuartos') return true;
+  if (x === 'r8' || x === '1/4') return true;
+  return x.indexOf('quarter') !== -1;
+}
+
+function isSemiFinals(r) {
+  var x = normalizeRondaLabel(r);
+  if (!x) return false;
+  if (x === 'semi-finals' || x === 'semifinals' || x === 'semi finals' || x === 'semis') return true;
+  if (x === 'r4' || x === '1/2') return true;
+  return x.indexOf('semi-final') !== -1 || x.indexOf('semifinal') !== -1;
 }
 
 export default async function handler(req) {
@@ -121,34 +155,39 @@ export default async function handler(req) {
     fecha: m.fecha, ronda: m.Fase_o_Grupo, ganador: m.ganador_final
   }));
 
-  const real16 = new Set(); const real8 = new Set(); const real4 = new Set();
+  const real32 = new Set(); const real16 = new Set(); const real8 = new Set(); const real4 = new Set();
   let campeonReal = ''; let subcampeonReal = ''; let terceroReal = ''; let cuartoReal = '';
 
   // Determinar quienes jugaron fases (heurística basada en 'Fase_o_Grupo' u otro asumiendo estructura de Mundial 26)
   // Como la DB puede no tener la fase bien escrita, nos basamos en nombre.
   if (torneoIniciado) {
+    const r32M = mappedMatches.filter(function (m) {
+      return isRoundOf32(m.ronda) && partidoPuedeCalificar(m, hoy);
+    });
+    r32M.forEach(m => { real32.add(m.local); real32.add(m.visitante); });
     const r16M = mappedMatches.filter(function (m) {
-      return (String(m.ronda).toLowerCase() === 'round of 16' || String(m.ronda).toLowerCase() === 'octavos') && partidoPuedeCalificar(m, hoy);
+      return isRoundOf16(m.ronda) && partidoPuedeCalificar(m, hoy);
     });
     r16M.forEach(m => { real16.add(m.local); real16.add(m.visitante); });
     const r8M = mappedMatches.filter(function (m) {
-      return (String(m.ronda).toLowerCase() === 'quarter-finals' || String(m.ronda).toLowerCase() === 'cuartos') && partidoPuedeCalificar(m, hoy);
+      return isQuarterFinals(m.ronda) && partidoPuedeCalificar(m, hoy);
     });
     r8M.forEach(m => { real8.add(m.local); real8.add(m.visitante); });
     const r4M = mappedMatches.filter(function (m) {
-      return (String(m.ronda).toLowerCase() === 'semi-finals' || String(m.ronda).toLowerCase() === 'semis') && partidoPuedeCalificar(m, hoy);
+      return isSemiFinals(m.ronda) && partidoPuedeCalificar(m, hoy);
     });
     r4M.forEach(m => { real4.add(m.local); real4.add(m.visitante); });
 
     const finalM = mappedMatches.find(function (m) {
-      return String(m.ronda).toLowerCase() === 'final' && partidoPuedeCalificar(m, hoy);
+      return normalizeRondaLabel(m.ronda) === 'final' && partidoPuedeCalificar(m, hoy);
     });
     if (finalM) {
       campeonReal = finalM.ganador || '';
       subcampeonReal = (campeonReal === finalM.local) ? finalM.visitante : finalM.local;
     }
     const thirdM = mappedMatches.find(function (m) {
-      return String(m.ronda).toLowerCase().includes('third') && partidoPuedeCalificar(m, hoy);
+      var x = normalizeRondaLabel(m.ronda);
+      return (x.indexOf('third') !== -1 || x === 'tercer lugar' || x === '3er lugar' || x === '3º lugar') && partidoPuedeCalificar(m, hoy);
     });
     if (thirdM) {
       terceroReal = thirdM.ganador || '';
@@ -175,14 +214,14 @@ export default async function handler(req) {
       if (!match || !partidoPuedeCalificar(match, hoy)) return;
 
       let pt = 0;
-      if (p.pronostico_local === match.gl && p.pronostico_visitante === match.gv) { pt = 2; aciertos++; }
-      else if (p.pronostico_local === match.gl || p.pronostico_visitante === match.gv) { pt = 1; }
+      if (scoreEqDatum(p.pronostico_local, match.gl) && scoreEqDatum(p.pronostico_visitante, match.gv)) { pt = 2; aciertos++; }
+      else if (scoreEqDatum(p.pronostico_local, match.gl) || scoreEqDatum(p.pronostico_visitante, match.gv)) { pt = 1; }
       ptsGoles += pt;
 
       if (p.estado === 'PENDIENTE') {
         silentPatch('pbc_1944158292', p.id, {
           puntos_ganados: pt, estado: (pt === 2) ? 'GANADO_EXACTO' : (pt === 1 ? 'GANADO_PARCIAL' : 'PERDIDO'),
-          resultado_real_local: match.gl, resultado_real_visitante: match.gv
+          resultado_real_local: parseDatumScore(match.gl), resultado_real_visitante: parseDatumScore(match.gv)
         });
       }
     });
@@ -191,6 +230,7 @@ export default async function handler(req) {
     const b = brackets.find(br => br.user_id === pr.user_id);
     if (b) {
       const check = (arr, setRef, val) => { if (arr && Array.isArray(arr)) arr.forEach(t => { if (setRef.has(t)) ptsBrackets += val; }); };
+      check(b.dieciseisavos, real32, 1);
       check(b.octavos, real16, 2);
       check(b.cuartos, real8, 3);
       check(b.semis, real4, 3);

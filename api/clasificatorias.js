@@ -2,8 +2,8 @@ export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
-const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const API_KEY = process.env.API_KEY;
+const BASE_URL = process.env.BASE_URL;
 
 const FLAGS_MAP = {
   "MEXICO": "\uD83C\uDDF2\uD83C\uDDFD", "ESTADOS UNIDOS": "\uD83C\uDDFA\uD83C\uDDF8", "CANADA": "\uD83C\uDDE8\uD83C\uDDE6", "BRASIL": "\uD83C\uDDE7\uD83C\uDDF7",

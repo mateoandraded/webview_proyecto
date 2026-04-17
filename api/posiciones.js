@@ -1,9 +1,11 @@
+import { hasPairOfDatumScores, parseDatumScore } from '../lib/datumScore.js';
+
 export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
-const BASE_URL_COLL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const API_KEY = process.env.API_KEY;
+const BASE_URL = process.env.BASE_URL;
 const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
 
 const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
@@ -62,13 +64,13 @@ function buildStandings(allMatches, fechaSimulada) {
     const grp = m.Fase_o_Grupo || "X";
     if (grp.length > 1) return;
     
-    // Si no hay resultado o la fecha aún no llega en la simulación, no computamos puntos
-    if (m.resulltado_local === null || m.resulltado_local === undefined) return;
     if (m.fecha && m.fecha > fechaSimulada) return;
+    if (!hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante)) return;
 
     const l = m.equipo_local, v = m.equipo_visitante;
-    const rl = parseInt(m.resulltado_local);
-    const rv = parseInt(m.resultado_visitante);
+    const rl = parseDatumScore(m.resulltado_local);
+    const rv = parseDatumScore(m.resultado_visitante);
+    if (rl === null || rv === null) return;
 
     const tL = table[grp][l];
     const tV = table[grp][v];

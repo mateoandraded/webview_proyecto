@@ -1,3 +1,5 @@
+import { hasPairOfDatumScores, parseDatumScore } from '../lib/datumScore.js';
+
 export const config = {
   runtime: 'edge',
 };
@@ -30,8 +32,8 @@ async function fetchFechaTorneoDesdeJelou() {
   return fallbackHoyYMD();
 }
 
-const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
-const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const API_KEY = process.env.API_KEY;
+const BASE_URL = process.env.BASE_URL;
 
 const FLAGS = { "MEXICO": "\uD83C\uDDF2\uD83C\uDDFD", "ESTADOS UNIDOS": "\uD83C\uDDFA\uD83C\uDDF8", "CANADA": "\uD83C\uDDE8\uD83C\uDDE6", "BRASIL": "\uD83C\uDDE7\uD83C\uDDF7", "ARGENTINA": "\uD83C\uDDE6\uD83C\uDDF7", "ECUADOR": "\uD83C\uDDEA\uD83C\uDDE8", "COLOMBIA": "\uD83C\uDDE8\uD83C\uDDF4", "PERU": "\uD83C\uDDF5\uD83C\uDDEA", "CHILE": "\uD83C\uDDE8\uD83C\uDDF1", "URUGUAY": "\uD83C\uDDFA\uD83C\uDDFE", "PARAGUAY": "\uD83C\uDDF5\uD83C\uDDFE", "BOLIVIA": "\uD83C\uDDE7\uD83C\uDDF4", "VENEZUELA": "\uD83C\uDDFB\uD83C\uDDEA", "ALEMANIA": "\uD83C\uDDE9\uD83C\uDDEA", "ESPANA": "\uD83C\uDDEA\uD83C\uDDF8", "ESPAÑA": "\uD83C\uDDEA\uD83C\uDDF8", "FRANCIA": "\uD83C\uDDEB\uD83C\uDDF7", "ITALIA": "\uD83C\uDDEE\uD83C\uDDF9", "PORTUGAL": "\uD83C\uDDF5\uD83C\uDDF9", "PAISES BAJOS": "\uD83C\uDDF3\uD83C\uDDF1", "BELGICA": "\uD83C\uDDE7\uD83C\uDDEA", "CROACIA": "\uD83C\uDDED\uD83C\uDDF7", "SERBIA": "\uD83C\uDDF7\uD83C\uDDF8", "SUIZA": "\uD83C\uDDE8\uD83C\uDDED", "DINAMARCA": "\uD83C\uDDE9\uD83C\uDDF0", "AUSTRIA": "\uD83C\uDDE6\uD83C\uDDF9", "UCRANIA": "\uD83C\uDDFA\uD83C\uDDE6", "TURQUIA": "\uD83C\uDDF9\uD83C\uDDF7", "HUNGRIA": "\uD83C\uDDED\uD83C\uDDFA", "REPUBLICA CHECA": "\uD83C\uDDE8\uD83C\uDDFF", "GRECIA": "\uD83C\uDDEC\uD83C\uDDF7", "JAPON": "\uD83C\uDDEF\uD83C\uDDF5", "REPUBLICA DE COREA": "\uD83C\uDDF0\uD83C\uDDF7", "COREA DEL SUR": "\uD83C\uDDF0\uD83C\uDDF7", "AUSTRALIA": "\uD83C\uDDE6\uD83C\uDDFA", "IRAN": "\uD83C\uDDEE\uD83C\uDDF7", "ARABIA SAUDITA": "\uD83C\uDDF8\uD83C\uDDE6", "QATAR": "\uD83C\uDDF6\uD83C\uDDE6", "MARRUECOS": "\uD83C\uDDF2\uD83C\uDDE6", "SENEGAL": "\uD83C\uDDF8\uD83C\uDDF3", "GHANA": "\uD83C\uDDEC\uD83C\uDDED", "CAMERUN": "\uD83C\uDDE8\uD83C\uDDF2", "NIGERIA": "\uD83C\uDDF3\uD83C\uDDEC", "TUNEZ": "\uD83C\uDDF9\uD83C\uDDF3", "SUDAFRICA": "\uD83C\uDDFF\uD83C\uDDE6", "EGIPTO": "\uD83C\uDDEA\uD83C\uDDEC", "COSTA RICA": "\uD83C\uDDE8\uD83C\uDDF7", "PANAMA": "\uD83C\uDDF5\uD83C\uDDE6", "HONDURAS": "\uD83C\uDDED\uD83C\uDDF3", "JAMAICA": "\uD83C\uDDEF\uD83C\uDDF2", "INDONESIA": "\uD83C\uDDEE\uD83C\uDDE9", "NUEVA ZELANDA": "\uD83C\uDDF3\uD83C\uDDFF", "GALES": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73\uDB40\uDC7F", "ESCOCIA": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F", "INGLATERRA": "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67\uDB40\uDC7F", "POLONIA": "\uD83C\uDDF5\uD83C\uDDF1", "RUMANIA": "\uD83C\uDDF7\uD83C\uDDF4", "ESLOVENIA": "\uD83C\uDDF8\uD83C\uDDEE", "ESLOVAQUIA": "\uD83C\uDDF8\uD83C\uDDF0", "ALBANIA": "\uD83C\uDDE6\uD83C\uDDF1", "ARGELIA": "\uD83C\uDDE9\uD83C\uDDFF", "COSTA DE MARFIL": "\uD83C\uDDE8\uD83C\uDDEE", "NORUEGA": "\uD83C\uDDF3\uD83C\uDDF4", "SUECIA": "\uD83C\uDDF8\uD83C\uDDEA", "IRLANDA": "\uD83C\uDDEE\uD83C\uDDEA", "TRINIDAD Y TOBAGO": "\uD83C\uDDF9\uD83C\uDDF9", "EL SALVADOR": "\uD83C\uDDF8\uD83C\uDDFB", "GUATEMALA": "\uD83C\uDDEC\uD83C\uDDF9" };
 function flag(n) { return FLAGS[(n || '').toUpperCase()] || '\uD83C\uDFF3\uFE0F'; }
@@ -111,17 +113,18 @@ export default async function handler(req) {
     if (g.length > 1) return;
     if (!groups[g]) groups[g] = [];
     const up = userPredictions.find(function (pr) { return pr.match_id === m.id_partido; });
-    const hasRealResult = m.resulltado_local !== null && m.resulltado_local !== undefined &&
-      m.resultado_visitante !== null && m.resultado_visitante !== undefined;
-    const hasPrediction = !!(up && up.pronostico_local !== null && up.pronostico_local !== undefined &&
-      up.pronostico_visitante !== null && up.pronostico_visitante !== undefined);
+    const hasRealResult = hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante);
+    const hasPrediction = !!(up && parseDatumScore(up.pronostico_local) !== null &&
+      parseDatumScore(up.pronostico_visitante) !== null);
 
-    const displayLocal = hasRealResult ? m.resulltado_local : (hasPrediction ? up.pronostico_local : "");
-    const displayVisitante = hasRealResult ? m.resultado_visitante : (hasPrediction ? up.pronostico_visitante : "");
+    const glN = parseDatumScore(m.resulltado_local);
+    const gvN = parseDatumScore(m.resultado_visitante);
+    const displayLocal = hasRealResult ? String(glN) : (hasPrediction ? String(parseDatumScore(up.pronostico_local)) : "");
+    const displayVisitante = hasRealResult ? String(gvN) : (hasPrediction ? String(parseDatumScore(up.pronostico_visitante)) : "");
 
     groups[g].push({
       id: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
-      fecha: m.fecha, real_l: m.resulltado_local, real_v: m.resultado_visitante,
+      fecha: m.fecha, real_l: hasRealResult ? glN : null, real_v: hasRealResult ? gvN : null,
       pred_l: up ? up.pronostico_local : null, pred_v: up ? up.pronostico_visitante : null,
       display_l: displayLocal, display_v: displayVisitante,
       hasReal: hasRealResult, hasPred: hasPrediction,
@@ -239,7 +242,7 @@ export default async function handler(req) {
     'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
     '}' +
     '});' +
-    'function step(btn,amount){var row=btn.closest(".match-row");if(row)row.setAttribute("data-dirty","1");var input=btn.parentElement.querySelector("input");var val=parseInt(input.value,10);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
+    'function step(btn,amount){var row=btn.closest(".match-row");var input=btn.parentElement.querySelector("input");var raw=String(input.value).trim();var val=parseInt(raw,10);if(isNaN(val)){if(amount>0)val=1;else return;}else{val+=amount;}if(val<0)val=0;if(val>20)val=20;if(row)row.setAttribute("data-dirty","1");input.value=val;}' +
     'function summaryForCallback(payload){' +
     'var MAX=1024;var out=[];var i,trial,s;' +
     'for(i=0;i<payload.length;i++){' +

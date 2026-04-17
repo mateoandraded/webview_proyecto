@@ -1,9 +1,11 @@
+import { parseDatumScore } from '../lib/datumScore.js';
+
 export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
-const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const API_KEY = process.env.API_KEY;
+const BASE_URL = process.env.BASE_URL;
 
 const FLAGS = {"MEXICO":"🇲🇽","ESTADOS UNIDOS":"🇺🇸","CANADA":"🇨🇦","BRASIL":"🇧🇷","ARGENTINA":"🇦🇷","ECUADOR":"🇪🇨","COLOMBIA":"🇨🇴","PERU":"🇵🇪","CHILE":"🇨🇱","URUGUAY":"🇺🇾","PARAGUAY":"🇵🇾","BOLIVIA":"🇧🇴","VENEZUELA":"🇻🇪","ALEMANIA":"🇩🇪","ESPANA":"🇪🇸","ESPAÑA":"🇪🇸","FRANCIA":"🇫🇷","ITALIA":"🇮🇹","PORTUGAL":"🇵🇹","PAISES BAJOS":"🇳🇱","BELGICA":"🇧🇪","CROACIA":"🇭🇷","SERBIA":"🇷🇸","SUIZA":"🇨🇭","DINAMARCA":"🇩🇰","AUSTRIA":"🇦🇹","UCRANIA":"🇺🇦","TURQUIA":"🇹🇷","HUNGRIA":"🇭🇺","REPUBLICA CHECA":"🇨🇿","GRECIA":"🇬🇷","JAPON":"🇯🇵","REPUBLICA DE COREA":"🇰🇷","COREA DEL SUR":"🇰🇷","AUSTRALIA":"🇦🇺","IRAN":"🇮🇷","ARABIA SAUDITA":"🇸🇦","QATAR":"🇶🇦","MARRUECOS":"🇲🇦","SENEGAL":"🇸🇳","GHANA":"🇬🇭","CAMERUN":"🇨🇲","NIGERIA":"🇳🇬","TUNEZ":"🇹🇳","SUDAFRICA":"🇿🇦","EGIPTO":"🇪🇬","COSTA RICA":"🇨🇷","PANAMA":"🇵🇦","HONDURAS":"🇭🇳","JAMAICA":"🇯🇲","INDONESIA":"🇮🇩","NUEVA ZELANDA":"🇳🇿","GALES":"🏴󠁧󠁢󠁷󠁬󠁳󠁿","ESCOCIA":"🏴󠁧󠁢󠁳󠁣󠁴󠁿","INGLATERRA":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","POLAND":"🇵🇱","POLONIA":"🇵🇱","RUMANIA":"🇷🇴","ESLOVENIA":"🇸🇮","ESLOVAQUIA":"🇸🇰","ALBANIA":"🇦🇱","ARGELIA":"🇩🇿","MALI":"🇲🇱","COSTA DE MARFIL":"🇨🇮","CONGO":"🇨🇬","UZBEKISTAN":"🇺🇿","CHINA":"🇨🇳","INDIA":"🇮🇳","BAHREIN":"🇧🇭","IRAK":"🇮🇶","TRINIDAD Y TOBAGO":"🇹🇹","EL SALVADOR":"🇸🇻","GUATEMALA":"🇬🇹","REPUBLICA DOMINICANA":"🇩🇴","HAITI":"🇭🇹","CURACAO":"🇨🇼","SURINAM":"🇸🇷","NORUEGA":"🇳🇴","SUECIA":"🇸🇪","FINLANDIA":"🇫🇮","ISLANDIA":"🇮🇸","IRLANDA":"🇮🇪"};
 function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
@@ -49,8 +51,12 @@ export default async function handler(req) {
       else if (est === 'GANADO_PARCIAL') { icon = 'PARCIAL'; statusClass = 'status-partial'; }
       else if (est === 'PERDIDO') { icon = 'FALLO'; statusClass = 'status-lost'; }
 
-      const realScore = (p.resultado_real_local !== undefined && p.resultado_real_local !== null && est !== 'PENDIENTE')
-        ? ("REAL: " + p.resultado_real_local + "-" + p.resultado_real_visitante) : '';
+      var rlReal = parseDatumScore(p.resultado_real_local);
+      var rvReal = parseDatumScore(p.resultado_real_visitante);
+      var plPred = parseDatumScore(p.pronostico_local);
+      var pvPred = parseDatumScore(p.pronostico_visitante);
+      var realScore = (rlReal !== null && rvReal !== null && est !== 'PENDIENTE')
+        ? ("REAL: " + rlReal + "-" + rvReal) : '';
 
       matchHistoryHtml +=
         "<div class='hist-row'>" +
@@ -59,7 +65,7 @@ export default async function handler(req) {
             "<div>" + flag(p.equipo_visitante) + " " + (p.equipo_visitante||'') + "</div>" +
           "</div>" +
           "<div class='hist-scores'>" +
-            "<div class='pred-score'>PRONÓSTICO: " + (p.pronostico_local ?? '-') + " - " + (p.pronostico_visitante ?? '-') + "</div>" +
+            "<div class='pred-score'>PRONÓSTICO: " + (plPred != null ? plPred : '-') + " - " + (pvPred != null ? pvPred : '-') + "</div>" +
             "<div class='real-score'>" + realScore + "</div>" +
           "</div>" +
           "<div class='hist-state " + statusClass + "'>" + icon + "</div>" +

@@ -2,14 +2,16 @@ export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = "db_HQIwDXV9xkJTEU5F3wwYAGhHAGInsItCu79g5FSz6e3106ee";
-const BASE_URL = "https://mateoacademy-9djnmu.jelou.cloud/api/collections";
+const API_KEY = process.env.API_KEY;
+const BASE_URL = process.env.BASE_URL;
 
 const COLLECTIONS = [
   { id: "pbc_1944158292", name: "torneo_pronosticos" },
   { id: "pbc_3271891893", name: "torneo_ranking/perfil" },
   { id: "pbc_3221812075", name: "brackets/clasificados" },
 ];
+
+const MATCHES_COLL = "pbc_631836067";
 
 const WC_TEAMS = [
   "MEXICO","SUDAFRICA","COREA DEL SUR","REPUBLICA CHECA","CANADA","BOSNIA","QATAR","SUIZA",
@@ -29,6 +31,145 @@ const NOMBRES = [
 const APELLIDOS = [
   "Gomez","Fernandez","Rodriguez","Perez","Lopez","Martinez","Gonzalez","Sanchez","Ramirez","Torres",
   "Flores","Diaz","Romero","Herrera","Castro","Vargas","Rojas","Navarro","Mendoza","Silva"
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//  ALL 96 GROUP STAGE MATCHES — WORLD CUP 2026
+// ═══════════════════════════════════════════════════════════════════
+const GROUP_MATCHES = [
+  // Jun 11
+  {fecha:"2026-06-11",hora:"14:00",local:"Mexico",visitante:"South Africa",grupo:"A",estadio:"Estadio Azteca"},
+  {fecha:"2026-06-11",hora:"21:00",local:"South Korea",visitante:"Czechia",grupo:"A",estadio:"TBD"},
+  // Jun 12
+  {fecha:"2026-06-12",hora:"14:00",local:"Canada",visitante:"Bosnia and Herzegovina",grupo:"B",estadio:"TBD"},
+  {fecha:"2026-06-12",hora:"20:00",local:"USA",visitante:"Paraguay",grupo:"D",estadio:"TBD"},
+  // Jun 13
+  {fecha:"2026-06-13",hora:"14:00",local:"Qatar",visitante:"Switzerland",grupo:"B",estadio:"TBD"},
+  {fecha:"2026-06-13",hora:"17:00",local:"Brazil",visitante:"Morocco",grupo:"C",estadio:"TBD"},
+  {fecha:"2026-06-13",hora:"20:00",local:"Haiti",visitante:"Scotland",grupo:"C",estadio:"TBD"},
+  {fecha:"2026-06-13",hora:"23:00",local:"Australia",visitante:"Türkiye",grupo:"D",estadio:"TBD"},
+  // Jun 14
+  {fecha:"2026-06-14",hora:"12:00",local:"Germany",visitante:"Curaçao",grupo:"E",estadio:"TBD"},
+  {fecha:"2026-06-14",hora:"15:00",local:"Netherlands",visitante:"Japan",grupo:"F",estadio:"TBD"},
+  {fecha:"2026-06-14",hora:"18:00",local:"Ivory Coast",visitante:"Ecuador",grupo:"E",estadio:"TBD"},
+  {fecha:"2026-06-14",hora:"21:00",local:"Sweden",visitante:"Tunisia",grupo:"F",estadio:"TBD"},
+  // Jun 15
+  {fecha:"2026-06-15",hora:"11:00",local:"Spain",visitante:"Cape Verde",grupo:"H",estadio:"TBD"},
+  {fecha:"2026-06-15",hora:"14:00",local:"Belgium",visitante:"Egypt",grupo:"G",estadio:"TBD"},
+  {fecha:"2026-06-15",hora:"17:00",local:"Saudi Arabia",visitante:"Uruguay",grupo:"H",estadio:"TBD"},
+  {fecha:"2026-06-15",hora:"20:00",local:"Iran",visitante:"New Zealand",grupo:"G",estadio:"TBD"},
+  // Jun 16
+  {fecha:"2026-06-16",hora:"14:00",local:"France",visitante:"Senegal",grupo:"I",estadio:"TBD"},
+  {fecha:"2026-06-16",hora:"17:00",local:"Iraq",visitante:"Norway",grupo:"I",estadio:"TBD"},
+  {fecha:"2026-06-16",hora:"20:00",local:"Argentina",visitante:"Algeria",grupo:"J",estadio:"TBD"},
+  {fecha:"2026-06-16",hora:"23:00",local:"Austria",visitante:"Jordan",grupo:"J",estadio:"TBD"},
+  // Jun 17
+  {fecha:"2026-06-17",hora:"12:00",local:"Portugal",visitante:"DR Congo",grupo:"K",estadio:"TBD"},
+  {fecha:"2026-06-17",hora:"15:00",local:"England",visitante:"Croatia",grupo:"L",estadio:"TBD"},
+  {fecha:"2026-06-17",hora:"18:00",local:"Ghana",visitante:"Panama",grupo:"L",estadio:"TBD"},
+  {fecha:"2026-06-17",hora:"21:00",local:"Uzbekistan",visitante:"Colombia",grupo:"K",estadio:"TBD"},
+  // Jun 18 (Matchday 2)
+  {fecha:"2026-06-18",hora:"11:00",local:"Czechia",visitante:"South Africa",grupo:"A",estadio:"TBD"},
+  {fecha:"2026-06-18",hora:"14:00",local:"Switzerland",visitante:"Bosnia and Herzegovina",grupo:"B",estadio:"TBD"},
+  {fecha:"2026-06-18",hora:"17:00",local:"Canada",visitante:"Qatar",grupo:"B",estadio:"TBD"},
+  {fecha:"2026-06-18",hora:"20:00",local:"Mexico",visitante:"South Korea",grupo:"A",estadio:"TBD"},
+  // Jun 19
+  {fecha:"2026-06-19",hora:"14:00",local:"USA",visitante:"Australia",grupo:"D",estadio:"TBD"},
+  {fecha:"2026-06-19",hora:"17:00",local:"Scotland",visitante:"Morocco",grupo:"C",estadio:"TBD"},
+  {fecha:"2026-06-19",hora:"19:30",local:"Brazil",visitante:"Haiti",grupo:"C",estadio:"TBD"},
+  {fecha:"2026-06-19",hora:"22:00",local:"Türkiye",visitante:"Paraguay",grupo:"D",estadio:"TBD"},
+  // Jun 20
+  {fecha:"2026-06-20",hora:"12:00",local:"Netherlands",visitante:"Sweden",grupo:"F",estadio:"TBD"},
+  {fecha:"2026-06-20",hora:"15:00",local:"Germany",visitante:"Ivory Coast",grupo:"E",estadio:"TBD"},
+  {fecha:"2026-06-20",hora:"19:00",local:"Ecuador",visitante:"Curaçao",grupo:"E",estadio:"TBD"},
+  {fecha:"2026-06-20",hora:"23:00",local:"Tunisia",visitante:"Japan",grupo:"F",estadio:"TBD"},
+  // Jun 21
+  {fecha:"2026-06-21",hora:"11:00",local:"Spain",visitante:"Saudi Arabia",grupo:"H",estadio:"TBD"},
+  {fecha:"2026-06-21",hora:"14:00",local:"Belgium",visitante:"Iran",grupo:"G",estadio:"TBD"},
+  {fecha:"2026-06-21",hora:"17:00",local:"Uruguay",visitante:"Cape Verde",grupo:"H",estadio:"TBD"},
+  {fecha:"2026-06-21",hora:"20:00",local:"New Zealand",visitante:"Egypt",grupo:"G",estadio:"TBD"},
+  // Jun 22
+  {fecha:"2026-06-22",hora:"12:00",local:"Argentina",visitante:"Austria",grupo:"J",estadio:"TBD"},
+  {fecha:"2026-06-22",hora:"16:00",local:"France",visitante:"Iraq",grupo:"I",estadio:"TBD"},
+  {fecha:"2026-06-22",hora:"19:00",local:"Norway",visitante:"Senegal",grupo:"I",estadio:"TBD"},
+  {fecha:"2026-06-22",hora:"22:00",local:"Jordan",visitante:"Algeria",grupo:"J",estadio:"TBD"},
+  // Jun 23
+  {fecha:"2026-06-23",hora:"12:00",local:"Portugal",visitante:"Uzbekistan",grupo:"K",estadio:"TBD"},
+  {fecha:"2026-06-23",hora:"15:00",local:"England",visitante:"Ghana",grupo:"L",estadio:"TBD"},
+  {fecha:"2026-06-23",hora:"18:00",local:"Panama",visitante:"Croatia",grupo:"L",estadio:"TBD"},
+  {fecha:"2026-06-23",hora:"21:00",local:"Colombia",visitante:"DR Congo",grupo:"K",estadio:"TBD"},
+  // Jun 24 (Matchday 3)
+  {fecha:"2026-06-24",hora:"14:00",local:"Switzerland",visitante:"Canada",grupo:"B",estadio:"TBD"},
+  {fecha:"2026-06-24",hora:"14:00",local:"Bosnia and Herzegovina",visitante:"Qatar",grupo:"B",estadio:"TBD"},
+  {fecha:"2026-06-24",hora:"17:00",local:"Morocco",visitante:"Haiti",grupo:"C",estadio:"TBD"},
+  {fecha:"2026-06-24",hora:"17:00",local:"Scotland",visitante:"Brazil",grupo:"C",estadio:"TBD"},
+  {fecha:"2026-06-24",hora:"20:00",local:"South Africa",visitante:"South Korea",grupo:"A",estadio:"TBD"},
+  {fecha:"2026-06-24",hora:"20:00",local:"Czechia",visitante:"Mexico",grupo:"A",estadio:"TBD"},
+  // Jun 25
+  {fecha:"2026-06-25",hora:"15:00",local:"Curaçao",visitante:"Ivory Coast",grupo:"E",estadio:"TBD"},
+  {fecha:"2026-06-25",hora:"15:00",local:"Ecuador",visitante:"Germany",grupo:"E",estadio:"TBD"},
+  {fecha:"2026-06-25",hora:"18:00",local:"Tunisia",visitante:"Netherlands",grupo:"F",estadio:"TBD"},
+  {fecha:"2026-06-25",hora:"18:00",local:"Japan",visitante:"Sweden",grupo:"F",estadio:"TBD"},
+  {fecha:"2026-06-25",hora:"21:00",local:"Türkiye",visitante:"USA",grupo:"D",estadio:"TBD"},
+  {fecha:"2026-06-25",hora:"21:00",local:"Paraguay",visitante:"Australia",grupo:"D",estadio:"TBD"},
+  // Jun 26
+  {fecha:"2026-06-26",hora:"14:00",local:"Norway",visitante:"France",grupo:"I",estadio:"TBD"},
+  {fecha:"2026-06-26",hora:"14:00",local:"Senegal",visitante:"Iraq",grupo:"I",estadio:"TBD"},
+  {fecha:"2026-06-26",hora:"19:00",local:"Cape Verde",visitante:"Saudi Arabia",grupo:"H",estadio:"TBD"},
+  {fecha:"2026-06-26",hora:"19:00",local:"Uruguay",visitante:"Spain",grupo:"H",estadio:"TBD"},
+  {fecha:"2026-06-26",hora:"22:00",local:"New Zealand",visitante:"Belgium",grupo:"G",estadio:"TBD"},
+  {fecha:"2026-06-26",hora:"22:00",local:"Egypt",visitante:"Iran",grupo:"G",estadio:"TBD"},
+  // Jun 27
+  {fecha:"2026-06-27",hora:"16:00",local:"Panama",visitante:"England",grupo:"L",estadio:"TBD"},
+  {fecha:"2026-06-27",hora:"16:00",local:"Croatia",visitante:"Ghana",grupo:"L",estadio:"TBD"},
+  {fecha:"2026-06-27",hora:"18:30",local:"Colombia",visitante:"Portugal",grupo:"K",estadio:"TBD"},
+  {fecha:"2026-06-27",hora:"18:30",local:"DR Congo",visitante:"Uzbekistan",grupo:"K",estadio:"TBD"},
+  {fecha:"2026-06-27",hora:"21:00",local:"Algeria",visitante:"Austria",grupo:"J",estadio:"TBD"},
+  {fecha:"2026-06-27",hora:"21:00",local:"Jordan",visitante:"Argentina",grupo:"J",estadio:"TBD"},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//  HARDCODED KNOCKOUT MATCHES FOR SIMULATION
+// ═══════════════════════════════════════════════════════════════════
+const KNOCKOUT_MATCHES = [
+  // Round of 32 (16 matches)
+  {fecha:"2026-06-30",hora:"15:00",local:"Mexico",visitante:"Switzerland",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-06-30",hora:"18:00",local:"Brazil",visitante:"Australia",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-06-30",hora:"21:00",local:"Germany",visitante:"Netherlands",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-01",hora:"15:00",local:"Spain",visitante:"Belgium",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-01",hora:"18:00",local:"France",visitante:"Argentina",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-01",hora:"21:00",local:"Portugal",visitante:"England",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-02",hora:"15:00",local:"USA",visitante:"Canada",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-02",hora:"18:00",local:"Uruguay",visitante:"Colombia",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-02",hora:"21:00",local:"South Korea",visitante:"Japan",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-03",hora:"15:00",local:"Morocco",visitante:"Ecuador",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-03",hora:"18:00",local:"Croatia",visitante:"Senegal",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-03",hora:"21:00",local:"Egypt",visitante:"Tunisia",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-04",hora:"15:00",local:"Algeria",visitante:"Iran",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-04",hora:"18:00",local:"Norway",visitante:"Austria",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-04",hora:"21:00",local:"Ghana",visitante:"DR Congo",fase:"Round of 32",estadio:"TBD"},
+  {fecha:"2026-07-04",hora:"23:00",local:"Paraguay",visitante:"Scotland",fase:"Round of 32",estadio:"TBD"},
+  // Round of 16 (8 matches)
+  {fecha:"2026-07-06",hora:"15:00",local:"Mexico",visitante:"Brazil",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-06",hora:"18:00",local:"Germany",visitante:"Spain",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-06",hora:"21:00",local:"France",visitante:"Portugal",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-07",hora:"15:00",local:"USA",visitante:"Uruguay",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-07",hora:"18:00",local:"Argentina",visitante:"England",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-07",hora:"21:00",local:"Morocco",visitante:"Croatia",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-08",hora:"15:00",local:"South Korea",visitante:"Egypt",fase:"Round of 16",estadio:"TBD"},
+  {fecha:"2026-07-08",hora:"18:00",local:"Colombia",visitante:"Norway",fase:"Round of 16",estadio:"TBD"},
+  // Quarter-finals (4 matches)
+  {fecha:"2026-07-10",hora:"15:00",local:"Brazil",visitante:"Germany",fase:"Quarter-finals",estadio:"TBD"},
+  {fecha:"2026-07-10",hora:"21:00",local:"France",visitante:"USA",fase:"Quarter-finals",estadio:"TBD"},
+  {fecha:"2026-07-11",hora:"15:00",local:"Argentina",visitante:"Morocco",fase:"Quarter-finals",estadio:"TBD"},
+  {fecha:"2026-07-11",hora:"21:00",local:"Colombia",visitante:"South Korea",fase:"Quarter-finals",estadio:"TBD"},
+  // Semi-finals (2 matches)
+  {fecha:"2026-07-14",hora:"18:00",local:"Brazil",visitante:"France",fase:"Semi-finals",estadio:"TBD"},
+  {fecha:"2026-07-14",hora:"21:00",local:"Argentina",visitante:"Colombia",fase:"Semi-finals",estadio:"TBD"},
+  // Third-place
+  {fecha:"2026-07-18",hora:"18:00",local:"France",visitante:"Colombia",fase:"Third-place",estadio:"TBD"},
+  // Final
+  {fecha:"2026-07-19",hora:"18:00",local:"Brazil",visitante:"Argentina",fase:"Final",estadio:"TBD"},
 ];
 
 function sleep(ms) {
@@ -92,6 +233,11 @@ async function createRecord(coll, body) {
   return { ok: !!res.ok, status: res.status, data: res.data, raw: res.raw, error: res.error };
 }
 
+async function patchRecord(coll, id, body) {
+  const res = await apiRequest(`${coll}/records/${id}`, 'PATCH', body);
+  return { ok: !!res.ok, status: res.status, data: res.data };
+}
+
 function getRandomItems(arr, n) {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -101,12 +247,18 @@ function getRandomItems(arr, n) {
   return copy.slice(0, n);
 }
 
+function makeMatchId(local, visitante, fecha) {
+  return `${local}_${visitante}_${fecha}`.replace(/\s+/g, '_');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NUKE: Delete all 3 user-data collections
+// ═══════════════════════════════════════════════════════════════════
 async function nukeCollections() {
   let totalDeleted = 0;
   const errors = [];
 
   for (const coll of COLLECTIONS) {
-    // Segundo pase de verificación para evitar residuos por paginación/carrera.
     for (let pass = 1; pass <= 2; pass++) {
       const items = await fetchAllRecords(coll.id);
       if (items.length === 0) break;
@@ -129,6 +281,9 @@ async function nukeCollections() {
   return { totalDeleted, errors, remainingByCollection };
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  SEED: Create 20 dummy users with predictions & brackets
+// ═══════════════════════════════════════════════════════════════════
 function buildRandomUser(i, seedTs) {
   const nombre = NOMBRES[Math.floor(Math.random() * NOMBRES.length)];
   const apellido = APELLIDOS[Math.floor(Math.random() * APELLIDOS.length)];
@@ -140,39 +295,197 @@ function buildRandomUser(i, seedTs) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  CARGAR PARTIDOS: Seed all 96 group stage matches
+// ═══════════════════════════════════════════════════════════════════
+async function cargarPartidos() {
+  let created = 0;
+  let failed = 0;
+  const errors = [];
+
+  for (const m of GROUP_MATCHES) {
+    const record = {
+      fecha: m.fecha,
+      hora: m.hora,
+      equipo_local: m.local,
+      equipo_visitante: m.visitante,
+      Fase_o_Grupo: m.grupo,
+      estadio: m.estadio,
+      resulltado_local: null,
+      resultado_visitante: null,
+      id_partido: makeMatchId(m.local, m.visitante, m.fecha)
+    };
+    const res = await createRecord(MATCHES_COLL, record);
+    if (res.ok) created++;
+    else {
+      failed++;
+      errors.push(`${m.local} vs ${m.visitante}: status ${res.status}`);
+    }
+  }
+
+  return {
+    success: failed === 0,
+    message: `⚽ Cargados ${created}/${GROUP_MATCHES.length} partidos de fase de grupos.`,
+    created,
+    failed,
+    errors
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  NUKE PARTIDOS: Clear the matches collection
+// ═══════════════════════════════════════════════════════════════════
+async function nukePartidos() {
+  let totalDeleted = 0;
+  const errors = [];
+
+  for (let pass = 1; pass <= 2; pass++) {
+    const items = await fetchAllRecords(MATCHES_COLL);
+    if (items.length === 0) break;
+    for (const item of items) {
+      const ok = await deleteRecord(MATCHES_COLL, item.id);
+      if (ok) totalDeleted++;
+      else errors.push(`No se pudo eliminar partido ${item.id}`);
+    }
+  }
+
+  const remaining = await fetchAllRecords(MATCHES_COLL);
+  return {
+    success: errors.length === 0 && remaining.length === 0,
+    message: `💣 Eliminados ${totalDeleted} partidos. Restantes: ${remaining.length}`,
+    totalDeleted,
+    remaining: remaining.length,
+    errors
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SIMULAR MUNDIAL: Random scores for groups + hardcoded knockout
+// ═══════════════════════════════════════════════════════════════════
+async function simularMundial() {
+  // 1. Get all existing matches
+  const allMatches = await fetchAllRecords(MATCHES_COLL);
+  const groupMatches = allMatches.filter(m => m.Fase_o_Grupo && m.Fase_o_Grupo.length === 1);
+
+  let patched = 0;
+  let knockoutCreated = 0;
+  const errors = [];
+
+  // 2. Set random scores (0-5) for all group stage matches
+  for (const m of groupMatches) {
+    const scoreL = Math.floor(Math.random() * 6);
+    const scoreV = Math.floor(Math.random() * 6);
+    const res = await patchRecord(MATCHES_COLL, m.id, {
+      resulltado_local: scoreL,
+      resultado_visitante: scoreV
+    });
+    if (res.ok) patched++;
+    else errors.push(`Patch ${m.id}: status ${res.status}`);
+  }
+
+  // 3. Create knockout matches with hardcoded results
+  for (const km of KNOCKOUT_MATCHES) {
+    // Winner is always local team (hardcoded for simplicity)
+    const scoreL = Math.floor(Math.random() * 3) + 1; // 1-3
+    const scoreV = Math.floor(Math.random() * scoreL);  // 0 to scoreL-1 (local always wins)
+    const record = {
+      fecha: km.fecha,
+      hora: km.hora,
+      equipo_local: km.local,
+      equipo_visitante: km.visitante,
+      Fase_o_Grupo: km.fase,
+      estadio: km.estadio,
+      resulltado_local: scoreL,
+      resultado_visitante: scoreV,
+      id_partido: makeMatchId(km.local, km.visitante, km.fecha),
+      ganador_final: km.local
+    };
+    const res = await createRecord(MATCHES_COLL, record);
+    if (res.ok) knockoutCreated++;
+    else errors.push(`Knockout ${km.local} vs ${km.visitante}: status ${res.status}`);
+  }
+
+  return {
+    success: errors.length === 0,
+    message: `🎲 Simulación completa. Grupos: ${patched} resultados random. Eliminatorias: ${knockoutCreated} partidos creados. Campeón: Brazil 🇧🇷`,
+    patched,
+    knockoutCreated,
+    errors
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  CLEAN SIMULACIÓN: Remove knockout, reset all scores to null
+// ═══════════════════════════════════════════════════════════════════
+async function cleanSimulacion() {
+  const allMatches = await fetchAllRecords(MATCHES_COLL);
+  let deletedKnockout = 0;
+  let resetGroups = 0;
+  const errors = [];
+
+  for (const m of allMatches) {
+    const fase = m.Fase_o_Grupo || '';
+    const isGroup = fase.length === 1; // Single letter = group
+
+    if (!isGroup) {
+      // Delete knockout matches
+      const ok = await deleteRecord(MATCHES_COLL, m.id);
+      if (ok) deletedKnockout++;
+      else errors.push(`No se pudo eliminar knockout ${m.id}`);
+    } else {
+      // Reset group match scores to null
+      const res = await patchRecord(MATCHES_COLL, m.id, {
+        resulltado_local: null,
+        resultado_visitante: null
+      });
+      if (res.ok) resetGroups++;
+      else errors.push(`No se pudo resetear ${m.id}`);
+    }
+  }
+
+  return {
+    success: errors.length === 0,
+    message: `🧹 Limpieza completa. ${deletedKnockout} partidos eliminatorios borrados. ${resetGroups} partidos de grupos reseteados a null.`,
+    deletedKnockout,
+    resetGroups,
+    errors
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  HANDLER
+// ═══════════════════════════════════════════════════════════════════
 export default async function handler(req) {
   const url = new URL(req.url);
   const action = url.searchParams.get('action');
 
   if (req.method === 'POST') {
     if (action === 'nuke') {
-      const cleanup = await nukeCollections();
-      const leftovers = Object.entries(cleanup.remainingByCollection)
+      const result = await nukeCollections();
+      const leftovers = Object.entries(result.remainingByCollection)
         .map(([name, count]) => `${name}:${count}`)
         .join(' | ');
-
       return new Response(JSON.stringify({
-        success: cleanup.errors.length === 0 && Object.values(cleanup.remainingByCollection).every((x) => x === 0),
-        message: `☢️ LIMPIEZA COMPLETA. Eliminados ${cleanup.totalDeleted}. Restantes -> ${leftovers}`,
-        deleted: cleanup.totalDeleted,
-        remaining: cleanup.remainingByCollection,
-        errors: cleanup.errors
+        success: result.errors.length === 0 && Object.values(result.remainingByCollection).every((x) => x === 0),
+        message: `☢️ LIMPIEZA COMPLETA. Eliminados ${result.totalDeleted}. Restantes -> ${leftovers}`,
+        deleted: result.totalDeleted,
+        remaining: result.remainingByCollection,
+        errors: result.errors
       }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (action === 'seed') {
-      // Seed robusto: primero limpia tablas objetivo.
       const cleanup = await nukeCollections();
-      const matches = await fetchAllRecords('pbc_631836067');
+      const matches = await fetchAllRecords(MATCHES_COLL);
       if (matches.length === 0) {
         return new Response(JSON.stringify({
           success: false,
-          message: "No hay partidos en pbc_631836067",
+          message: "No hay partidos en la BD. Primero usa CARGAR PARTIDOS.",
           cleanup
         }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
 
-      const subset = matches.slice(0, 12); // cobertura razonable y runtime estable
+      const subset = matches.slice(0, 12);
       const seedTs = Date.now();
       const usersToCreate = 20;
 
@@ -255,6 +568,26 @@ export default async function handler(req) {
         errors
       }), { headers: { 'Content-Type': 'application/json' } });
     }
+
+    if (action === 'cargar_partidos') {
+      const result = await cargarPartidos();
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'nuke_partidos') {
+      const result = await nukePartidos();
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'simular') {
+      const result = await simularMundial();
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'clean_simulacion') {
+      const result = await cleanSimulacion();
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
   }
 
   const html = `<!DOCTYPE html>
@@ -265,30 +598,58 @@ export default async function handler(req) {
     <title>Admin - Mundial 2026</title>
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;900&display=swap" rel="stylesheet">
     <style>
-        :root { --black: #000; --white: #fff; --lime: #C9FF24; --mag: #FF0055; --bg: #111; }
+        :root { --black: #000; --white: #fff; --lime: #C9FF24; --mag: #FF0055; --teal: #00FFCC; --purple: #6200EA; --bg: #111; }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--bg); color: var(--white); font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
-        .card { background: var(--black); border: 2px solid var(--white); padding: 40px; width: 90%; max-width: 400px; }
-        h1 { font-family: 'Archivo Black'; font-size: 24px; margin-bottom: 30px; letter-spacing: -1px; }
-        .btn { width: 100%; padding: 20px; font-family: 'Archivo Black'; font-size: 16px; border: none; cursor: pointer; margin-bottom: 15px; transition: 0.2s; text-transform: uppercase; }
+        body { background: var(--bg); color: var(--white); font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; text-align: center; padding: 20px; }
+        .card { background: var(--black); border: 2px solid var(--white); padding: 40px 30px; width: 90%; max-width: 420px; }
+        h1 { font-family: 'Archivo Black'; font-size: 22px; margin-bottom: 10px; letter-spacing: -1px; }
+        .sub { font-size: 10px; color: rgba(255,255,255,.4); margin-bottom: 30px; letter-spacing: 1px; font-weight: 800; }
+        .section { margin-bottom: 24px; }
+        .section-label { font-size: 10px; font-weight: 900; color: rgba(255,255,255,.5); letter-spacing: 2px; margin-bottom: 10px; text-align: left; border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 6px; }
+        .btn { width: 100%; padding: 18px; font-family: 'Archivo Black'; font-size: 14px; border: none; cursor: pointer; margin-bottom: 10px; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
         .btn-nuke { background: var(--mag); color: var(--white); }
         .btn-seed { background: var(--lime); color: var(--black); }
-        .btn:active { transform: scale(0.95); opacity: 0.8; }
-        #status { margin-top: 20px; font-size: 12px; font-weight: 900; color: var(--lime); min-height: 20px; }
+        .btn-cargar { background: var(--teal); color: var(--black); }
+        .btn-nuke-p { background: #FF6B35; color: var(--white); }
+        .btn-simular { background: var(--purple); color: var(--white); }
+        .btn-clean { background: var(--white); color: var(--black); }
+        #status { margin-top: 20px; font-size: 11px; font-weight: 900; color: var(--lime); min-height: 40px; line-height: 1.5; word-break: break-word; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>🛠 PANEL DE CONTROL</h1>
-        <button class="btn btn-nuke" onclick="run('nuke')">☢️ ELIMINAR TODO (NUKE)</button>
-        <button class="btn btn-seed" onclick="run('seed')">🌱 POBLAR (BRING TO LIFE)</button>
+        <div class="sub">ADMIN · MUNDIAL 2026</div>
+
+        <div class="section">
+            <div class="section-label">👥 USUARIOS & DATOS</div>
+            <button class="btn btn-nuke" onclick="run('nuke')">☢️ ELIMINAR TODO (NUKE)</button>
+            <button class="btn btn-seed" onclick="run('seed')">🌱 POBLAR (BRING TO LIFE)</button>
+        </div>
+
+        <div class="section">
+            <div class="section-label">⚽ PARTIDOS</div>
+            <button class="btn btn-cargar" onclick="run('cargar_partidos')">📦 CARGAR PARTIDOS (96)</button>
+            <button class="btn btn-nuke-p" onclick="run('nuke_partidos')">💣 NUKE PARTIDOS</button>
+        </div>
+
+        <div class="section">
+            <div class="section-label">🎲 SIMULACIÓN</div>
+            <button class="btn btn-simular" onclick="run('simular')">🎲 SIMULAR MUNDIAL</button>
+            <button class="btn btn-clean" onclick="run('clean_simulacion')">🧹 CLEAN SIMULACIÓN</button>
+        </div>
+
         <div id="status"></div>
     </div>
 
     <script>
         async function run(action) {
             const st = document.getElementById('status');
-            st.innerText = 'PROCESANDO...';
+            const btns = document.querySelectorAll('.btn');
+            btns.forEach(b => b.disabled = true);
+            st.innerText = 'PROCESANDO... (esto puede tardar)';
             st.style.color = 'white';
             try {
                 const res = await fetch(\`?action=\${action}\`, { method: 'POST' });
@@ -296,8 +657,10 @@ export default async function handler(req) {
                 st.innerText = data.message || 'OK';
                 st.style.color = data.success ? '#C9FF24' : '#FF0055';
             } catch (e) {
-                st.innerText = 'ERROR EN LA PETICIÓN';
+                st.innerText = 'ERROR EN LA PETICIÓN: ' + e.message;
                 st.style.color = '#FF0055';
+            } finally {
+                btns.forEach(b => b.disabled = false);
             }
         }
     </script>

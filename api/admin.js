@@ -1,5 +1,7 @@
 export const config = {
-  runtime: 'edge',
+  // Node permite maxDuration mayor; Edge (~25s) cortaba cargas largas a Datum (HTML "error", JSON inválido).
+  runtime: 'nodejs',
+  maxDuration: 60,
 };
 
 const API_KEY = process.env.API_KEY;
@@ -34,98 +36,82 @@ const APELLIDOS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════
-//  ALL 96 GROUP STAGE MATCHES — WORLD CUP 2026
+//  Primera fase · 12 grupos × 6 partidos = 72 (calendario oficial, etiquetas en español;
+//  nombres alineados con FLAGS en grupos.js: mayúsculas sin tilde salvo Ñ en ESPAÑA, etc.)
 // ═══════════════════════════════════════════════════════════════════
 const GROUP_MATCHES = [
-  // Jun 11
-  {fecha:"2026-06-11",hora:"14:00",local:"Mexico",visitante:"South Africa",grupo:"A",estadio:"Estadio Azteca"},
-  {fecha:"2026-06-11",hora:"21:00",local:"South Korea",visitante:"Czechia",grupo:"A",estadio:"TBD"},
-  // Jun 12
-  {fecha:"2026-06-12",hora:"14:00",local:"Canada",visitante:"Bosnia and Herzegovina",grupo:"B",estadio:"TBD"},
-  {fecha:"2026-06-12",hora:"20:00",local:"USA",visitante:"Paraguay",grupo:"D",estadio:"TBD"},
-  // Jun 13
-  {fecha:"2026-06-13",hora:"14:00",local:"Qatar",visitante:"Switzerland",grupo:"B",estadio:"TBD"},
-  {fecha:"2026-06-13",hora:"17:00",local:"Brazil",visitante:"Morocco",grupo:"C",estadio:"TBD"},
-  {fecha:"2026-06-13",hora:"20:00",local:"Haiti",visitante:"Scotland",grupo:"C",estadio:"TBD"},
-  {fecha:"2026-06-13",hora:"23:00",local:"Australia",visitante:"Türkiye",grupo:"D",estadio:"TBD"},
-  // Jun 14
-  {fecha:"2026-06-14",hora:"12:00",local:"Germany",visitante:"Curaçao",grupo:"E",estadio:"TBD"},
-  {fecha:"2026-06-14",hora:"15:00",local:"Netherlands",visitante:"Japan",grupo:"F",estadio:"TBD"},
-  {fecha:"2026-06-14",hora:"18:00",local:"Ivory Coast",visitante:"Ecuador",grupo:"E",estadio:"TBD"},
-  {fecha:"2026-06-14",hora:"21:00",local:"Sweden",visitante:"Tunisia",grupo:"F",estadio:"TBD"},
-  // Jun 15
-  {fecha:"2026-06-15",hora:"11:00",local:"Spain",visitante:"Cape Verde",grupo:"H",estadio:"TBD"},
-  {fecha:"2026-06-15",hora:"14:00",local:"Belgium",visitante:"Egypt",grupo:"G",estadio:"TBD"},
-  {fecha:"2026-06-15",hora:"17:00",local:"Saudi Arabia",visitante:"Uruguay",grupo:"H",estadio:"TBD"},
-  {fecha:"2026-06-15",hora:"20:00",local:"Iran",visitante:"New Zealand",grupo:"G",estadio:"TBD"},
-  // Jun 16
-  {fecha:"2026-06-16",hora:"14:00",local:"France",visitante:"Senegal",grupo:"I",estadio:"TBD"},
-  {fecha:"2026-06-16",hora:"17:00",local:"Iraq",visitante:"Norway",grupo:"I",estadio:"TBD"},
-  {fecha:"2026-06-16",hora:"20:00",local:"Argentina",visitante:"Algeria",grupo:"J",estadio:"TBD"},
-  {fecha:"2026-06-16",hora:"23:00",local:"Austria",visitante:"Jordan",grupo:"J",estadio:"TBD"},
-  // Jun 17
-  {fecha:"2026-06-17",hora:"12:00",local:"Portugal",visitante:"DR Congo",grupo:"K",estadio:"TBD"},
-  {fecha:"2026-06-17",hora:"15:00",local:"England",visitante:"Croatia",grupo:"L",estadio:"TBD"},
-  {fecha:"2026-06-17",hora:"18:00",local:"Ghana",visitante:"Panama",grupo:"L",estadio:"TBD"},
-  {fecha:"2026-06-17",hora:"21:00",local:"Uzbekistan",visitante:"Colombia",grupo:"K",estadio:"TBD"},
-  // Jun 18 (Matchday 2)
-  {fecha:"2026-06-18",hora:"11:00",local:"Czechia",visitante:"South Africa",grupo:"A",estadio:"TBD"},
-  {fecha:"2026-06-18",hora:"14:00",local:"Switzerland",visitante:"Bosnia and Herzegovina",grupo:"B",estadio:"TBD"},
-  {fecha:"2026-06-18",hora:"17:00",local:"Canada",visitante:"Qatar",grupo:"B",estadio:"TBD"},
-  {fecha:"2026-06-18",hora:"20:00",local:"Mexico",visitante:"South Korea",grupo:"A",estadio:"TBD"},
-  // Jun 19
-  {fecha:"2026-06-19",hora:"14:00",local:"USA",visitante:"Australia",grupo:"D",estadio:"TBD"},
-  {fecha:"2026-06-19",hora:"17:00",local:"Scotland",visitante:"Morocco",grupo:"C",estadio:"TBD"},
-  {fecha:"2026-06-19",hora:"19:30",local:"Brazil",visitante:"Haiti",grupo:"C",estadio:"TBD"},
-  {fecha:"2026-06-19",hora:"22:00",local:"Türkiye",visitante:"Paraguay",grupo:"D",estadio:"TBD"},
-  // Jun 20
-  {fecha:"2026-06-20",hora:"12:00",local:"Netherlands",visitante:"Sweden",grupo:"F",estadio:"TBD"},
-  {fecha:"2026-06-20",hora:"15:00",local:"Germany",visitante:"Ivory Coast",grupo:"E",estadio:"TBD"},
-  {fecha:"2026-06-20",hora:"19:00",local:"Ecuador",visitante:"Curaçao",grupo:"E",estadio:"TBD"},
-  {fecha:"2026-06-20",hora:"23:00",local:"Tunisia",visitante:"Japan",grupo:"F",estadio:"TBD"},
-  // Jun 21
-  {fecha:"2026-06-21",hora:"11:00",local:"Spain",visitante:"Saudi Arabia",grupo:"H",estadio:"TBD"},
-  {fecha:"2026-06-21",hora:"14:00",local:"Belgium",visitante:"Iran",grupo:"G",estadio:"TBD"},
-  {fecha:"2026-06-21",hora:"17:00",local:"Uruguay",visitante:"Cape Verde",grupo:"H",estadio:"TBD"},
-  {fecha:"2026-06-21",hora:"20:00",local:"New Zealand",visitante:"Egypt",grupo:"G",estadio:"TBD"},
-  // Jun 22
-  {fecha:"2026-06-22",hora:"12:00",local:"Argentina",visitante:"Austria",grupo:"J",estadio:"TBD"},
-  {fecha:"2026-06-22",hora:"16:00",local:"France",visitante:"Iraq",grupo:"I",estadio:"TBD"},
-  {fecha:"2026-06-22",hora:"19:00",local:"Norway",visitante:"Senegal",grupo:"I",estadio:"TBD"},
-  {fecha:"2026-06-22",hora:"22:00",local:"Jordan",visitante:"Algeria",grupo:"J",estadio:"TBD"},
-  // Jun 23
-  {fecha:"2026-06-23",hora:"12:00",local:"Portugal",visitante:"Uzbekistan",grupo:"K",estadio:"TBD"},
-  {fecha:"2026-06-23",hora:"15:00",local:"England",visitante:"Ghana",grupo:"L",estadio:"TBD"},
-  {fecha:"2026-06-23",hora:"18:00",local:"Panama",visitante:"Croatia",grupo:"L",estadio:"TBD"},
-  {fecha:"2026-06-23",hora:"21:00",local:"Colombia",visitante:"DR Congo",grupo:"K",estadio:"TBD"},
-  // Jun 24 (Matchday 3)
-  {fecha:"2026-06-24",hora:"14:00",local:"Switzerland",visitante:"Canada",grupo:"B",estadio:"TBD"},
-  {fecha:"2026-06-24",hora:"14:00",local:"Bosnia and Herzegovina",visitante:"Qatar",grupo:"B",estadio:"TBD"},
-  {fecha:"2026-06-24",hora:"17:00",local:"Morocco",visitante:"Haiti",grupo:"C",estadio:"TBD"},
-  {fecha:"2026-06-24",hora:"17:00",local:"Scotland",visitante:"Brazil",grupo:"C",estadio:"TBD"},
-  {fecha:"2026-06-24",hora:"20:00",local:"South Africa",visitante:"South Korea",grupo:"A",estadio:"TBD"},
-  {fecha:"2026-06-24",hora:"20:00",local:"Czechia",visitante:"Mexico",grupo:"A",estadio:"TBD"},
-  // Jun 25
-  {fecha:"2026-06-25",hora:"15:00",local:"Curaçao",visitante:"Ivory Coast",grupo:"E",estadio:"TBD"},
-  {fecha:"2026-06-25",hora:"15:00",local:"Ecuador",visitante:"Germany",grupo:"E",estadio:"TBD"},
-  {fecha:"2026-06-25",hora:"18:00",local:"Tunisia",visitante:"Netherlands",grupo:"F",estadio:"TBD"},
-  {fecha:"2026-06-25",hora:"18:00",local:"Japan",visitante:"Sweden",grupo:"F",estadio:"TBD"},
-  {fecha:"2026-06-25",hora:"21:00",local:"Türkiye",visitante:"USA",grupo:"D",estadio:"TBD"},
-  {fecha:"2026-06-25",hora:"21:00",local:"Paraguay",visitante:"Australia",grupo:"D",estadio:"TBD"},
-  // Jun 26
-  {fecha:"2026-06-26",hora:"14:00",local:"Norway",visitante:"France",grupo:"I",estadio:"TBD"},
-  {fecha:"2026-06-26",hora:"14:00",local:"Senegal",visitante:"Iraq",grupo:"I",estadio:"TBD"},
-  {fecha:"2026-06-26",hora:"19:00",local:"Cape Verde",visitante:"Saudi Arabia",grupo:"H",estadio:"TBD"},
-  {fecha:"2026-06-26",hora:"19:00",local:"Uruguay",visitante:"Spain",grupo:"H",estadio:"TBD"},
-  {fecha:"2026-06-26",hora:"22:00",local:"New Zealand",visitante:"Belgium",grupo:"G",estadio:"TBD"},
-  {fecha:"2026-06-26",hora:"22:00",local:"Egypt",visitante:"Iran",grupo:"G",estadio:"TBD"},
-  // Jun 27
-  {fecha:"2026-06-27",hora:"16:00",local:"Panama",visitante:"England",grupo:"L",estadio:"TBD"},
-  {fecha:"2026-06-27",hora:"16:00",local:"Croatia",visitante:"Ghana",grupo:"L",estadio:"TBD"},
-  {fecha:"2026-06-27",hora:"18:30",local:"Colombia",visitante:"Portugal",grupo:"K",estadio:"TBD"},
-  {fecha:"2026-06-27",hora:"18:30",local:"DR Congo",visitante:"Uzbekistan",grupo:"K",estadio:"TBD"},
-  {fecha:"2026-06-27",hora:"21:00",local:"Algeria",visitante:"Austria",grupo:"J",estadio:"TBD"},
-  {fecha:"2026-06-27",hora:"21:00",local:"Jordan",visitante:"Argentina",grupo:"J",estadio:"TBD"},
+  { fecha: "2026-06-11", hora: "14:00", local: "Mexico", visitante: "Sudafrica", grupo: "A", estadio: "Estadio Ciudad de México (Ciudad de México)" },
+  { fecha: "2026-06-11", hora: "21:00", local: "Republica de Corea", visitante: "Republica Checa", grupo: "A", estadio: "Estadio Guadalajara (Guadalajara)" },
+  { fecha: "2026-06-12", hora: "14:00", local: "Canada", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "Estadio de Toronto (Toronto)" },
+  { fecha: "2026-06-12", hora: "20:00", local: "Estados Unidos", visitante: "Paraguay", grupo: "D", estadio: "Estadio Los Angeles (Los Ángeles)" },
+  { fecha: "2026-06-13", hora: "14:00", local: "Qatar", visitante: "Suiza", grupo: "B", estadio: "Estadio de la Bahía de San Francisco (Área de la Bahía)" },
+  { fecha: "2026-06-13", hora: "17:00", local: "Brasil", visitante: "Marruecos", grupo: "C", estadio: "Estadio Nueva York/Nueva Jersey (Nueva York)" },
+  { fecha: "2026-06-13", hora: "20:00", local: "Haiti", visitante: "Escocia", grupo: "C", estadio: "Estadio Boston (Boston)" },
+  { fecha: "2026-06-13", hora: "23:00", local: "Australia", visitante: "Turquia", grupo: "D", estadio: "Estadio BC Place Vancouver (Vancouver)" },
+  { fecha: "2026-06-14", hora: "12:00", local: "Alemania", visitante: "Curazao", grupo: "E", estadio: "Estadio Houston (Houston)" },
+  { fecha: "2026-06-14", hora: "15:00", local: "Paises Bajos", visitante: "Japon", grupo: "F", estadio: "Estadio Dallas (Dallas)" },
+  { fecha: "2026-06-14", hora: "18:00", local: "Costa de Marfil", visitante: "Ecuador", grupo: "E", estadio: "Estadio Filadelfia (Filadelfia)" },
+  { fecha: "2026-06-14", hora: "21:00", local: "Suecia", visitante: "Tunez", grupo: "F", estadio: "Estadio Monterrey (Monterrey)" },
+  { fecha: "2026-06-15", hora: "11:00", local: "España", visitante: "Cabo Verde", grupo: "H", estadio: "Estadio Atlanta (Atlanta)" },
+  { fecha: "2026-06-15", hora: "14:00", local: "Belgica", visitante: "Egipto", grupo: "G", estadio: "Estadio de Seattle (Seattle)" },
+  { fecha: "2026-06-15", hora: "17:00", local: "Arabia Saudita", visitante: "Uruguay", grupo: "H", estadio: "Estadio Miami (Miami)" },
+  { fecha: "2026-06-15", hora: "20:00", local: "Iran", visitante: "Nueva Zelanda", grupo: "G", estadio: "Estadio Los Angeles (Los Ángeles)" },
+  { fecha: "2026-06-16", hora: "14:00", local: "Francia", visitante: "Senegal", grupo: "I", estadio: "Estadio Nueva York/Nueva Jersey (Nueva York)" },
+  { fecha: "2026-06-16", hora: "17:00", local: "Irak", visitante: "Noruega", grupo: "I", estadio: "Estadio Boston (Boston)" },
+  { fecha: "2026-06-16", hora: "20:00", local: "Argentina", visitante: "Argelia", grupo: "J", estadio: "Estadio Kansas City (Kansas City)" },
+  { fecha: "2026-06-16", hora: "23:00", local: "Austria", visitante: "Jordania", grupo: "J", estadio: "Estadio de la Bahía de San Francisco (Área de la Bahía)" },
+  { fecha: "2026-06-17", hora: "12:00", local: "Portugal", visitante: "RD Congo", grupo: "K", estadio: "Estadio Houston (Houston)" },
+  { fecha: "2026-06-17", hora: "15:00", local: "Inglaterra", visitante: "Croacia", grupo: "L", estadio: "Estadio Dallas (Dallas)" },
+  { fecha: "2026-06-17", hora: "18:00", local: "Ghana", visitante: "Panama", grupo: "L", estadio: "Estadio de Toronto (Toronto)" },
+  { fecha: "2026-06-17", hora: "21:00", local: "Uzbekistan", visitante: "Colombia", grupo: "K", estadio: "Estadio Ciudad de México (Ciudad de México)" },
+  { fecha: "2026-06-18", hora: "11:00", local: "Republica Checa", visitante: "Sudafrica", grupo: "A", estadio: "Estadio Atlanta (Atlanta)" },
+  { fecha: "2026-06-18", hora: "14:00", local: "Suiza", visitante: "Bosnia y Herzegovina", grupo: "B", estadio: "Estadio Los Angeles (Los Ángeles)" },
+  { fecha: "2026-06-18", hora: "17:00", local: "Canada", visitante: "Qatar", grupo: "B", estadio: "Estadio BC Place Vancouver (Vancouver)" },
+  { fecha: "2026-06-18", hora: "20:00", local: "Mexico", visitante: "Republica de Corea", grupo: "A", estadio: "Estadio Guadalajara (Guadalajara)" },
+  { fecha: "2026-06-19", hora: "14:00", local: "Estados Unidos", visitante: "Australia", grupo: "D", estadio: "Estadio de Seattle (Seattle)" },
+  { fecha: "2026-06-19", hora: "17:00", local: "Escocia", visitante: "Marruecos", grupo: "C", estadio: "Estadio Boston (Boston)" },
+  { fecha: "2026-06-19", hora: "19:30", local: "Brasil", visitante: "Haiti", grupo: "C", estadio: "Estadio Filadelfia (Filadelfia)" },
+  { fecha: "2026-06-19", hora: "22:00", local: "Turquia", visitante: "Paraguay", grupo: "D", estadio: "Estadio de la Bahía de San Francisco (Área de la Bahía)" },
+  { fecha: "2026-06-20", hora: "12:00", local: "Paises Bajos", visitante: "Suecia", grupo: "F", estadio: "Estadio Houston (Houston)" },
+  { fecha: "2026-06-20", hora: "15:00", local: "Alemania", visitante: "Costa de Marfil", grupo: "E", estadio: "Estadio de Toronto (Toronto)" },
+  { fecha: "2026-06-20", hora: "19:00", local: "Ecuador", visitante: "Curazao", grupo: "E", estadio: "Estadio Kansas City (Kansas City)" },
+  { fecha: "2026-06-20", hora: "23:00", local: "Tunez", visitante: "Japon", grupo: "F", estadio: "Estadio Monterrey (Monterrey)" },
+  { fecha: "2026-06-21", hora: "11:00", local: "España", visitante: "Arabia Saudita", grupo: "H", estadio: "Estadio Atlanta (Atlanta)" },
+  { fecha: "2026-06-21", hora: "14:00", local: "Belgica", visitante: "Iran", grupo: "G", estadio: "Estadio Los Angeles (Los Ángeles)" },
+  { fecha: "2026-06-21", hora: "17:00", local: "Uruguay", visitante: "Cabo Verde", grupo: "H", estadio: "Estadio Miami (Miami)" },
+  { fecha: "2026-06-21", hora: "20:00", local: "Nueva Zelanda", visitante: "Egipto", grupo: "G", estadio: "Estadio BC Place Vancouver (Vancouver)" },
+  { fecha: "2026-06-22", hora: "12:00", local: "Argentina", visitante: "Austria", grupo: "J", estadio: "Estadio Dallas (Dallas)" },
+  { fecha: "2026-06-22", hora: "16:00", local: "Francia", visitante: "Irak", grupo: "I", estadio: "Estadio Filadelfia (Filadelfia)" },
+  { fecha: "2026-06-22", hora: "19:00", local: "Noruega", visitante: "Senegal", grupo: "I", estadio: "Estadio Nueva York/Nueva Jersey (Nueva York)" },
+  { fecha: "2026-06-22", hora: "22:00", local: "Jordania", visitante: "Argelia", grupo: "J", estadio: "Estadio de la Bahía de San Francisco (Área de la Bahía)" },
+  { fecha: "2026-06-23", hora: "12:00", local: "Portugal", visitante: "Uzbekistan", grupo: "K", estadio: "Estadio Houston (Houston)" },
+  { fecha: "2026-06-23", hora: "15:00", local: "Inglaterra", visitante: "Ghana", grupo: "L", estadio: "Estadio Boston (Boston)" },
+  { fecha: "2026-06-23", hora: "18:00", local: "Panama", visitante: "Croacia", grupo: "L", estadio: "Estadio de Toronto (Toronto)" },
+  { fecha: "2026-06-23", hora: "21:00", local: "Colombia", visitante: "RD Congo", grupo: "K", estadio: "Estadio Guadalajara (Guadalajara)" },
+  { fecha: "2026-06-24", hora: "14:00", local: "Suiza", visitante: "Canada", grupo: "B", estadio: "Estadio BC Place Vancouver (Vancouver)" },
+  { fecha: "2026-06-24", hora: "14:00", local: "Bosnia y Herzegovina", visitante: "Qatar", grupo: "B", estadio: "Estadio de Seattle (Seattle)" },
+  { fecha: "2026-06-24", hora: "17:00", local: "Escocia", visitante: "Brasil", grupo: "C", estadio: "Estadio Miami (Miami)" },
+  { fecha: "2026-06-24", hora: "17:00", local: "Marruecos", visitante: "Haiti", grupo: "C", estadio: "Estadio Atlanta (Atlanta)" },
+  { fecha: "2026-06-24", hora: "20:00", local: "Republica Checa", visitante: "Mexico", grupo: "A", estadio: "Estadio Ciudad de México (Ciudad de México)" },
+  { fecha: "2026-06-24", hora: "20:00", local: "Sudafrica", visitante: "Republica de Corea", grupo: "A", estadio: "Estadio Monterrey (Monterrey)" },
+  { fecha: "2026-06-25", hora: "15:00", local: "Curazao", visitante: "Costa de Marfil", grupo: "E", estadio: "Estadio Filadelfia (Filadelfia)" },
+  { fecha: "2026-06-25", hora: "15:00", local: "Ecuador", visitante: "Alemania", grupo: "E", estadio: "Estadio Nueva York/Nueva Jersey (Nueva York)" },
+  { fecha: "2026-06-25", hora: "18:00", local: "Japon", visitante: "Suecia", grupo: "F", estadio: "Estadio Dallas (Dallas)" },
+  { fecha: "2026-06-25", hora: "18:00", local: "Tunez", visitante: "Paises Bajos", grupo: "F", estadio: "Estadio Kansas City (Kansas City)" },
+  { fecha: "2026-06-25", hora: "21:00", local: "Turquia", visitante: "Estados Unidos", grupo: "D", estadio: "Estadio Los Angeles (Los Ángeles)" },
+  { fecha: "2026-06-25", hora: "21:00", local: "Paraguay", visitante: "Australia", grupo: "D", estadio: "Estadio de la Bahía de San Francisco (Área de la Bahía)" },
+  { fecha: "2026-06-26", hora: "14:00", local: "Noruega", visitante: "Francia", grupo: "I", estadio: "Estadio Boston (Boston)" },
+  { fecha: "2026-06-26", hora: "14:00", local: "Senegal", visitante: "Irak", grupo: "I", estadio: "Estadio de Toronto (Toronto)" },
+  { fecha: "2026-06-26", hora: "19:00", local: "Cabo Verde", visitante: "Arabia Saudita", grupo: "H", estadio: "Estadio Houston (Houston)" },
+  { fecha: "2026-06-26", hora: "19:00", local: "Uruguay", visitante: "España", grupo: "H", estadio: "Estadio Guadalajara (Guadalajara)" },
+  { fecha: "2026-06-26", hora: "22:00", local: "Egipto", visitante: "Iran", grupo: "G", estadio: "Estadio de Seattle (Seattle)" },
+  { fecha: "2026-06-26", hora: "22:00", local: "Nueva Zelanda", visitante: "Belgica", grupo: "G", estadio: "Estadio BC Place Vancouver (Vancouver)" },
+  { fecha: "2026-06-27", hora: "16:00", local: "Panama", visitante: "Inglaterra", grupo: "L", estadio: "Estadio Nueva York/Nueva Jersey (Nueva York)" },
+  { fecha: "2026-06-27", hora: "16:00", local: "Croacia", visitante: "Ghana", grupo: "L", estadio: "Estadio Filadelfia (Filadelfia)" },
+  { fecha: "2026-06-27", hora: "18:30", local: "Colombia", visitante: "Portugal", grupo: "K", estadio: "Estadio Miami (Miami)" },
+  { fecha: "2026-06-27", hora: "18:30", local: "RD Congo", visitante: "Uzbekistan", grupo: "K", estadio: "Estadio Atlanta (Atlanta)" },
+  { fecha: "2026-06-27", hora: "21:00", local: "Argelia", visitante: "Austria", grupo: "J", estadio: "Estadio Kansas City (Kansas City)" },
+  { fecha: "2026-06-27", hora: "21:00", local: "Jordania", visitante: "Argentina", grupo: "J", estadio: "Estadio Dallas (Dallas)" },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -247,8 +233,10 @@ function getRandomItems(arr, n) {
   return copy.slice(0, n);
 }
 
-function makeMatchId(local, visitante, fecha) {
-  return `${local}_${visitante}_${fecha}`.replace(/\s+/g, '_');
+function makeMatchId(local, visitante, fecha, faseExtra = '') {
+  const base = `${local}_${visitante}_${fecha}`.replace(/\s+/g, '_');
+  if (!faseExtra) return base;
+  return `${base}_${String(faseExtra).replace(/\s+/g, '_')}`;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -298,12 +286,16 @@ function buildRandomUser(i, seedTs) {
 // ═══════════════════════════════════════════════════════════════════
 //  CARGAR PARTIDOS: Seed all 96 group stage matches
 // ═══════════════════════════════════════════════════════════════════
-async function cargarPartidos() {
+async function cargarPartidos(offset = 0, limit = null) {
+  const total = GROUP_MATCHES.length;
+  const end = limit == null ? total : Math.min(offset + limit, total);
+  const slice = GROUP_MATCHES.slice(offset, end);
+
   let created = 0;
   let failed = 0;
   const errors = [];
 
-  for (const m of GROUP_MATCHES) {
+  for (const m of slice) {
     const record = {
       fecha: m.fecha,
       hora: m.hora,
@@ -319,16 +311,26 @@ async function cargarPartidos() {
     if (res.ok) created++;
     else {
       failed++;
-      errors.push(`${m.local} vs ${m.visitante}: status ${res.status}`);
+      const errDetail = res.data && (res.data.message || res.data.data) ? JSON.stringify(res.data).slice(0, 200) : (res.raw || '').slice(0, 120);
+      errors.push(`${m.local} vs ${m.visitante}: ${res.status} ${errDetail}`);
     }
+    await sleep(15);
   }
+
+  const nextOffset = end;
+  const done = nextOffset >= total;
 
   return {
     success: failed === 0,
-    message: `⚽ Cargados ${created}/${GROUP_MATCHES.length} partidos de fase de grupos.`,
+    message: `⚽ Lote: +${created} creados (índices ${offset}–${end - 1}). Total previsto fase grupos: ${total}.`,
     created,
     failed,
-    errors
+    errors,
+    offset,
+    nextOffset,
+    totalExpected: total,
+    done,
+    sliceLen: slice.length
   };
 }
 
@@ -362,16 +364,13 @@ async function nukePartidos() {
 // ═══════════════════════════════════════════════════════════════════
 //  SIMULAR MUNDIAL: Random scores for groups + hardcoded knockout
 // ═══════════════════════════════════════════════════════════════════
-async function simularMundial() {
-  // 1. Get all existing matches
+async function simularMundialGrupos() {
   const allMatches = await fetchAllRecords(MATCHES_COLL);
   const groupMatches = allMatches.filter(m => m.Fase_o_Grupo && m.Fase_o_Grupo.length === 1);
 
   let patched = 0;
-  let knockoutCreated = 0;
   const errors = [];
 
-  // 2. Set random scores (0-5) for all group stage matches
   for (const m of groupMatches) {
     const scoreL = Math.floor(Math.random() * 6);
     const scoreV = Math.floor(Math.random() * 6);
@@ -381,13 +380,29 @@ async function simularMundial() {
     });
     if (res.ok) patched++;
     else errors.push(`Patch ${m.id}: status ${res.status}`);
+    await sleep(12);
   }
 
-  // 3. Create knockout matches with hardcoded results
-  for (const km of KNOCKOUT_MATCHES) {
-    // Winner is always local team (hardcoded for simplicity)
-    const scoreL = Math.floor(Math.random() * 3) + 1; // 1-3
-    const scoreV = Math.floor(Math.random() * scoreL);  // 0 to scoreL-1 (local always wins)
+  return {
+    success: errors.length === 0,
+    message: `🎲 Grupos: ${patched}/${groupMatches.length} marcadores aleatorios.`,
+    patched,
+    groupTotal: groupMatches.length,
+    errors
+  };
+}
+
+async function simularMundialKnockout(offset = 0, limit = null) {
+  const total = KNOCKOUT_MATCHES.length;
+  const end = limit == null ? total : Math.min(offset + limit, total);
+  const slice = KNOCKOUT_MATCHES.slice(offset, end);
+
+  let knockoutCreated = 0;
+  const errors = [];
+
+  for (const km of slice) {
+    const scoreL = Math.floor(Math.random() * 3) + 1;
+    const scoreV = Math.floor(Math.random() * scoreL);
     const record = {
       fecha: km.fecha,
       hora: km.hora,
@@ -397,19 +412,29 @@ async function simularMundial() {
       estadio: km.estadio,
       resulltado_local: scoreL,
       resultado_visitante: scoreV,
-      id_partido: makeMatchId(km.local, km.visitante, km.fecha),
+      id_partido: makeMatchId(km.local, km.visitante, km.fecha, km.fase),
       ganador_final: km.local
     };
     const res = await createRecord(MATCHES_COLL, record);
     if (res.ok) knockoutCreated++;
-    else errors.push(`Knockout ${km.local} vs ${km.visitante}: status ${res.status}`);
+    else {
+      const errDetail = res.data && res.data.message ? String(res.data.message).slice(0, 120) : (res.raw || '').slice(0, 80);
+      errors.push(`Knockout ${km.local} vs ${km.visitante}: ${res.status} ${errDetail}`);
+    }
+    await sleep(15);
   }
+
+  const nextOffset = end;
+  const done = nextOffset >= total;
 
   return {
     success: errors.length === 0,
-    message: `🎲 Simulación completa. Grupos: ${patched} resultados random. Eliminatorias: ${knockoutCreated} partidos creados. Campeón: Brazil 🇧🇷`,
-    patched,
+    message: `🎲 Eliminatorias: +${knockoutCreated} en este lote (índices ${offset}–${end - 1}, total KO ${total}).`,
     knockoutCreated,
+    offset,
+    nextOffset,
+    totalKnockout: total,
+    done,
     errors
   };
 }
@@ -570,7 +595,10 @@ export default async function handler(req) {
     }
 
     if (action === 'cargar_partidos') {
-      const result = await cargarPartidos();
+      const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+      const limRaw = url.searchParams.get('limit');
+      const limit = limRaw == null || limRaw === '' ? null : parseInt(limRaw, 10);
+      const result = await cargarPartidos(offset, limit);
       return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
 
@@ -579,9 +607,27 @@ export default async function handler(req) {
       return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
     }
 
-    if (action === 'simular') {
-      const result = await simularMundial();
+    if (action === 'simular_grupos') {
+      const result = await simularMundialGrupos();
       return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    if (action === 'simular_knockout') {
+      const offset = parseInt(url.searchParams.get('offset') || '0', 10);
+      const limRaw = url.searchParams.get('limit');
+      const limit = limRaw == null || limRaw === '' ? 12 : parseInt(limRaw, 10);
+      const result = await simularMundialKnockout(offset, limit);
+      return new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    /** Compat: una sola llamada = solo fase grupos (evita timeout); el UI encadena KO. */
+    if (action === 'simular') {
+      const g = await simularMundialGrupos();
+      return new Response(JSON.stringify({
+        ...g,
+        message: g.message + ' Usa el botón SIMULAR completo o ejecuta simular_knockout por lotes.',
+        hint: 'simular_knockout'
+      }), { headers: { 'Content-Type': 'application/json' } });
     }
 
     if (action === 'clean_simulacion') {
@@ -631,13 +677,13 @@ export default async function handler(req) {
 
         <div class="section">
             <div class="section-label">⚽ PARTIDOS</div>
-            <button class="btn btn-cargar" onclick="run('cargar_partidos')">📦 CARGAR PARTIDOS (96)</button>
+            <button class="btn btn-cargar" onclick="run('cargar_partidos')">📦 CARGAR PARTIDOS (${GROUP_MATCHES.length})</button>
             <button class="btn btn-nuke-p" onclick="run('nuke_partidos')">💣 NUKE PARTIDOS</button>
         </div>
 
         <div class="section">
             <div class="section-label">🎲 SIMULACIÓN</div>
-            <button class="btn btn-simular" onclick="run('simular')">🎲 SIMULAR MUNDIAL</button>
+            <button class="btn btn-simular" onclick="run('simular')">🎲 SIMULAR (grupos + ${KNOCKOUT_MATCHES.length} KO)</button>
             <button class="btn btn-clean" onclick="run('clean_simulacion')">🧹 CLEAN SIMULACIÓN</button>
         </div>
 
@@ -645,22 +691,91 @@ export default async function handler(req) {
     </div>
 
     <script>
-        async function run(action) {
+        async function parseJsonSafe(res) {
+            const text = await res.text();
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                throw new Error('Respuesta no JSON (timeout o error de plataforma). HTTP ' + res.status + '. Inicio: ' + text.slice(0, 350));
+            }
+        }
+        async function runCargarPartidos() {
             const st = document.getElementById('status');
             const btns = document.querySelectorAll('.btn');
-            btns.forEach(b => b.disabled = true);
-            st.innerText = 'PROCESANDO... (esto puede tardar)';
+            btns.forEach(function (b) { b.disabled = true; });
             st.style.color = 'white';
+            const chunk = 25;
+            var offset = 0;
+            var lines = [];
             try {
-                const res = await fetch(\`?action=\${action}\`, { method: 'POST' });
-                const data = await res.json();
-                st.innerText = data.message || 'OK';
-                st.style.color = data.success ? '#C9FF24' : '#FF0055';
+                while (true) {
+                    st.innerText = 'Cargando partidos… desde índice ' + offset;
+                    var res = await fetch('?action=cargar_partidos&offset=' + offset + '&limit=' + chunk, { method: 'POST' });
+                    var data = await parseJsonSafe(res);
+                    lines.push(data.message);
+                    if (data.errors && data.errors.length) lines = lines.concat(data.errors.slice(0, 5));
+                    if (data.done) break;
+                    offset = data.nextOffset;
+                }
+                st.innerText = lines.join('\\n');
+                st.style.color = '#C9FF24';
             } catch (e) {
-                st.innerText = 'ERROR EN LA PETICIÓN: ' + e.message;
+                st.innerText = String(e.message);
                 st.style.color = '#FF0055';
             } finally {
-                btns.forEach(b => b.disabled = false);
+                btns.forEach(function (b) { b.disabled = false; });
+            }
+        }
+        async function runSimularCompleto() {
+            const st = document.getElementById('status');
+            const btns = document.querySelectorAll('.btn');
+            btns.forEach(function (b) { b.disabled = true; });
+            st.style.color = 'white';
+            var lines = [];
+            try {
+                st.innerText = 'Simulando fase de grupos…';
+                var r1 = await fetch('?action=simular_grupos', { method: 'POST' });
+                var d1 = await parseJsonSafe(r1);
+                lines.push(d1.message);
+                st.innerText = lines.join(' | ');
+                var off = 0;
+                var batch = 8;
+                while (true) {
+                    st.innerText = lines.join(' | ') + ' — KO offset ' + off;
+                    var r2 = await fetch('?action=simular_knockout&offset=' + off + '&limit=' + batch, { method: 'POST' });
+                    var d2 = await parseJsonSafe(r2);
+                    lines.push(d2.message);
+                    if (d2.errors && d2.errors.length) lines = lines.concat(d2.errors.slice(0, 4));
+                    if (d2.done) break;
+                    off = d2.nextOffset;
+                }
+                st.innerText = lines.join('\\n');
+                st.style.color = '#C9FF24';
+            } catch (e) {
+                st.innerText = String(e.message);
+                st.style.color = '#FF0055';
+            } finally {
+                btns.forEach(function (b) { b.disabled = false; });
+            }
+        }
+        async function run(action) {
+            if (action === 'cargar_partidos') return runCargarPartidos();
+            if (action === 'simular') return runSimularCompleto();
+            const st = document.getElementById('status');
+            const btns = document.querySelectorAll('.btn');
+            btns.forEach(function (b) { b.disabled = true; });
+            st.innerText = 'PROCESANDO...';
+            st.style.color = 'white';
+            try {
+                const res = await fetch('?action=' + encodeURIComponent(action), { method: 'POST' });
+                const data = await parseJsonSafe(res);
+                st.innerText = data.message || JSON.stringify(data);
+                st.style.color = data.success !== false ? '#C9FF24' : '#FF0055';
+            } catch (e) {
+                st.innerText = 'ERROR: ' + e.message;
+                st.style.color = '#FF0055';
+            } finally {
+                btns.forEach(function (b) { b.disabled = false; });
             }
         }
     </script>

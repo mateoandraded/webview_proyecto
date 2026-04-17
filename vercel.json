@@ -1,4 +1,9 @@
 {
   "version": 2,
-  "buildCommand": null
+  "buildCommand": null,
+  "functions": {
+    "api/admin.js": {
+      "maxDuration": 60
+    }
+  }
 }

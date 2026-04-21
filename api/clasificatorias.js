@@ -729,7 +729,7 @@ o]);
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify(cbBody)
-          }).finally(function(){ setTimeout(function(){ window.location.href = "https://wa.me/13239183195"; }, 1500); });
+          }).finally(function(){ setTimeout(function(){ window.location.href = "https://wa.me/593983456638"; }, 1500); });
         }else{
           alert("Error al guardar");
         }
@@ -746,7 +746,7 @@ o]);
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ executionId: exId, success: true, data: { action: "volver" } })
-      }).finally(function(){ window.location.href = "https://wa.me/13239183195"; });
+      }).finally(function(){ window.location.href = "https://wa.me/593983456638"; });
     }
 
     document.addEventListener("visibilitychange", function(){

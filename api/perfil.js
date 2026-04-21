@@ -371,7 +371,7 @@ export default async function handler(req) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cbBody)
       }).finally(function() {
-        window.location.href = "https://wa.me/13239183195";
+        window.location.href = "https://wa.me/593983456638";
       });
     }
   </script>

@@ -320,7 +320,7 @@ export default async function handler(req) {
     '    var t=document.getElementById("toast");t.classList.add("show");' +
     '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
     '    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
-    '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/13239183195";},1500); });' +
+    '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/593983456638";},1500); });' +
     '  }else{alert("Error al guardar.");}' +
     '})' +
     '.catch(function(){alert("Error de red.");})' +
@@ -332,7 +332,7 @@ export default async function handler(req) {
     '  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
     '  var cbBody={executionId:exId,success:true,data:{action:"volver"}}; ' +
     '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
-    '    .finally(function(){ window.location.href="https://wa.me/13239183195"; });' +
+    '    .finally(function(){ window.location.href="https://wa.me/593983456638"; });' +
     '};';
 
   const html = '<!DOCTYPE html><html lang="es"><head>' +

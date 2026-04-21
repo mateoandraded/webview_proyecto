@@ -62,7 +62,7 @@ function silentPatch(coll, id, payload) {
     method: 'PATCH',
     headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },
     body: JSON.stringify(payload)
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 /** Inicio fase de grupos Mundial 2026 (Datum + grupos.js). */
@@ -140,7 +140,7 @@ export default async function handler(req) {
 
   // 1. Fetch Datum + fecha simulada desde Jelou Functions (mismos secrets que FECHA_HOY)
   const [rawMatches, profiles, predictions, brackets, hoy] = await Promise.all([
-    fetch(BASE_URL_MATCHES, { headers: {"X-Api-Key": API_KEY} }).then(r=>r.ok?r.json().then(d=>d.items||[]):[]).catch(()=>[]),
+    fetch(BASE_URL_MATCHES, { headers: { "X-Api-Key": API_KEY } }).then(r => r.ok ? r.json().then(d => d.items || []) : []).catch(() => []),
     fetchDB('pbc_3271891893'), // Perfiles/Ranking
     fetchDB('pbc_1944158292'), // Pronosticos Goles
     fetchDB('pbc_3221812075'), // Pronosticos Brackets
@@ -294,16 +294,16 @@ export default async function handler(req) {
 
       listHtml +=
         '<div class="rank-card" style="--accent:' + c.accent + ';--dark:' + c.dark + '">' +
-          badgeHtml +
-          '<div class="rc-pos" style="background:' + c.accent + ';color:' + c.dark + '">' + medalLabel(posNum) + '</div>' +
-          '<div class="rc-info">' +
-            '<div class="rc-name' + (isUser ? ' is-user' : '') + '">' + esc(t.nombre || 'Anónimo') + '</div>' +
-            '<div class="rc-sub">' + (t.aciertos || 0) + ' aciertos ext.</div>' +
-          '</div>' +
-          '<div class="rc-score">' +
-            '<div class="rc-pts" style="color:' + c.accent + '">' + (t.total_puntos || 0) + '</div>' +
-            '<div class="rc-lbl">PTS GLOBALES</div>' +
-          '</div>' +
+        badgeHtml +
+        '<div class="rc-pos" style="background:' + c.accent + ';color:' + c.dark + '">' + medalLabel(posNum) + '</div>' +
+        '<div class="rc-info">' +
+        '<div class="rc-name' + (isUser ? ' is-user' : '') + '">' + esc(t.nombre || 'Anónimo') + '</div>' +
+        '<div class="rc-sub">' + (t.aciertos || 0) + ' aciertos ext.</div>' +
+        '</div>' +
+        '<div class="rc-score">' +
+        '<div class="rc-pts" style="color:' + c.accent + '">' + (t.total_puntos || 0) + '</div>' +
+        '<div class="rc-lbl">PTS GLOBALES</div>' +
+        '</div>' +
         '</div>';
     });
   } else {
@@ -315,16 +315,16 @@ export default async function handler(req) {
     listHtml +=
       '<div class="divider"><span>TU POSICI\u00D3N GENERAL</span></div>' +
       '<div class="rank-card" style="--accent:#FF6B35;--dark:#fff">' +
-        '<div class="badge-tu">T\u00FA</div>' +
-        '<div class="rc-pos" style="background:#FF6B35;color:#fff">' + (currentUserIndex + 1) + '</div>' +
-        '<div class="rc-info">' +
-          '<div class="rc-name is-user">' + esc(currentUserObj.nombre) + '</div>' +
-          '<div class="rc-sub">' + currentUserObj.aciertos + ' aciertos</div>' +
-        '</div>' +
-        '<div class="rc-score">' +
-          '<div class="rc-pts" style="color:#FF6B35">' + currentUserObj.total_puntos + '</div>' +
-          '<div class="rc-lbl">PTS</div>' +
-        '</div>' +
+      '<div class="badge-tu">T\u00FA</div>' +
+      '<div class="rc-pos" style="background:#FF6B35;color:#fff">' + (currentUserIndex + 1) + '</div>' +
+      '<div class="rc-info">' +
+      '<div class="rc-name is-user">' + esc(currentUserObj.nombre) + '</div>' +
+      '<div class="rc-sub">' + currentUserObj.aciertos + ' aciertos</div>' +
+      '</div>' +
+      '<div class="rc-score">' +
+      '<div class="rc-pts" style="color:#FF6B35">' + currentUserObj.total_puntos + '</div>' +
+      '<div class="rc-lbl">PTS</div>' +
+      '</div>' +
       '</div>';
   }
 
@@ -385,37 +385,37 @@ export default async function handler(req) {
     '<style>' + css + '</style>' +
     '</head><body>' +
     '<div class="app">' +
-      '<div class="header-box">' +
-        '<div class="header-26">26</div>' +
-        '<div class="badge-26">QUINIELA 2026</div>' +
-        '<h1>TABLA DE<br>POSICIONES</h1>' +
-      '</div>' +
-      '<div class="section-label">\uD83C\uDFC6 RANKING GLOBAL TOP 5</div>' +
-      '<div class="rank-list">' + listHtml + '</div>' +
+    '<div class="header-box">' +
+    '<div class="header-26">26</div>' +
+    '<div class="badge-26">JELOU MUNDIAL 2026</div>' +
+    '<h1>TABLA DE<br>POSICIONES</h1>' +
+    '</div>' +
+    '<div class="section-label">\uD83C\uDFC6 RANKING GLOBAL TOP 5</div>' +
+    '<div class="rank-list">' + listHtml + '</div>' +
     '</div>' +
     '<div class="footer-bar">' +
-      '<button class="btn-volver" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
+    '<button class="btn-volver" id="btn-volver" onclick="volverMenu()">VOLVER</button>' +
     '</div>' +
     '<script>' +
-      'var callbackSent=false;' +
-      'document.addEventListener("visibilitychange",function(){' +
-        'if(document.visibilityState==="hidden"&&!callbackSent){' +
-          'callbackSent=true;' +
-          'var execId=new URLSearchParams(window.location.search).get("executionId")||"' + esc(executionId) + '";' +
-          'var cbBody={executionId:execId,success:true,data:{action:"volver"}};' +
-          'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
-        '}' +
-      '});' +
-      'function volverMenu(){' +
-        'if(callbackSent)return;' +
-        'callbackSent=true;' +
-        'var execId="' + esc(executionId) + '";' +
-        'var btn=document.getElementById("btn-volver");' +
-        'btn.innerText="Saliendo...";btn.disabled=true;' +
-        'var cbBody={executionId:execId,success:true,data:{action:"volver"}};' +
-        'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
-          '.finally(function(){ window.location.href="https://wa.me/13239183195"; });' +
-      '}' +
+    'var callbackSent=false;' +
+    'document.addEventListener("visibilitychange",function(){' +
+    'if(document.visibilityState==="hidden"&&!callbackSent){' +
+    'callbackSent=true;' +
+    'var execId=new URLSearchParams(window.location.search).get("executionId")||"' + esc(executionId) + '";' +
+    'var cbBody={executionId:execId,success:true,data:{action:"volver"}};' +
+    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
+    '}' +
+    '});' +
+    'function volverMenu(){' +
+    'if(callbackSent)return;' +
+    'callbackSent=true;' +
+    'var execId="' + esc(executionId) + '";' +
+    'var btn=document.getElementById("btn-volver");' +
+    'btn.innerText="Saliendo...";btn.disabled=true;' +
+    'var cbBody={executionId:execId,success:true,data:{action:"volver"}};' +
+    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+    '.finally(function(){ window.location.href="https://wa.me/593983456638"; });' +
+    '}' +
     '<\/script>' +
     '</body></html>';
 

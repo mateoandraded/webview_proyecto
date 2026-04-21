@@ -625,9 +625,6 @@ export default async function handler(req) {
           h += matchFinal("PARTIDO POR EL TERCER LUGAR", "tercero", "cuarto", thirdFinal, "3er PUESTO", "4to PUESTO");
         }
       }
-o]);
-        }
-      }
       p.innerHTML = h;
     }
 

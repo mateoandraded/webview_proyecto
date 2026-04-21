@@ -603,7 +603,8 @@ export default async function handler(req) {
         if(m101 && w101) thirdFinal.push(w101 === m101.home ? m101.away : m101.home);
         if(m102 && w102) thirdFinal.push(w102 === m102.home ? m102.away : m102.home);
 
-        h += "<div class=\\"instr\\">Selecciona podio final de        if(finalists.length < 2 || thirdFinal.length < 2){
+        h += "<div class=\\"instr\\">Selecciona podio final</div>";
+        if(finalists.length < 2 || thirdFinal.length < 2){
           h += "<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero completa SEMIS</div>";
         } else {
           function matchFinal(label, winKey, loseKey, pool, winLabel, loseLabel){

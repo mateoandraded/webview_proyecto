@@ -52,23 +52,25 @@ function bracketPayloadsEqual(p, existing) {
 }
 
 const FLAGS_MAP = {
-  "MEXICO": "\uD83C\uDDF2\uD83C\uDDFD", "ESTADOS UNIDOS": "\uD83C\uDDFA\uD83C\uDDF8", "CANADA": "\uD83C\uDDE8\uD83C\uDDE6", "BRASIL": "\uD83C\uDDE7\uD83C\uDDF7",
-  "ARGENTINA": "\uD83C\uDDE6\uD83C\uDDF7", "ECUADOR": "\uD83C\uDDEA\uD83C\uDDE8", "COLOMBIA": "\uD83C\uDDE8\uD83C\uDDF4", "URUGUAY": "\uD83C\uDDFA\uD83C\uDDFE",
-  "PARAGUAY": "\uD83C\uDDF5\uD83C\uDDFE", "CHILE": "\uD83C\uDDE8\uD83C\uDDF1", "PERU": "\uD83C\uDDF5\uD83C\uDDEA", "VENEZUELA": "\uD83C\uDDFB\uD83C\uDDEA",
-  "ALEMANIA": "\uD83C\uDDE9\uD83C\uDDEA", "ESPANA": "\uD83C\uDDEA\uD83C\uDDF8", "ESPA\u00D1A": "\uD83C\uDDEA\uD83C\uDDF8", "FRANCIA": "\uD83C\uDDEB\uD83C\uDDF7", "PORTUGAL": "\uD83C\uDDF5\uD83C\uDDF9",
-  "BELGICA": "\uD83C\uDDE7\uD83C\uDDEA", "PAISES BAJOS": "\uD83C\uDDF3\uD83C\uDDF1", "CROACIA": "\uD83C\uDDED\uD83C\uDDF7", "SERBIA": "\uD83C\uDDF7\uD83C\uDDF8",
-  "SUIZA": "\uD83C\uDDE8\uD83C\uDDED", "TURQUIA": "\uD83C\uDDF9\uD83C\uDDF7", "DINAMARCA": "\uD83C\uDDE9\uD83C\uDDF0", "AUSTRIA": "\uD83C\uDDE6\uD83C\uDDF9",
-  "POLONIA": "\uD83C\uDDF5\uD83C\uDDF1", "RUMANIA": "\uD83C\uDDF7\uD83C\uDDF4", "ESLOVENIA": "\uD83C\uDDF8\uD83C\uDDEE", "ESLOVAQUIA": "\uD83C\uDDF8\uD83C\uDDF0",
-  "ALBANIA": "\uD83C\uDDE6\uD83C\uDDF1", "UCRANIA": "\uD83C\uDDFA\uD83C\uDDE6", "GRECIA": "\uD83C\uDDEC\uD83C\uDDF7", "MARRUECOS": "\uD83C\uDDF2\uD83C\uDDE6",
-  "SENEGAL": "\uD83C\uDDF8\uD83C\uDDF3", "NIGERIA": "\uD83C\uDDF3\uD83C\uDDEC", "CAMERUN": "\uD83C\uDDE8\uD83C\uDDF2", "COSTA DE MARFIL": "\uD83C\uDDE8\uD83C\uDDEE",
-  "EGIPTO": "\uD83C\uDDEA\uD83C\uDDEC", "GHANA": "\uD83C\uDDEC\uD83C\uDDED", "TUNEZ": "\uD83C\uDDF9\uD83C\uDDF3", "JAPON": "\uD83C\uDDEF\uD83C\uDDF5",
-  "COREA DEL SUR": "\uD83C\uDDF0\uD83C\uDDF7", "AUSTRALIA": "\uD83C\uDDE6\uD83C\uDDFA", "IRAN": "\uD83C\uDDEE\uD83C\uDDF7", "ARABIA SAUDITA": "\uD83C\uDDF8\uD83C\uDDE6",
-  "INDONESIA": "\uD83C\uDDEE\uD83C\uDDE9", "COSTA RICA": "\uD83C\uDDE8\uD83C\uDDF7", "PANAMA": "\uD83C\uDDF5\uD83C\uDDE6", "JAMAICA": "\uD83C\uDDEF\uD83C\uDDF2",
-  "SUDAFRICA": "\uD83C\uDDFF\uD83C\uDDE6", "REPUBLICA CHECA": "\uD83C\uDDE8\uD83C\uDDFF", "BOSNIA": "\uD83C\uDDE7\uD83C\uDDE6", "QATAR": "\uD83C\uDDF6\uD83C\uDDE6",
-  "HAITI": "\uD83C\uDDED\uD83C\uDDF9", "ESCOCIA": "\uD83C\uDDEC\uD83C\uDDE7", "CURAZAO": "\uD83C\uDDE8\uD83C\uDDFC", "SUECIA": "\uD83C\uDDF8\uD83C\uDDEA",
-  "NUEVA ZELANDA": "\uD83C\uDDF3\uD83C\uDDFF", "CABO VERDE": "\uD83C\uDDE8\uD83C\uDDFB", "IRAK": "\uD83C\uDDEE\uD83C\uDDF6", "NORUEGA": "\uD83C\uDDF3\uD83C\uDDF4",
-  "ARGELIA": "\uD83C\uDDE9\uD83C\uDDFF", "JORDANIA": "\uD83C\uDDEF\uD83C\uDDF4", "RD CONGO": "\uD83C\uDDE8\uD83C\uDDE9", "UZBEKISTAN": "\uD83C\uDDFA\uD83C\uDDFF",
-  "INGLATERRA": "\uD83C\uDDEC\uD83C\uDDE7"
+  "MEXICO": "🇲🇽", "ESTADOS UNIDOS": "🇺🇸", "CANADA": "🇨🇦", "BRASIL": "🇧🇷",
+  "ARGENTINA": "🇦🇷", "ECUADOR": "🇪🇨", "COLOMBIA": "🇨🇴", "URUGUAY": "🇺🇾",
+  "PARAGUAY": "🇵🇾", "CHILE": "🇨🇱", "PERU": "🇵🇪", "VENEZUELA": "🇻🇪",
+  "ALEMANIA": "🇩🇪", "ESPANA": "🇪🇸", "ESPAÑA": "🇪🇸", "FRANCIA": "🇫🇷", "PORTUGAL": "🇵🇹",
+  "BELGICA": "🇧🇪", "PAISES BAJOS": "🇳🇱", "CROACIA": "🇭🇷", "SERBIA": "🇷🇸",
+  "SUIZA": "🇨🇭", "TURQUIA": "🇹🇷", "DINAMARCA": "🇩🇰", "AUSTRIA": "🇦🇹",
+  "POLONIA": "🇵🇱", "RUMANIA": "🇷🇴", "ESLOVENIA": "🇸🇮", "ESLOVAQUIA": "🇸🇰",
+  "ALBANIA": "🇦🇱", "UCRANIA": "🇺🇦", "GRECIA": "🇬🇷", "MARRUECOS": "🇲🇦",
+  "SENEGAL": "🇸🇳", "NIGERIA": "🇳🇬", "CAMERUN": "🇨🇲", "COSTA DE MARFIL": "🇨🇮",
+  "EGIPTO": "🇪🇬", "GHANA": "🇬🇭", "TUNEZ": "🇹🇳", "JAPON": "🇯🇵",
+  "COREA DEL SUR": "🇰🇷", "AUSTRALIA": "🇦🇺", "IRAN": "🇮🇷", "ARABIA SAUDITA": "🇸🇦",
+  "INDONESIA": "🇮🇩", "COSTA RICA": "🇨🇷", "PANAMA": "🇵🇦", "JAMAICA": "🇯🇲",
+  "SUDAFRICA": "🇿🇦", "REPUBLICA CHECA": "🇨🇿", "BOSNIA": "🇧🇦", "BOSNIA Y HERZEGOVINA": "🇧🇦",
+  "QATAR": "🇶🇦", "HAITI": "🇭🇹", "HAITÍ": "🇭🇹", "ESCOCIA": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  "CURAZAO": "🇨🇼", "SUECIA": "🇸🇪", "NUEVA ZELANDA": "🇳🇿", "CABO VERDE": "🇨🇻",
+  "IRAK": "🇮🇶", "NORUEGA": "🇳🇴", "ARGELIA": "🇩🇿", "JORDANIA": "🇯🇴",
+  "RD CONGO": "🇨🇬", "CONGO": "🇨🇬", "REPUBLICA DEL CONGO": "🇨🇬", "REPÚBLICA DEL CONGO": "🇨🇬",
+  "UZBEKISTAN": "🇺🇿", "UZBEKISTÁN": "🇺🇿", "INGLATERRA": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "REPUBLICA DE COREA": "🇰🇷", "REPÚBLICA DE COREA": "🇰🇷"
 };
 
 const GROUP_TEAMS = {
@@ -509,14 +511,15 @@ export default async function handler(req) {
       rerender();
     }
 
-    function pickPodio(k, t){
+    function pickFinalMatch(winKey, loseKey, t, other){
       if(!PUEDE_EDITAR) return;
-      if(state.podium[k] === t) state.podium[k] = "";
-      else state.podium[k] = t;
-      if(k === "campeon"){ if(state.podium.sub === t) state.podium.sub = ""; }
-      if(k === "sub"){ if(state.podium.campeon === t) state.podium.campeon = ""; }
-      if(k === "tercero"){ if(state.podium.cuarto === t) state.podium.cuarto = ""; }
-      if(k === "cuarto"){ if(state.podium.tercero === t) state.podium.tercero = ""; }
+      if(state.podium[winKey] === t){
+        state.podium[winKey] = "";
+        state.podium[loseKey] = "";
+      }else{
+        state.podium[winKey] = t;
+        state.podium[loseKey] = other;
+      }
       buildPanel(5);
       checkSaveButton();
     }
@@ -600,24 +603,29 @@ export default async function handler(req) {
         if(m101 && w101) thirdFinal.push(w101 === m101.home ? m101.away : m101.home);
         if(m102 && w102) thirdFinal.push(w102 === m102.home ? m102.away : m102.home);
 
-        h += "<div class=\\"instr\\">Selecciona podio final del torneo</div>";
-        if(finalists.length < 2 || thirdFinal.length < 2){
+        h += "<div class=\\"instr\\">Selecciona podio final de        if(finalists.length < 2 || thirdFinal.length < 2){
           h += "<div class=\\"instr\\" style=\\"border-color:var(--mag)\\">Primero completa SEMIS</div>";
         } else {
-          function podio(label,key,pool,excl){
+          function matchFinal(label, winKey, loseKey, pool, winLabel, loseLabel){
             var html = "<div class=\\"podio-section\\"><div class=\\"podio-label\\">" + label + "</div><div class=\\"podio-chips\\">";
-            var selected = state.podium[key];
+            var winner = state.podium[winKey];
+            var loser = state.podium[loseKey];
             pool.forEach(function(t){
-              if(excl.indexOf(t) >= 0 && t !== selected) return;
-              html += chip(t, selected === t, false, "pickPodio(\\'" + key + "\\',\\'" + t + "\\')", selected === t ? "OK" : "");
+              var isWin = winner === t;
+              var isLose = loser === t;
+              var sel = isWin || isLose;
+              var badge = isWin ? winLabel : (isLose ? loseLabel : "");
+              var other = pool[0] === t ? pool[1] : pool[0];
+              html += chip(t, sel, false, "pickFinalMatch(\\'" + winKey + "\\',\\'" + loseKey + "\\',\\'" + t + "\\',\\'" + other + "\\')", badge);
             });
             html += "</div></div>";
             return html;
           }
-          h += podio("🏆 CAMPEÓN MUNDIAL","campeon",finalists,[]);
-          h += podio("SUBCAMPEÓN (2° PUESTO)","sub",finalists,[state.podium.campeon]);
-          h += podio("TERCER LUGAR (3er PUESTO)","tercero",thirdFinal,[]);
-          h += podio("CUARTO LUGAR (4to PUESTO)","cuarto",thirdFinal,[state.podium.tercero]);
+          h += matchFinal("🏆 FINAL MUNDIAL", "campeon", "sub", finalists, "CAMPEÓN", "2° PUESTO");
+          h += matchFinal("PARTIDO POR EL TERCER LUGAR", "tercero", "cuarto", thirdFinal, "3er PUESTO", "4to PUESTO");
+        }
+      }
+o]);
         }
       }
       p.innerHTML = h;
@@ -756,7 +764,7 @@ export default async function handler(req) {
 
     window.toggleGroupTeam = toggleGroupTeam;
     window.toggleWinner = toggleWinner;
-    window.pickPodio = pickPodio;
+    window.pickFinalMatch = pickFinalMatch;
     window.showPhase = showPhase;
     window.guardar = guardar;
     window.volver = volver;

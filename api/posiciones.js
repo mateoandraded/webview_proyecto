@@ -60,17 +60,11 @@ const FLAGS = {
 };
 function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
 
-/**
- * Procesa los partidos para generar tablas de posiciones de TODOS los grupos.
- */
 function buildStandings(allMatches, fechaSimulada) {
   const table = {};
-  
-  // 1. Inicializar TODOS los equipos y grupos presentes en la base de datos
   allMatches.forEach(m => {
     const grp = m.Fase_o_Grupo || "X";
-    if (grp.length > 1) return; // Saltamos fases eliminatorias
-    
+    if (grp.length > 1) return;
     if (!table[grp]) table[grp] = {};
     const teams = [m.equipo_local, m.equipo_visitante];
     teams.forEach(t => {
@@ -79,34 +73,25 @@ function buildStandings(allMatches, fechaSimulada) {
       }
     });
   });
-
-  // 2. Calcular puntos solo para los partidos jugados (estado TERMINADO o fecha pasada)
   allMatches.forEach(m => {
     const grp = m.Fase_o_Grupo || "X";
     if (grp.length > 1) return;
-    
     if (m.fecha && m.fecha > fechaSimulada) return;
     if (!hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante)) return;
-
     const l = m.equipo_local, v = m.equipo_visitante;
     const rl = parseDatumScore(m.resulltado_local);
     const rv = parseDatumScore(m.resultado_visitante);
     if (rl === null || rv === null) return;
-
     const tL = table[grp][l];
     const tV = table[grp][v];
     if (!tL || !tV) return;
-
     tL.pj++; tV.pj++;
     tL.gf += rl; tL.gc += rv; tL.gd += (rl - rv);
     tV.gf += rv; tV.gc += rl; tV.gd += (rv - rl);
-
     if (rl > rv) { tL.pts += 3; tL.pg++; tV.pp++; }
     else if (rl < rv) { tV.pts += 3; tV.pg++; tL.pp++; }
     else { tL.pts++; tV.pts++; tL.pe++; tV.pe++; }
   });
-
-  // 3. Ordenar y formatear resultado final
   const finalRes = {};
   Object.keys(table).sort().forEach(g => {
     const arr = Object.values(table[g]);
@@ -145,7 +130,6 @@ export default async function handler(req) {
   };
   const t = i18n[lang] || i18n['es'];
 
-
   let rawMatches = [];
   let fechaSimulada;
   try {
@@ -162,127 +146,104 @@ export default async function handler(req) {
     fechaSimulada = paramFecha || await fetchFechaTorneoDesdeJelou();
   }
 
-  // --- LOGICA DE SINCRONIZACIÓN AUTOMÁTICA ---
-  // Si detectamos que hay partidos cuya fecha ya pasó pero no tienen resultado (null),
-  // podríamos disparar un trigger a la Jelou Function que consulta API-Football.
-  // Por ahora, procesamos lo que hay en Datum para que la vista sea instantánea.
-  
   const standings = buildStandings(rawMatches, fechaSimulada);
 
   let htmlBody = '';
   Object.keys(standings).forEach(grp => {
     let rows = '';
-    standings[grp].forEach((t, i) => {
+    standings[grp].forEach((team, i) => {
       const qClass = (i < 2) ? 'qualify' : '';
-      const dg = t.gd > 0 ? ('+' + t.gd) : String(t.gd);
-      rows += `
-        <div class="t-row ${qClass}">
-          <div class="c-pos">${i+1}</div>
-          <div class="c-team">
-            <span class="t-flag">${flag(t.team)}</span>
-            <span class="t-name">${t.team}</span>
-          </div>
-          <div class="c-st">${t.pj}</div>
-          <div class="c-st bold">${dg}</div>
-          <div class="c-st lime">${t.pts}</div>
-        </div>`;
+      const dg = team.gd > 0 ? ('+' + team.gd) : String(team.gd);
+      rows +=
+        '<div class="t-row ' + qClass + '">' +
+        '<div class="c-pos">' + (i+1) + '</div>' +
+        '<div class="c-team">' +
+        '<span class="t-flag">' + flag(team.team) + '</span>' +
+        '<span class="t-name">' + team.team + '</span>' +
+        '</div>' +
+        '<div class="c-st">' + team.pj + '</div>' +
+        '<div class="c-st bold">' + dg + '</div>' +
+        '<div class="c-st lime">' + team.pts + '</div>' +
+        '</div>';
     });
 
-    htmlBody += `
-      <div class="group-table">
-        <div class="g-header">${t.group} ${grp}</div>
-        <div class="t-head">
-          <div class="c-pos">#</div>
-          <div class="c-team">${t.team}</div>
-          <div class="c-st">${t.pj}</div>
-          <div class="c-st">${t.dg}</div>
-          <div class="c-st lime">${t.pts}</div>
-        </div>
-        <div class="t-body">${rows}</div>
-      </div>`;
+    htmlBody +=
+      '<div class="group-table">' +
+      '<div class="g-header">' + t.group + ' ' + grp + '</div>' +
+      '<div class="t-head">' +
+      '<div class="c-pos">#</div>' +
+      '<div class="c-team">' + t.team + '</div>' +
+      '<div class="c-st">' + t.pj + '</div>' +
+      '<div class="c-st">' + t.dg + '</div>' +
+      '<div class="c-st lime">' + t.pts + '</div>' +
+      '</div>' +
+      '<div class="t-body">' + rows + '</div>' +
+      '</div>';
   });
 
-  const css = `
-    :root{--black:#000;--white:#fff;--lime:#C9FF24;--magenta:#FF0055;--teal:#00FFCC;--dim:#141414;--tb:#262626}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--black);color:var(--white);font-family:'Inter',sans-serif;padding-bottom:100px;overflow-x:hidden}
-    .app-container{max-width:450px;margin:auto;padding:0 16px}
-    .header-box{margin:40px 0 32px;border-bottom:4px solid var(--white);padding-bottom:12px;position:relative}
-    .badge-26{background:var(--magenta);color:var(--white);font-weight:900;font-size:14px;padding:4px 10px;margin-bottom:12px;display:inline-block;letter-spacing:1px}
-    h1{font-family:'Archivo Black',sans-serif;font-size:40px;line-height:.9;letter-spacing:-2px}
-    .group-table{margin-bottom:40px;border:2px solid var(--tb);background:var(--dim);box-shadow: 10px 10px 0px rgba(201,255,36,0.05);}
-    .g-header{font-family:'Archivo Black';font-size:24px;padding:12px 16px;background:var(--white);color:var(--black);letter-spacing:-1px;text-transform:uppercase}
-    .t-head{display:flex;background:rgba(255,255,255,0.03);padding:10px 16px;font-size:10px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,.4);border-bottom:2px solid var(--tb)}
-    .t-row{display:flex;padding:14px 16px;border-bottom:1px solid var(--tb);align-items:center;transition:.2s}
-    .t-row:last-child{border-bottom:none}
-    .t-row.qualify{background:rgba(201,255,36,.03)}
-    .t-row.qualify .c-pos{color:var(--lime);font-family:'Archivo Black'}
-    .c-pos{width:30px;font-weight:800;font-size:14px}
-    .c-team{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
-    .t-flag{font-size:22px;line-height:1}
-    .t-name{font-weight:900;font-size:14px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.5px}
-    .c-st{width:40px;text-align:center;font-weight:700;font-size:14px;color:rgba(255,255,255,0.8)}
-    .c-st.bold{font-weight:900;color:var(--white)}
-    .c-st.lime{color:var(--lime);font-family:'Archivo Black';font-size:16px}
-    .bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:20px 16px;border-top:4px solid var(--lime);z-index:100}
-    .btn-volver{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--white);color:var(--black);border:none;padding:18px;font-family:'Archivo Black';font-size:18px;cursor:pointer;text-align:center;letter-spacing:1px;transition:.2s}
-    .btn-volver:active{background:var(--lime);transform:scale(0.98)}
-  `;
+  const css =
+    ':root{--black:#000;--white:#fff;--lime:#C9FF24;--magenta:#FF0055;--teal:#00FFCC;--dim:#141414;--tb:#262626}' +
+    '*{box-sizing:border-box;margin:0;padding:0}' +
+    'body{background:var(--black);color:var(--white);font-family:\'Inter\',sans-serif;padding-bottom:100px;overflow-x:hidden}' +
+    '.app-container{max-width:450px;margin:auto;padding:0 16px}' +
+    '.header-box{margin:40px 0 32px;border-bottom:4px solid var(--white);padding-bottom:12px;position:relative}' +
+    '.badge-26{background:var(--magenta);color:var(--white);font-weight:900;font-size:14px;padding:4px 10px;margin-bottom:12px;display:inline-block;letter-spacing:1px}' +
+    'h1{font-family:\'Archivo Black\',sans-serif;font-size:40px;line-height:.9;letter-spacing:-2px}' +
+    '.group-table{margin-bottom:40px;border:2px solid var(--tb);background:var(--dim);box-shadow:10px 10px 0px rgba(201,255,36,0.05)}' +
+    '.g-header{font-family:\'Archivo Black\';font-size:24px;padding:12px 16px;background:var(--white);color:var(--black);letter-spacing:-1px;text-transform:uppercase}' +
+    '.t-head{display:flex;background:rgba(255,255,255,0.03);padding:10px 16px;font-size:10px;font-weight:900;letter-spacing:1px;color:rgba(255,255,255,.4);border-bottom:2px solid var(--tb)}' +
+    '.t-row{display:flex;padding:14px 16px;border-bottom:1px solid var(--tb);align-items:center;transition:.2s}' +
+    '.t-row:last-child{border-bottom:none}' +
+    '.t-row.qualify{background:rgba(201,255,36,.03)}' +
+    '.t-row.qualify .c-pos{color:var(--lime);font-family:\'Archivo Black\'}' +
+    '.c-pos{width:30px;font-weight:800;font-size:14px}' +
+    '.c-team{flex:1;display:flex;align-items:center;gap:10px;min-width:0}' +
+    '.t-flag{font-size:22px;line-height:1}' +
+    '.t-name{font-weight:900;font-size:14px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.5px}' +
+    '.c-st{width:40px;text-align:center;font-weight:700;font-size:14px;color:rgba(255,255,255,0.8)}' +
+    '.c-st.bold{font-weight:900;color:var(--white)}' +
+    '.c-st.lime{color:var(--lime);font-family:\'Archivo Black\';font-size:16px}' +
+    '.bottom-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:20px 16px;border-top:4px solid var(--lime);z-index:100}' +
+    '.btn-volver{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--white);color:var(--black);border:none;padding:18px;font-family:\'Archivo Black\';font-size:18px;cursor:pointer;text-align:center;letter-spacing:1px;transition:.2s}' +
+    '.btn-volver:active{background:var(--lime);transform:scale(0.98)}';
 
-  const html = `<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>\${t.doc_title}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-    <style>\${css}</style>
-</head>
-<body>
-    <div class="app-container">
-        <div class="header-box">
-            <div class="badge-26">\${t.badge}</div>
-            <h1>\${t.title}</h1>
-        </div>
-        <div>\${htmlBody}</div>
-    </div>
-    <div class="bottom-bar">
-        <button class="btn-volver" id="btnVolver" onclick="volver()">\${t.btn_back}</button>
-    </div>
-    <script>
-    let callbackSent = false;
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden" && !callbackSent) {
-            callbackSent = true;
-            const exId = new URLSearchParams(window.location.search).get("executionId") || "${executionId}";
-            const cbBody = { executionId: exId, success: true, data: { action: "volver" } };
-            fetch("https://workflows.jelou.ai/v1/webview/callback", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(cbBody),
-                keepalive: true
-            });
-        }
-    });
-    function volver(){
-        if (callbackSent) return;
-        callbackSent = true;
-        const exId = "\${executionId}";
-        const btn = document.getElementById("btnVolver");
-        if(btn) { btn.innerText = "\${t.btn_leaving}"; btn.disabled = true; }
-        const cbBody = { executionId: exId, success: true, data: { action: "volver" } };
-        fetch("https://workflows.jelou.ai/v1/webview/callback", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(cbBody)
-        }).finally(() => { 
-            window.location.href = "https://wa.me/593983456638"; 
-        });
-    }
-    </script>
-</body>
-</html>`;
+  const html = '<!DOCTYPE html><html lang="es"><head>' +
+    '<meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">' +
+    '<title>' + t.doc_title + '</title>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">' +
+    '<style>' + css + '</style>' +
+    '</head><body>' +
+    '<div class="app-container">' +
+    '<div class="header-box">' +
+    '<div class="badge-26">' + t.badge + '</div>' +
+    '<h1>' + t.title + '</h1>' +
+    '</div>' +
+    '<div>' + htmlBody + '</div>' +
+    '</div>' +
+    '<div class="bottom-bar">' +
+    '<button class="btn-volver" id="btnVolver" onclick="volver()">' + t.btn_back + '</button>' +
+    '</div>' +
+    '<script>' +
+    'var callbackSent=false;' +
+    'document.addEventListener("visibilitychange",function(){' +
+    'if(document.visibilityState==="hidden"&&!callbackSent){' +
+    'callbackSent=true;' +
+    'var exId=new URLSearchParams(window.location.search).get("executionId")||"' + executionId + '";' +
+    'var cbBody={executionId:exId,success:true,data:{action:"volver"}};' +
+    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody),keepalive:true});' +
+    '}});' +
+    'function volver(){' +
+    'if(callbackSent)return;callbackSent=true;' +
+    'var exId="' + executionId + '";' +
+    'var btn=document.getElementById("btnVolver");' +
+    'if(btn){btn.innerText="' + t.btn_leaving + '";btn.disabled=true;}' +
+    'var cbBody={executionId:exId,success:true,data:{action:"volver"}};' +
+    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+    '.finally(function(){window.location.href="https://wa.me/593983456638";});' +
+    '}' +
+    '<\/script>' +
+    '</body></html>';
 
   return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
-

@@ -199,7 +199,7 @@ export default async function handler(req) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>\${t.title_doc} · Jelou Mundial 2026</title>
+  <title>${t.title_doc} · Jelou Mundial 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
     :root{--black:#000;--white:#fff;--lime:#C9FF24;--mag:#FF0055;--teal:#00FFCC;--purple:#6200EA;--dim:#181818;--dim2:#222;--bd:rgba(255,255,255,.12)}
@@ -256,19 +256,19 @@ export default async function handler(req) {
   </style>
 </head>
 <body${puedeEditar ? '' : ' class="bracket-readonly"'}>
-  <div class="toast" id="toast">\${t.toast_saved}</div>
+  <div class="toast" id="toast">${t.toast_saved}</div>
   <div class="app">
     <div class="header-box">
       <div class="badge-26">JELOU MUNDIAL 2026</div>
-      <h1>\${t.title}</h1>
+      <h1>${t.title}</h1>
     </div>
     <div class="phase-nav">
-      <div class="phase-tab active" onclick="showPhase(0)">\${t.tab_groups}</div>
-      <div class="phase-tab" onclick="showPhase(1)">\${t.tab_16vos}</div>
-      <div class="phase-tab" onclick="showPhase(2)">\${t.tab_8vos}</div>
-      <div class="phase-tab" onclick="showPhase(3)">\${t.tab_4tos}</div>
-      <div class="phase-tab" onclick="showPhase(4)">\${t.tab_semis}</div>
-      <div class="phase-tab" onclick="showPhase(5)">\${t.tab_podio}</div>
+      <div class="phase-tab active" onclick="showPhase(0)">${t.tab_groups}</div>
+      <div class="phase-tab" onclick="showPhase(1)">${t.tab_16vos}</div>
+      <div class="phase-tab" onclick="showPhase(2)">${t.tab_8vos}</div>
+      <div class="phase-tab" onclick="showPhase(3)">${t.tab_4tos}</div>
+      <div class="phase-tab" onclick="showPhase(4)">${t.tab_semis}</div>
+      <div class="phase-tab" onclick="showPhase(5)">${t.tab_podio}</div>
     </div>
     <div id="panel0" class="phase-panel active"></div>
     <div id="panel1" class="phase-panel"></div>
@@ -278,8 +278,8 @@ export default async function handler(req) {
     <div id="panel5" class="phase-panel"></div>
   </div>
   <div class="bottom-bar">
-    <button class="btn-save" id="btnSave" onclick="guardar()">\${t.btn_save}</button>
-    <button class="btn-volver" onclick="volver()">\${t.btn_back}</button>
+    <button class="btn-save" id="btnSave" onclick="guardar()">${t.btn_save}</button>
+    <button class="btn-volver" onclick="volver()">${t.btn_back}</button>
   </div>
   <script>
     var T = \${JSON.stringify(t)};

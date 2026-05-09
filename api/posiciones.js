@@ -190,16 +190,16 @@ export default async function handler(req) {
 
     htmlBody += `
       <div class="group-table">
-        <div class="g-header">\${t.group} \${grp}</div>
+        <div class="g-header">${t.group} ${grp}</div>
         <div class="t-head">
           <div class="c-pos">#</div>
-          <div class="c-team">\${t.team}</div>
-          <div class="c-st">\${t.pj}</div>
-          <div class="c-st">\${t.dg}</div>
-          <div class="c-st lime">\${t.pts}</div>
+          <div class="c-team">${t.team}</div>
+          <div class="c-st">${t.pj}</div>
+          <div class="c-st">${t.dg}</div>
+          <div class="c-st lime">${t.pts}</div>
         </div>
-        <div class="t-body">\${rows}</div>
-      </div>\`;
+        <div class="t-body">${rows}</div>
+      </div>`;
   });
 
   const css = `

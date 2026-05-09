@@ -124,6 +124,27 @@ export default async function handler(req) {
   const url = getRequestUrl(req);
   const paramFecha = url.searchParams.get('fecha');
   const executionId = url.searchParams.get('executionId') || '';
+  const lang = url.searchParams.get('lang') || 'es';
+
+  const i18n = {
+    es: {
+      doc_title: "Posiciones - World Cup 26", badge: "FASE DE GRUPOS", title: "TABLAS DE<br>POSICIONES",
+      group: "GRUPO", team: "SELECCIÓN", pj: "PJ", dg: "DG", pts: "PTS",
+      btn_back: "VOLVER AL MENÚ", btn_leaving: "SALIENDO..."
+    },
+    en: {
+      doc_title: "Standings - World Cup 26", badge: "GROUP STAGE", title: "LEAGUE<br>STANDINGS",
+      group: "GROUP", team: "TEAM", pj: "GP", dg: "GD", pts: "PTS",
+      btn_back: "BACK TO MENU", btn_leaving: "LEAVING..."
+    },
+    pt: {
+      doc_title: "Classificação - World Cup 26", badge: "FASE DE GRUPOS", title: "TABELA DE<br>CLASSIFICAÇÃO",
+      group: "GRUPO", team: "SELEÇÃO", pj: "J", dg: "SG", pts: "PTS",
+      btn_back: "VOLTAR AO MENU", btn_leaving: "SAINDO..."
+    }
+  };
+  const t = i18n[lang] || i18n['es'];
+
 
   let rawMatches = [];
   let fechaSimulada;
@@ -169,16 +190,16 @@ export default async function handler(req) {
 
     htmlBody += `
       <div class="group-table">
-        <div class="g-header">GRUPO ${grp}</div>
+        <div class="g-header">\${t.group} \${grp}</div>
         <div class="t-head">
           <div class="c-pos">#</div>
-          <div class="c-team">SELECCIÓN</div>
-          <div class="c-st">PJ</div>
-          <div class="c-st">DG</div>
-          <div class="c-st lime">PTS</div>
+          <div class="c-team">\${t.team}</div>
+          <div class="c-st">\${t.pj}</div>
+          <div class="c-st">\${t.dg}</div>
+          <div class="c-st lime">\${t.pts}</div>
         </div>
-        <div class="t-body">${rows}</div>
-      </div>`;
+        <div class="t-body">\${rows}</div>
+      </div>\`;
   });
 
   const css = `
@@ -213,20 +234,20 @@ export default async function handler(req) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Posiciones - World Cup 26</title>
+    <title>\${t.doc_title}</title>
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-    <style>${css}</style>
+    <style>\${css}</style>
 </head>
 <body>
     <div class="app-container">
         <div class="header-box">
-            <div class="badge-26">FASE DE GRUPOS</div>
-            <h1>TABLAS DE<br>POSICIONES</h1>
+            <div class="badge-26">\${t.badge}</div>
+            <h1>\${t.title}</h1>
         </div>
-        <div>${htmlBody}</div>
+        <div>\${htmlBody}</div>
     </div>
     <div class="bottom-bar">
-        <button class="btn-volver" id="btnVolver" onclick="volver()">VOLVER AL MENÚ</button>
+        <button class="btn-volver" id="btnVolver" onclick="volver()">\${t.btn_back}</button>
     </div>
     <script>
     let callbackSent = false;
@@ -246,9 +267,9 @@ export default async function handler(req) {
     function volver(){
         if (callbackSent) return;
         callbackSent = true;
-        const exId = "${executionId}";
+        const exId = "\${executionId}";
         const btn = document.getElementById("btnVolver");
-        if(btn) { btn.innerText = "SALIENDO..."; btn.disabled = true; }
+        if(btn) { btn.innerText = "\${t.btn_leaving}"; btn.disabled = true; }
         const cbBody = { executionId: exId, success: true, data: { action: "volver" } };
         fetch("https://workflows.jelou.ai/v1/webview/callback", {
             method: "POST",

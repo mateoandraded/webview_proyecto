@@ -65,6 +65,44 @@ export default async function handler(req) {
   const url = getRequestUrl(req);
   const userId = url.searchParams.get('user_id') || 'GUEST';
   const executionId = url.searchParams.get('executionId') || '';
+  const lang = url.searchParams.get('lang') || 'es';
+
+  const i18n = {
+    es: {
+      pending: "PENDIENTE", exact: "EXACTO", partial: "PARCIAL", miss: "FALLO",
+      real: "REAL: ", pred: "PRONÓSTICO: ", no_preds: "SIN PRONÓSTICOS REGISTRADOS",
+      ph_16: "1/16", ph_8: "1/8", ph_4: "1/4", ph_2: "SEMIS",
+      champ: "CAMPEÓN", sub: "SUB", third: "TERCERO",
+      no_brackets: "CLASIFICADOS NO DISPONIBLES", doc_title: "Mi Perfil - Jelou Mundial 2026",
+      badge: "JELOU MUNDIAL 2026", title: "RESUMEN GLOBAL", fan: "FAN",
+      perf_status: "ESTADO DE RENDIMIENTO", total_pts: "TOTAL PTS", exacts: "EXACTOS",
+      groups: "GRUPOS", brackets: "CLASIFICADOS", history: "HISTORIAL",
+      my_brackets: "MIS CLASIFICADOS", btn_back: "VOLVER", btn_leaving: "Saliendo..."
+    },
+    en: {
+      pending: "TBD", exact: "EXACT", partial: "PARTIAL", miss: "MISS",
+      real: "REAL: ", pred: "PREDICTION: ", no_preds: "NO PREDICTIONS RECORDED",
+      ph_16: "R32", ph_8: "R16", ph_4: "QF", ph_2: "SF",
+      champ: "CHAMPION", sub: "RUNNER-UP", third: "THIRD",
+      no_brackets: "BRACKETS UNAVAILABLE", doc_title: "My Profile - World Cup 26",
+      badge: "JELOU WORLD CUP 2026", title: "GLOBAL SUMMARY", fan: "FAN",
+      perf_status: "PERFORMANCE STATUS", total_pts: "TOTAL PTS", exacts: "EXACT HITS",
+      groups: "GROUPS", brackets: "BRACKETS", history: "HISTORY",
+      my_brackets: "MY BRACKETS", btn_back: "BACK", btn_leaving: "Leaving..."
+    },
+    pt: {
+      pending: "PENDENTE", exact: "EXATO", partial: "PARCIAL", miss: "ERRO",
+      real: "REAL: ", pred: "PALPITE: ", no_preds: "NENHUM PALPITE REGISTRADO",
+      ph_16: "16 AVOS", ph_8: "OITAVAS", ph_4: "QUARTAS", ph_2: "SEMIS",
+      champ: "CAMPEÃO", sub: "VICE", third: "TERCEIRO",
+      no_brackets: "CLASSIFICADOS INDISPONÍVEIS", doc_title: "Meu Perfil - Copa 2026",
+      badge: "JELOU COPA 2026", title: "RESUMO GLOBAL", fan: "FÃ",
+      perf_status: "STATUS DE DESEMPENHO", total_pts: "TOTAL PTS", exacts: "EXATOS",
+      groups: "GRUPOS", brackets: "CLASSIFICADOS", history: "HISTÓRICO",
+      my_brackets: "MEUS CLASSIFICADOS", btn_back: "VOLTAR", btn_leaving: "Saindo..."
+    }
+  };
+  const t = i18n[lang] || i18n['es'];
 
   const [fechaServidor, rawMatches] = await Promise.all([
     fetchFechaTorneoDesdeJelou(),
@@ -98,17 +136,17 @@ export default async function handler(req) {
     predictions.sort((a,b) => (a.fecha_partido||'').localeCompare(b.fecha_partido||''));
     predictions.forEach(p => {
       const est = p.estado || 'PENDIENTE';
-      let icon = 'PENDIENTE'; let statusClass = 'status-pending'; 
-      if (est === 'GANADO_EXACTO') { icon = 'EXACTO'; statusClass = 'status-exact'; }
-      else if (est === 'GANADO_PARCIAL') { icon = 'PARCIAL'; statusClass = 'status-partial'; }
-      else if (est === 'PERDIDO') { icon = 'FALLO'; statusClass = 'status-lost'; }
+      let icon = t.pending; let statusClass = 'status-pending'; 
+      if (est === 'GANADO_EXACTO') { icon = t.exact; statusClass = 'status-exact'; }
+      else if (est === 'GANADO_PARCIAL') { icon = t.partial; statusClass = 'status-partial'; }
+      else if (est === 'PERDIDO') { icon = t.miss; statusClass = 'status-lost'; }
 
       var rlReal = parseDatumScore(p.resultado_real_local);
       var rvReal = parseDatumScore(p.resultado_real_visitante);
       var plPred = parseDatumScore(p.pronostico_local);
       var pvPred = parseDatumScore(p.pronostico_visitante);
       var realScore = (rlReal !== null && rvReal !== null && est !== 'PENDIENTE')
-        ? ("REAL: " + rlReal + "-" + rvReal) : '';
+        ? (t.real + rlReal + "-" + rvReal) : '';
 
       matchHistoryHtml +=
         "<div class='hist-row'>" +
@@ -117,23 +155,23 @@ export default async function handler(req) {
             "<div>" + flag(p.equipo_visitante) + " " + (p.equipo_visitante||'') + "</div>" +
           "</div>" +
           "<div class='hist-scores'>" +
-            "<div class='pred-score'>PRONÓSTICO: " + (plPred != null ? plPred : '-') + " - " + (pvPred != null ? pvPred : '-') + "</div>" +
+            "<div class='pred-score'>" + t.pred + (plPred != null ? plPred : '-') + " - " + (pvPred != null ? pvPred : '-') + "</div>" +
             "<div class='real-score'>" + realScore + "</div>" +
           "</div>" +
           "<div class='hist-state " + statusClass + "'>" + icon + "</div>" +
         "</div>";
     });
   } else {
-    matchHistoryHtml = "<div class='empty-msg'>SIN PRONÓSTICOS REGISTRADOS</div>";
+    matchHistoryHtml = "<div class='empty-msg'>" + t.no_preds + "</div>";
   }
 
   let bracketHtml = '';
   if (bracket) {
     const phases = [
-      { key: 'dieciseisavos', label: '1/16' },
-      { key: 'octavos', label: '1/8' },
-      { key: 'cuartos', label: '1/4' },
-      { key: 'semis', label: 'SEMIS' }
+      { key: 'dieciseisavos', label: t.ph_16 },
+      { key: 'octavos', label: t.ph_8 },
+      { key: 'cuartos', label: t.ph_4 },
+      { key: 'semis', label: t.ph_2 }
     ];
     phases.forEach(ph => {
       const teams = bracket[ph.key] || [];
@@ -155,9 +193,9 @@ export default async function handler(req) {
     });
 
     const podiumItems = [
-      { key: 'campeon', label: 'CAMPEÓN', cls: 'podium-champ' },
-      { key: 'subcampeon', label: 'SUB', cls: 'podium-sub' },
-      { key: 'tercer_lugar', label: 'TERCERO', cls: 'podium-third' }
+      { key: 'campeon', label: t.champ, cls: 'podium-champ' },
+      { key: 'subcampeon', label: t.sub, cls: 'podium-sub' },
+      { key: 'tercer_lugar', label: t.third, cls: 'podium-third' }
     ];
     let podiumHtml = '';
     const realMap = {
@@ -181,7 +219,7 @@ export default async function handler(req) {
       bracketHtml += "<div class='podium-grid'>" + podiumHtml + "</div>";
     }
   } else {
-    bracketHtml = "<div class='empty-msg'>CLASIFICADOS NO DISPONIBLES</div>";
+    bracketHtml = "<div class='empty-msg'>" + t.no_brackets + "</div>";
   }
 
   const html = `<!DOCTYPE html>
@@ -189,7 +227,7 @@ export default async function handler(req) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Mi Perfil - Jelou Mundial 2026</title>
+  <title>\${t.doc_title}</title>
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -302,46 +340,46 @@ export default async function handler(req) {
 <body>
   <div class="app-container">
     <div class="header-box">
-      <div class="badge-26">JELOU MUNDIAL 2026</div>
-      <h1>RESUMEN GLOBAL</h1>
+      <div class="badge-26">\${t.badge}</div>
+      <h1>\${t.title}</h1>
     </div>
 
     <div class="profile-hero">
-      <div class="p-name">${profile.nombre || 'FAN'} ${profile.apellido || ''}</div>
-      <div style="font-weight: 800; font-size: 12px; opacity: 0.8">ESTADO DE RENDIMIENTO</div>
+      <div class="p-name">\${profile.nombre || t.fan} \${profile.apellido || ''}</div>
+      <div style="font-weight: 800; font-size: 12px; opacity: 0.8">\${t.perf_status}</div>
       
       <div class="p-stat-grid">
         <div>
-          <div class="lbl">TOTAL PTS</div>
-          <div class="val">${profile.total_puntos || 0}</div>
+          <div class="lbl">\${t.total_pts}</div>
+          <div class="val">\${profile.total_puntos || 0}</div>
         </div>
         <div>
-          <div class="lbl">EXACTOS</div>
-          <div class="val">${profile.pronosticos_correctos || 0}</div>
+          <div class="lbl">\${t.exacts}</div>
+          <div class="val">\${profile.pronosticos_correctos || 0}</div>
         </div>
       </div>
 
       <div class="points-detail">
         <div class="pd-box">
-          <div class="lbl">GRUPOS</div>
-          <div class="val">${profile.puntos_goles || 0}</div>
+          <div class="lbl">\${t.groups}</div>
+          <div class="val">\${profile.puntos_goles || 0}</div>
         </div>
         <div class="pd-box secondary">
-          <div class="lbl">CLASIFICADOS</div>
-          <div class="val">${profile.puntos_brackets || 0}</div>
+          <div class="lbl">\${t.brackets}</div>
+          <div class="val">\${profile.puntos_brackets || 0}</div>
         </div>
       </div>
     </div>
 
-    <div class="section-title">HISTORIAL</div>
-    <div style="margin-bottom: 40px">${matchHistoryHtml}</div>
+    <div class="section-title">\${t.history}</div>
+    <div style="margin-bottom: 40px">\${matchHistoryHtml}</div>
 
-    <div class="section-title">MIS CLASIFICADOS</div>
-    <div>${bracketHtml}</div>
+    <div class="section-title">\${t.my_brackets}</div>
+    <div>\${bracketHtml}</div>
   </div>
 
   <div class="bottom-bar">
-    <button class="btn-volver" id="btn-volver" onclick="volver()">VOLVER</button>
+    <button class="btn-volver" id="btn-volver" onclick="volver()">\${t.btn_back}</button>
   </div>
 
   <script>
@@ -364,7 +402,7 @@ export default async function handler(req) {
       callbackSent = true;
       var exId = new URLSearchParams(window.location.search).get("executionId") || "";
       var btn = document.getElementById("btn-volver");
-      btn.innerText = "Saliendo...";
+      btn.innerText = "\${t.btn_leaving}";
       var cbBody = { executionId: exId, success: true, data: { action: "volver" } };
       fetch("https://workflows.jelou.ai/v1/webview/callback", {
         method: "POST",

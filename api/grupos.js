@@ -79,6 +79,33 @@ async function fetchDatum(collection, method, body, id, query) {
 export default async function handler(req) {
   const url = getRequestUrl(req);
   const userId = url.searchParams.get('user_id') || 'GUEST';
+  const lang = url.searchParams.get('lang') || 'es';
+
+  const i18n = {
+    es: {
+      doc_title: "Grupos - World Cup 26", toast: "¡GUARDADO!", badge: "FASE DE GRUPOS",
+      title: "MIS<br>PRONÓSTICOS", btn_save: "GUARDAR TODO", btn_back: "VOLVER",
+      pending: "PENDIENTE", finished: "FIN", your_pred: "Tu pronóstico: ", group: "GRUPO",
+      alert_closed: "Los pronósticos ya están cerrados.", btn_saving: "GUARDANDO...",
+      alert_save: "Error al guardar.", alert_net: "Error de red."
+    },
+    en: {
+      doc_title: "Groups - World Cup 26", toast: "SAVED!", badge: "GROUP STAGE",
+      title: "MY<br>PREDICTIONS", btn_save: "SAVE ALL", btn_back: "BACK",
+      pending: "TBD", finished: "END", your_pred: "Your prediction: ", group: "GROUP",
+      alert_closed: "Predictions are already closed.", btn_saving: "SAVING...",
+      alert_save: "Error saving.", alert_net: "Network error."
+    },
+    pt: {
+      doc_title: "Grupos - World Cup 26", toast: "SALVO!", badge: "FASE DE GRUPOS",
+      title: "MEUS<br>PALPITES", btn_save: "SALVAR TUDO", btn_back: "VOLTAR",
+      pending: "PENDENTE", finished: "FIM", your_pred: "Seu palpite: ", group: "GRUPO",
+      alert_closed: "Os palpites já estão encerrados.", btn_saving: "SALVANDO...",
+      alert_save: "Erro ao salvar.", alert_net: "Erro de rede."
+    }
+  };
+  const t = i18n[lang] || i18n['es'];
+
 
   if (req.method === 'POST') {
     try {
@@ -172,15 +199,15 @@ export default async function handler(req) {
       const lockClass = m.locked ? 'locked' : '';
       const lockData = m.locked ? "data-locked='true'" : '';
       const statusBadge = m.partidoFinalizado
-        ? "<span class='lock-badge'>FIN</span>"
-        : "<span class='pending-badge'>PENDIENTE</span>";
+        ? "<span class='lock-badge'>" + t.finished + "</span>"
+        : "<span class='pending-badge'>" + t.pending + "</span>";
 
       var predSubline = '';
       if (m.locked) {
         if (predictionComplete(up)) {
-          predSubline = "<div class='pred-subline'>Tu pron\u00F3stico: " + parseDatumScore(m.pred_l) + " \u2013 " + parseDatumScore(m.pred_v) + '</div>';
+          predSubline = "<div class='pred-subline'>" + t.your_pred + parseDatumScore(m.pred_l) + " \u2013 " + parseDatumScore(m.pred_v) + '</div>';
         } else {
-          predSubline = "<div class='pred-subline'>Tu pron\u00F3stico: \u2014</div>";
+          predSubline = "<div class='pred-subline'>" + t.your_pred + "\u2014</div>";
         }
       }
 
@@ -230,7 +257,7 @@ export default async function handler(req) {
     groupsHtml +=
       "<div class='group-block'>" +
       "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\">" +
-      "<span class='group-title'>GRUPO " + gk + '</span>' + pctHtml +
+      "<span class='group-title'>" + t.group + " " + gk + '</span>' + pctHtml +
       "</div>" +
       "<div class='group-content'>" + matchHtml + "</div>" +
       "</div>";
@@ -302,7 +329,7 @@ export default async function handler(req) {
     '}});' +
     'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
     'function save(){' +
-    'var btn=document.getElementById("btnSave");if(!btn)return;btn.innerHTML="GUARDANDO...";' +
+    'var btn=document.getElementById("btnSave");if(!btn)return;btn.innerHTML="' + t.btn_saving + '";' +
     'var payload=[];' +
     'document.querySelectorAll(".match-row").forEach(function(row){' +
     'if(row.getAttribute("data-locked")==="true")return;' +
@@ -310,21 +337,21 @@ export default async function handler(req) {
     'var valL=il.value;var valV=iv.value;' +
     'if(valL!==""&&valV!==""){payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL),visitor_score:parseInt(valV),locked:false});}' +
     '});' +
-    'if(payload.length===0){btn.innerHTML="GUARDAR TODO";return;}' +
+    'if(payload.length===0){btn.innerHTML="' + t.btn_save + '";return;}' +
     'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
     'var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
     'fetch("/api/grupos?user_id="+userId,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})' +
     '.then(function(res){' +
-    '  if(res.status===403){alert("Los pron\\u00F3sticos ya est\\u00E1n cerrados.");return;}' +
+    '  if(res.status===403){alert("' + t.alert_closed + '");return;}' +
     '  if(res.ok){' +
-    '    var t=document.getElementById("toast");t.classList.add("show");' +
+    '    var toast=document.getElementById("toast");toast.classList.add("show");' +
     '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
     '    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
     '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/593983456638";},1500); });' +
-    '  }else{alert("Error al guardar.");}' +
+    '  }else{alert("' + t.alert_save + '");}' +
     '})' +
-    '.catch(function(){alert("Error de red.");})' +
-    '.finally(function(){btn.innerHTML="GUARDAR TODO";});' +
+    '.catch(function(){alert("' + t.alert_net + '");})' +
+    '.finally(function(){btn.innerHTML="' + t.btn_save + '";});' +
     '}' +
     'window.volver=function(){' +
     '  if(callbackSent)return;' +
@@ -338,18 +365,18 @@ export default async function handler(req) {
   const html = '<!DOCTYPE html><html lang="es"><head>' +
     '<meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">' +
-    '<title>Grupos - World Cup 26</title>' +
+    '<title>' + t.doc_title + '</title>' +
     '<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">' +
     '<style>' + css + '</style>' +
     '</head><body' + bodyClass + '>' +
-    '<div class="toast" id="toast">\u00A1GUARDADO!</div>' +
+    '<div class="toast" id="toast">' + t.toast + '</div>' +
     '<div class="app-container">' +
-    '<div class="header-box"><div class="badge-26">FASE DE GRUPOS</div><h1>MIS<br>PRON\u00D3STICOS</h1></div>' +
+    '<div class="header-box"><div class="badge-26">' + t.badge + '</div><h1>' + t.title + '</h1></div>' +
     '<div>' + groupsHtml + '</div>' +
     '</div>' +
     '<div class="bottom-bar">' +
-    '  <button class="btn-save" id="btnSave" onclick="save()">GUARDAR TODO</button>' +
-    '  <button class="btn-volver" onclick="volver()">VOLVER</button>' +
+    '  <button class="btn-save" id="btnSave" onclick="save()">' + t.btn_save + '</button>' +
+    '  <button class="btn-volver" onclick="volver()">' + t.btn_back + '</button>' +
     '</div>' +
     '<script>' + jsCode + '<\/script>' +
     '</body></html>';

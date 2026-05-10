@@ -282,12 +282,12 @@ export default async function handler(req) {
     <button class="btn-volver" onclick="volver()">${t.btn_back}</button>
   </div>
   <script>
-    var T = \${JSON.stringify(t)};
-    var GROUPS=\${JSON.stringify(GROUP_TEAMS)};
-    var FLAGS=\${JSON.stringify(FLAGS_MAP)};
-    var SAVED=\${JSON.stringify(uBracket)};
-    var PUEDE_EDITAR=\${JSON.stringify(puedeEditar)};
-    var SERVER_EXECUTION_ID=\${JSON.stringify(executionId)};
+    var T = ${JSON.stringify(t)};
+    var GROUPS=${JSON.stringify(GROUP_TEAMS)};
+    var FLAGS=${JSON.stringify(FLAGS_MAP)};
+    var SAVED=${JSON.stringify(uBracket)};
+    var PUEDE_EDITAR=${JSON.stringify(puedeEditar)};
+    var SERVER_EXECUTION_ID=${JSON.stringify(executionId)};
 
     var GROUP_ORDER = Object.keys(GROUPS).sort();
     var THIRD_SLOTS = [

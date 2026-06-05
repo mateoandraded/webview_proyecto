@@ -154,6 +154,20 @@ export default async function handler(req) {
     fecha: m.fecha, ronda: m.Fase_o_Grupo, ganador: m.ganador_final
   }));
 
+  // Indices O(1) para evitar find/filter por user dentro del loop principal.
+  // Con 175 perfiles x 80 pronosticos x 104 partidos pasariamos de ~1.4M ops a ~14k.
+  const matchById = new Map();
+  for (const m of mappedMatches) matchById.set(m.id_partido, m);
+
+  const predsByUser = new Map();
+  for (const p of predictions) {
+    if (!predsByUser.has(p.user_id)) predsByUser.set(p.user_id, []);
+    predsByUser.get(p.user_id).push(p);
+  }
+
+  const bracketByUser = new Map();
+  for (const b of brackets) bracketByUser.set(b.user_id, b);
+
   const real32 = new Set(); const real16 = new Set(); const real8 = new Set(); const real4 = new Set();
   let campeonReal = ''; let subcampeonReal = ''; let terceroReal = ''; let cuartoReal = '';
 
@@ -207,9 +221,9 @@ export default async function handler(req) {
 
     let ptsGoles = 0; let aciertos = 0;
 
-    const userPreds = predictions.filter(p => p.user_id === pr.user_id);
+    const userPreds = predsByUser.get(pr.user_id) || [];
     userPreds.forEach(p => {
-      const match = mappedMatches.find(m => m.id_partido === p.match_id);
+      const match = matchById.get(p.match_id);
       if (!match || !partidoPuedeCalificar(match, hoy)) return;
 
       let pt = 0;
@@ -226,7 +240,7 @@ export default async function handler(req) {
     });
 
     let ptsBrackets = 0;
-    const b = brackets.find(br => br.user_id === pr.user_id);
+    const b = bracketByUser.get(pr.user_id);
     if (b) {
       const check = (arr, setRef, val) => { if (arr && Array.isArray(arr)) arr.forEach(t => { if (setRef.has(t)) ptsBrackets += val; }); };
       check(b.dieciseisavos, real32, 1);

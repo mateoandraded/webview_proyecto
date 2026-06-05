@@ -47,19 +47,22 @@ const FLAGS_MAP = {
   "REPUBLICA DE COREA": "🇰🇷", "REPÚBLICA DE COREA": "🇰🇷"
 };
 
+// Title Case identico a PartidosMundial2025.equipo_local/equipo_visitante.
+// Permite que el bracket guardado y los partidos reales se comparen con exact match
+// y los puntos de bracket se otorguen correctamente.
 const GROUP_TEAMS = {
-  A: ["MEXICO", "SUDAFRICA", "COREA DEL SUR", "REPUBLICA CHECA"],
-  B: ["CANADA", "BOSNIA", "QATAR", "SUIZA"],
-  C: ["BRASIL", "MARRUECOS", "HAITI", "ESCOCIA"],
-  D: ["ESTADOS UNIDOS", "PARAGUAY", "AUSTRALIA", "TURQUIA"],
-  E: ["ALEMANIA", "CURAZAO", "COSTA DE MARFIL", "ECUADOR"],
-  F: ["PAISES BAJOS", "JAPON", "SUECIA", "TUNEZ"],
-  G: ["BELGICA", "EGIPTO", "IRAN", "NUEVA ZELANDA"],
-  H: ["ESPA\u00D1A", "CABO VERDE", "ARABIA SAUDITA", "URUGUAY"],
-  I: ["FRANCIA", "SENEGAL", "IRAK", "NORUEGA"],
-  J: ["ARGENTINA", "ARGELIA", "AUSTRIA", "JORDANIA"],
-  K: ["PORTUGAL", "RD CONGO", "UZBEKISTAN", "COLOMBIA"],
-  L: ["INGLATERRA", "CROACIA", "GHANA", "PANAMA"]
+  A: ["Mexico", "Sudafrica", "Republica de Corea", "Republica Checa"],
+  B: ["Canada", "Bosnia y Herzegovina", "Qatar", "Suiza"],
+  C: ["Brasil", "Marruecos", "Haiti", "Escocia"],
+  D: ["Estados Unidos", "Paraguay", "Australia", "Turquia"],
+  E: ["Alemania", "Curazao", "Costa de Marfil", "Ecuador"],
+  F: ["Paises Bajos", "Japon", "Suecia", "Tunez"],
+  G: ["Belgica", "Egipto", "Iran", "Nueva Zelanda"],
+  H: ["Espana", "Cabo Verde", "Arabia Saudita", "Uruguay"],
+  I: ["Francia", "Senegal", "Irak", "Noruega"],
+  J: ["Argentina", "Argelia", "Austria", "Jordania"],
+  K: ["Portugal", "RD Congo", "Uzbekistan", "Colombia"],
+  L: ["Inglaterra", "Croacia", "Ghana", "Panama"]
 };
 
 async function fetchDatum(collection, method, body, id, query) {

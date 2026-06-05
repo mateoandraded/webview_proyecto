@@ -1,5 +1,6 @@
 import { hasPairOfDatumScores, parseDatumScore } from '../lib/datumScore.js';
 import { getRequestUrl } from '../lib/requestUrl.js';
+import { fetchFechaTorneoDesdeJelou } from '../lib/fechaTorneo.js';
 
 export const config = {
   runtime: 'edge',
@@ -8,34 +9,6 @@ export const config = {
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
 const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
-
-const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
-
-function fallbackHoyYMD() {
-  var parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-  var y = parts.find(function (p) { return p.type === 'year'; }).value;
-  var mo = parts.find(function (p) { return p.type === 'month'; }).value;
-  var d = parts.find(function (p) { return p.type === 'day'; }).value;
-  return y + '-' + mo + '-' + d;
-}
-
-async function fetchFechaTorneoDesdeJelou() {
-  try {
-    var ctrl = new AbortController();
-    var tid = setTimeout(function () { ctrl.abort(); }, 5000);
-    var res = await fetch(JELOU_ESTADO_TORNEO_URL, {
-      method: 'GET',
-      signal: ctrl.signal,
-      headers: { Accept: 'application/json' }
-    });
-    clearTimeout(tid);
-    if (!res.ok) return fallbackHoyYMD();
-    var data = await res.json();
-    var f = data && data.fecha_simulada_hoy;
-    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
-  } catch (e) { /* timeout / red */ }
-  return fallbackHoyYMD();
-}
 
 const FLAGS = {
   "MEXICO": "🇲🇽", "ESTADOS UNIDOS": "🇺🇸", "CANADA": "🇨🇦", "BRASIL": "🇧🇷",

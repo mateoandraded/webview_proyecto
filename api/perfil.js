@@ -1,6 +1,7 @@
 import { parseDatumScore } from '../lib/datumScore.js';
 import { getRequestUrl } from '../lib/requestUrl.js';
 import { buildRealBracketSets, teamInPhase } from '../lib/realBracketSets.js';
+import { fetchFechaTorneoDesdeJelou } from '../lib/fechaTorneo.js';
 
 export const config = {
   runtime: 'edge',
@@ -8,30 +9,6 @@ export const config = {
 
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
-
-const JELOU_ESTADO_TORNEO_URL = 'https://torneo-libertadores.fn.jelou.ai/estado-torneo';
-
-function fallbackHoyYMD() {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
-  const y = parts.find((p) => p.type === 'year').value;
-  const mo = parts.find((p) => p.type === 'month').value;
-  const d = parts.find((p) => p.type === 'day').value;
-  return y + '-' + mo + '-' + d;
-}
-
-async function fetchFechaTorneoDesdeJelou() {
-  try {
-    const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), 5000);
-    const res = await fetch(JELOU_ESTADO_TORNEO_URL, { method: 'GET', signal: ctrl.signal, headers: { Accept: 'application/json' } });
-    clearTimeout(tid);
-    if (!res.ok) return fallbackHoyYMD();
-    const data = await res.json();
-    const f = data && data.fecha_simulada_hoy;
-    if (typeof f === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(f.trim())) return f.trim();
-  } catch (e) { /* */ }
-  return fallbackHoyYMD();
-}
 
 const FLAGS = {
   "MEXICO": "🇲🇽", "ESTADOS UNIDOS": "🇺🇸", "CANADA": "🇨🇦", "BRASIL": "🇧🇷",

@@ -1,6 +1,7 @@
 import { hasPairOfDatumScores, parseDatumScore, scoreEqDatum } from '../lib/datumScore.js';
 import { getRequestUrl } from '../lib/requestUrl.js';
 import { fetchFechaTorneoDesdeJelou } from '../lib/fechaTorneo.js';
+import { flag } from '../lib/flags.js';
 
 export const config = {
   runtime: 'edge',
@@ -117,21 +118,27 @@ export default async function handler(req) {
       no_participants: "Aún no hay participantes", your_pos: "TU POSICIÓN GENERAL",
       hits: " aciertos", pts: "PTS", doc_title: "Ranking · World Cup 2026",
       badge: "JELOU MUNDIAL 2026", title: "TABLA DE<br>POSICIONES",
-      subtitle: "🏆 RANKING GLOBAL TOP 5", btn_back: "VOLVER", btn_leaving: "Saliendo..."
+      subtitle: "🏆 RANKING GLOBAL TOP 5", btn_back: "VOLVER", btn_leaving: "Saliendo...",
+      btn_show_all: "VER RANKING COMPLETO", btn_hide_all: "OCULTAR RANKING COMPLETO",
+      full_section: "📋 RANKING COMPLETO"
     },
     en: {
       you: "You", anon: "Anonymous", exact_hits: " exact hits", global_pts: "GLOBAL PTS",
       no_participants: "No participants yet", your_pos: "YOUR OVERALL POSITION",
       hits: " hits", pts: "PTS", doc_title: "Leaderboard · World Cup 2026",
       badge: "JELOU WORLD CUP 2026", title: "LEADERBOARD",
-      subtitle: "🏆 GLOBAL RANKING TOP 5", btn_back: "BACK", btn_leaving: "Leaving..."
+      subtitle: "🏆 GLOBAL RANKING TOP 5", btn_back: "BACK", btn_leaving: "Leaving...",
+      btn_show_all: "VIEW FULL RANKING", btn_hide_all: "HIDE FULL RANKING",
+      full_section: "📋 FULL RANKING"
     },
     pt: {
       you: "Você", anon: "Anônimo", exact_hits: " acertos exat.", global_pts: "PTS GLOBAIS",
       no_participants: "Nenhum participante ainda", your_pos: "SUA POSIÇÃO GERAL",
       hits: " acertos", pts: "PTS", doc_title: "Classificação · World Cup 2026",
       badge: "JELOU COPA 2026", title: "CLASSIFICAÇÃO",
-      subtitle: "🏆 RANKING GLOBAL TOP 5", btn_back: "VOLTAR", btn_leaving: "Saindo..."
+      subtitle: "🏆 RANKING GLOBAL TOP 5", btn_back: "VOLTAR", btn_leaving: "Saindo...",
+      btn_show_all: "VER CLASSIFICAÇÃO COMPLETA", btn_hide_all: "OCULTAR CLASSIFICAÇÃO COMPLETA",
+      full_section: "📋 CLASSIFICAÇÃO COMPLETA"
     }
   };
   const t = i18n[lang] || i18n['es'];
@@ -215,6 +222,8 @@ export default async function handler(req) {
         nombre: String(pr.nombre).trim(),
         total_puntos: Number(pr.total_puntos) || 0,
         aciertos: Number(pr.pronosticos_correctos) || 0,
+        esParticipante: !!pr.es_participante,
+        nacionalidad: pr.nacionalidad || '',
         isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre).trim().toLowerCase() === loggedUser)
       };
     }
@@ -265,6 +274,8 @@ export default async function handler(req) {
       nombre: String(pr.nombre).trim(),
       total_puntos: totalCalculado,
       aciertos: aciertos,
+      esParticipante: !!pr.es_participante,
+      nacionalidad: pr.nacionalidad || '',
       isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre).trim().toLowerCase() === loggedUser)
     };
   });
@@ -296,24 +307,36 @@ export default async function handler(req) {
     return String(posNum);
   }
 
+  // Construye la fila central (bandera + nombre + medalla J de Jelou + subtítulo).
+  // La bandera viene de torneo_ranking.nacionalidad; la J solo si es_participante=true.
+  function buildRcInfo(u, isUser, subLabel) {
+    var bandera = u.nacionalidad ? '<span class="nacion-flag">' + flag(u.nacionalidad) + '</span>' : '';
+    var jelou = u.esParticipante ? '<img class="badge-jelou" src="/isotipo-jelou.png" alt="J">' : '';
+    var sub = (u.aciertos || 0) + (subLabel || t.exact_hits);
+    return '<div class="rc-info">' +
+      '<div class="rc-name-row">' + bandera +
+      '<span class="rc-name' + (isUser ? ' is-user' : '') + '">' + esc(u.nombre || t.anon) + '</span>' +
+      jelou +
+      '</div>' +
+      '<div class="rc-sub">' + sub + '</div>' +
+      '</div>';
+  }
+
   let listHtml = '';
   if (top5.length > 0) {
-    top5.forEach((t, idx) => {
+    top5.forEach((u, idx) => {
       const posNum = idx + 1;
       const c = posColors[Math.min(idx, posColors.length - 1)];
-      const isUser = t.isCurrentUser;
+      const isUser = u.isCurrentUser;
       const badgeHtml = isUser ? '<div class="badge-tu">' + t.you + '</div>' : '';
 
       listHtml +=
         '<div class="rank-card" style="--accent:' + c.accent + ';--dark:' + c.dark + '">' +
         badgeHtml +
         '<div class="rc-pos" style="background:' + c.accent + ';color:' + c.dark + '">' + medalLabel(posNum) + '</div>' +
-        '<div class="rc-info">' +
-        '<div class="rc-name' + (isUser ? ' is-user' : '') + '">' + esc(t.nombre || t.anon) + '</div>' +
-        '<div class="rc-sub">' + (t.aciertos || 0) + t.exact_hits + '</div>' +
-        '</div>' +
+        buildRcInfo(u, isUser, t.exact_hits) +
         '<div class="rc-score">' +
-        '<div class="rc-pts" style="color:' + c.accent + '">' + (t.total_puntos || 0) + '</div>' +
+        '<div class="rc-pts" style="color:' + c.accent + '">' + (u.total_puntos || 0) + '</div>' +
         '<div class="rc-lbl">' + t.global_pts + '</div>' +
         '</div>' +
         '</div>';
@@ -329,15 +352,38 @@ export default async function handler(req) {
       '<div class="rank-card" style="--accent:#FF6B35;--dark:#fff">' +
       '<div class="badge-tu">' + t.you + '</div>' +
       '<div class="rc-pos" style="background:#FF6B35;color:#fff">' + (currentUserIndex + 1) + '</div>' +
-      '<div class="rc-info">' +
-      '<div class="rc-name is-user">' + esc(currentUserObj.nombre) + '</div>' +
-      '<div class="rc-sub">' + currentUserObj.aciertos + t.hits + '</div>' +
-      '</div>' +
+      buildRcInfo(currentUserObj, true, t.hits) +
       '<div class="rc-score">' +
       '<div class="rc-pts" style="color:#FF6B35">' + currentUserObj.total_puntos + '</div>' +
       '<div class="rc-lbl">' + t.pts + '</div>' +
       '</div>' +
       '</div>';
+  }
+
+  // Boton "Ver ranking completo" + lista colapsable con los N usuarios.
+  // Renderizamos el HTML siempre pero ocultamos con display:none hasta el toggle.
+  if (calculatedUsers.length > 0) {
+    listHtml +=
+      '<button id="btn-show-all" class="btn-show-all" onclick="toggleFullRank()">' + t.btn_show_all + '</button>' +
+      '<div id="full-rank" class="full-rank-list">' +
+      '<div class="section-label" style="margin-top:8px">' + t.full_section + '</div>';
+    calculatedUsers.forEach((u, idx) => {
+      const isUser = u.isCurrentUser;
+      const accent = isUser ? '#C9FF24' : 'rgba(255,255,255,.18)';
+      const dark = isUser ? '#000' : '#fff';
+      const badgeTu = isUser ? '<div class="badge-tu">' + t.you + '</div>' : '';
+      listHtml +=
+        '<div class="rank-card compact" style="--accent:' + accent + ';--dark:' + dark + '">' +
+        badgeTu +
+        '<div class="rc-pos" style="background:' + accent + ';color:' + dark + '">' + (idx + 1) + '</div>' +
+        buildRcInfo(u, isUser, t.exact_hits) +
+        '<div class="rc-score">' +
+        '<div class="rc-pts" style="color:' + (isUser ? '#C9FF24' : '#fff') + '">' + (u.total_puntos || 0) + '</div>' +
+        '<div class="rc-lbl">' + t.global_pts + '</div>' +
+        '</div>' +
+        '</div>';
+    });
+    listHtml += '</div>';
   }
 
   const css = `
@@ -368,9 +414,12 @@ export default async function handler(req) {
       flex-shrink:0;
     }
     .rc-info{flex:1;padding:12px 10px;min-width:0}
-    .rc-name{font-weight:900;font-size:15px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rc-name-row{display:flex;align-items:center;gap:6px;min-width:0}
+    .rc-name{font-weight:900;font-size:15px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
     .rc-name.is-user{color:var(--lime)}
     .rc-sub{font-size:11px;color:rgba(255,255,255,.5);font-weight:600;margin-top:3px}
+    .nacion-flag{font-size:16px;line-height:1;flex-shrink:0}
+    .badge-jelou{width:18px;height:18px;object-fit:contain;flex-shrink:0;border-radius:50%;background:var(--white);padding:1px}
     .rc-score{padding:12px 16px 12px 0;text-align:right;flex-shrink:0}
     .rc-pts{font-family:'Archivo Black';font-size:28px;line-height:1}
     .rc-lbl{font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.4);font-weight:800;margin-top:2px}
@@ -384,6 +433,19 @@ export default async function handler(req) {
     .divider::before{content:"";position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,.1)}
     .divider span{position:relative;background:var(--black);padding:0 12px;font-size:10px;color:var(--lime);font-weight:800;letter-spacing:2px}
     .empty-state{text-align:center;padding:40px 24px;color:rgba(255,255,255,.4);font-size:14px;background:var(--dim);font-weight:700;border:1px dashed rgba(255,255,255,.1)}
+    .btn-show-all{width:100%;background:var(--magenta);color:var(--white);border:none;padding:14px;font-family:'Archivo Black',sans-serif;font-size:13px;cursor:pointer;letter-spacing:1.5px;margin:28px 0 8px;text-transform:uppercase}
+    .btn-show-all:active{background:var(--purple)}
+    .full-rank-list{display:none}
+    .full-rank-list.expanded{display:block;margin-top:8px;animation:fadeIn .2s ease-out}
+    .full-rank-list .rank-card.compact{margin-bottom:4px}
+    .full-rank-list .rank-card.compact .rc-pos{min-width:42px;width:42px;height:52px;font-size:14px}
+    .full-rank-list .rank-card.compact .rc-name{font-size:13px}
+    .full-rank-list .rank-card.compact .rc-sub{font-size:10px}
+    .full-rank-list .rank-card.compact .rc-pts{font-size:20px}
+    .full-rank-list .rank-card.compact .rc-lbl{font-size:8px}
+    .full-rank-list .rank-card.compact .nacion-flag{font-size:14px}
+    .full-rank-list .rank-card.compact .badge-jelou{width:14px;height:14px}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
     .footer-bar{position:fixed;bottom:0;left:0;width:100%;background:var(--black);padding:16px;border-top:4px solid var(--lime);z-index:50}
     .btn-volver{width:100%;max-width:450px;margin:0 auto;display:block;background:var(--white);color:var(--black);border:none;padding:16px;font-family:'Archivo Black';font-size:18px;cursor:pointer;text-align:center;letter-spacing:1px}
     .btn-volver:active{background:var(--teal)}
@@ -409,6 +471,12 @@ export default async function handler(req) {
     '<button class="btn-volver" id="btn-volver" onclick="volverMenu()">' + t.btn_back + '</button>' +
     '</div>' +
     '<script>' +
+    'var BTN_SHOW_ALL="' + t.btn_show_all + '";var BTN_HIDE_ALL="' + t.btn_hide_all + '";' +
+    'function toggleFullRank(){' +
+    'var el=document.getElementById("full-rank");var btn=document.getElementById("btn-show-all");' +
+    'if(el.classList.contains("expanded")){el.classList.remove("expanded");btn.innerText=BTN_SHOW_ALL;}' +
+    'else{el.classList.add("expanded");btn.innerText=BTN_HIDE_ALL;}' +
+    '}' +
     'var callbackSent=false;' +
     'document.addEventListener("visibilitychange",function(){' +
     'if(document.visibilityState==="hidden"&&!callbackSent){' +

@@ -2,6 +2,7 @@ import { parseDatumScore } from '../lib/datumScore.js';
 import { getRequestUrl } from '../lib/requestUrl.js';
 import { buildRealBracketSets, teamInPhase } from '../lib/realBracketSets.js';
 import { fetchFechaTorneoDesdeJelou } from '../lib/fechaTorneo.js';
+import { flag as nacionFlag } from '../lib/flags.js';
 
 export const config = {
   runtime: 'edge',
@@ -211,7 +212,9 @@ export default async function handler(req) {
     '.header-box h1{font-size:48px;letter-spacing:-2px}' +
     '.profile-hero{background:var(--lime);color:var(--black);padding:24px;margin-bottom:32px;position:relative;overflow:hidden}' +
     ".profile-hero::after{content:'26';position:absolute;right:-10px;bottom:-20px;font-family:'Archivo Black';font-size:140px;opacity:0.15;line-height:1;pointer-events:none}" +
-    ".p-name{font-family:'Archivo Black';font-size:28px;letter-spacing:-1px;margin-bottom:4px}" +
+    ".p-name{font-family:'Archivo Black';font-size:28px;letter-spacing:-1px;margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;line-height:1.1}" +
+    '.p-flag{font-size:30px;line-height:1}' +
+    '.p-jelou{width:28px;height:28px;object-fit:contain;background:#fff;border-radius:50%;padding:2px;vertical-align:middle}' +
     '.p-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;z-index:2}' +
     '.lbl{font-size:11px;font-weight:800;letter-spacing:1px;color:rgba(0,0,0,0.6)}' +
     ".val{font-size:36px;font-family:'Archivo Black';letter-spacing:-1px}" +
@@ -265,7 +268,11 @@ export default async function handler(req) {
     '<h1>' + t.title + '</h1>' +
     '</div>' +
     '<div class="profile-hero">' +
-    '<div class="p-name">' + (profile.nombre || t.fan) + ' ' + (profile.apellido || '') + '</div>' +
+    '<div class="p-name">' +
+      (profile.nacionalidad ? '<span class="p-flag">' + nacionFlag(profile.nacionalidad) + '</span> ' : '') +
+      (profile.nombre || t.fan) + ' ' + (profile.apellido || '') +
+      (profile.es_participante ? ' <img class="p-jelou" src="/isotipo-jelou.png" alt="J">' : '') +
+    '</div>' +
     '<div style="font-weight:800;font-size:12px;opacity:0.8">' + t.perf_status + '</div>' +
     '<div class="p-stat-grid">' +
     '<div><div class="lbl">' + t.total_pts + '</div><div class="val">' + (profile.total_puntos || 0) + '</div></div>' +

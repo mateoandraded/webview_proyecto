@@ -50,6 +50,22 @@ async function fetchDatum(collection, method, body, id, query) {
   return await res.json();
 }
 
+// Reintenta un fetch a Datum ante hipos transitorios. Sin esto, un fallo
+// puntual del fetch de partidos dejaba la pagina sin grupos (en blanco).
+async function fetchDatumRetry(collection, method, body, id, query, attempts) {
+  attempts = attempts || 3;
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fetchDatum(collection, method, body, id, query);
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) await new Promise(function (r) { setTimeout(r, 300); });
+    }
+  }
+  throw lastErr;
+}
+
 export default async function handler(req) {
   const url = getRequestUrl(req);
   const userId = url.searchParams.get('user_id') || 'GUEST';
@@ -153,13 +169,43 @@ export default async function handler(req) {
 
   const [fechaServidor, dataMatches, dataPreds] = await Promise.all([
     fetchFechaTorneoDesdeJelou(),
-    fetchDatum('pbc_631836067', 'GET', null, '', '').catch(function () { return { items: [] }; }),
+    fetchDatumRetry('pbc_631836067', 'GET', null, '', '', 3).catch(function () { return { items: [] }; }),
     userId !== 'GUEST'
-      ? fetchDatum('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')").catch(function () { return { items: [] }; })
+      ? fetchDatumRetry('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')", 3).catch(function () { return { items: [] }; })
       : Promise.resolve({ items: [] })
   ]);
   const rawMatches = Array.isArray(dataMatches) ? dataMatches : (dataMatches.items || []);
   const userPredictions = Array.isArray(dataPreds) ? dataPreds : (dataPreds.items || []);
+
+  // Si el fetch de partidos fallo aun con reintentos, NO renderizamos una pagina
+  // vacia (que el usuario ve como "no me salen los grupos"). Mostramos una
+  // pantalla de carga que se auto-recarga, con tope de intentos y boton manual.
+  if (rawMatches.length === 0) {
+    const L = {
+      es: { loading: 'Cargando partidos…', wait: 'Estamos preparando tus pronósticos, un momento.', err: 'No pudimos cargar los partidos. Revisa tu conexión e inténtalo de nuevo.', retry: 'Reintentar' },
+      en: { loading: 'Loading matches…', wait: 'Getting your predictions ready, one moment.', err: 'We could not load the matches. Check your connection and try again.', retry: 'Retry' },
+      pt: { loading: 'Carregando partidas…', wait: 'Preparando seus palpites, um momento.', err: 'Não foi possível carregar as partidas. Verifique sua conexão e tente novamente.', retry: 'Tentar novamente' }
+    };
+    const lt = L[lang] || L.es;
+    const reloadCount = parseInt(url.searchParams.get('_r') || '0', 10) || 0;
+    const params = new URLSearchParams(url.search);
+    params.set('_r', String(reloadCount + 1));
+    const retryUrl = (url.pathname + '?' + params.toString()).replace(/"/g, '&quot;');
+    const canAuto = reloadCount < 4;
+    const reloadHtml = '<!DOCTYPE html><html lang="' + lang + '"><head><meta charset="UTF-8">' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + t.doc_title + '</title>' +
+      (canAuto ? '<meta http-equiv="refresh" content="2;url=' + retryUrl + '">' : '') +
+      '<style>*{box-sizing:border-box}body{background:#000;color:#fff;font-family:Inter,Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;text-align:center;padding:24px}' +
+      '.box{max-width:320px}.sp{width:42px;height:42px;border:4px solid #222;border-top-color:#C9FF24;border-radius:50%;margin:0 auto 18px;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}' +
+      'h2{font-size:18px;margin:0 0 8px}p{color:rgba(255,255,255,.6);font-size:13px;margin:0 0 18px;line-height:1.4}a{display:inline-block;background:#C9FF24;color:#000;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:6px}</style></head>' +
+      '<body><div class="box">' + (canAuto ? '<div class="sp"></div>' : '') +
+      '<h2>' + (canAuto ? lt.loading : lt.retry) + '</h2>' +
+      '<p>' + (canAuto ? lt.wait : lt.err) + '</p>' +
+      '<a href="' + retryUrl + '">' + lt.retry + '</a>' +
+      '</div></body></html>';
+    return new Response(reloadHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+  }
   const puedeEditarPronosticos = fechaServidor <= FECHA_LIMITE_PRONOSTICOS;
 
   const groups = {};

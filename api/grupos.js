@@ -200,9 +200,14 @@ export default async function handler(req) {
           failedIds = r.failedIds;
         }
       }
-      const batchUrlDbg = BASE_URL ? (BASE_URL.replace(/\/collections\/?$/, '') + '/batch') : '';
+      const out = { success: failedIds.length === 0, saved: saved, failed: failedIds.length, failed_ids: failedIds, total: valid.length, via: via };
+      // Diagnostico solo bajo demanda (?debug=1): no se expone en respuestas normales.
+      if (url.searchParams.get('debug') === '1') {
+        out.batch_dbg = batchDbg;
+        out.batch_url = BASE_URL ? (BASE_URL.replace(/\/collections\/?$/, '') + '/batch') : '';
+      }
       return new Response(
-        JSON.stringify({ success: failedIds.length === 0, saved: saved, failed: failedIds.length, failed_ids: failedIds, total: valid.length, via: via, batch_dbg: batchDbg, batch_url: batchUrlDbg }),
+        JSON.stringify(out),
         { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     } catch (err) {

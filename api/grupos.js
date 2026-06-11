@@ -1,15 +1,15 @@
-import { hasPairOfDatumScores, parseDatumScore } from '../lib/datumScore.js';
-import { getRequestUrl } from '../lib/requestUrl.js';
-import { fetchFechaTorneoDesdeJelou } from '../lib/fechaTorneo.js';
+import { hasPairOfDatumScores, parseDatumScore } from "../lib/datumScore.js";
+import { getRequestUrl } from "../lib/requestUrl.js";
+import { fetchFechaTorneoDesdeJelou } from "../lib/fechaTorneo.js";
 
 export const config = {
-  runtime: 'edge',
+  runtime: "edge",
 };
 
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
 
-const FECHA_LIMITE_PRONOSTICOS = '2026-06-12';
+const FECHA_LIMITE_PRONOSTICOS = "2026-06-12";
 
 function predictionComplete(up) {
   if (!up) return false;
@@ -17,36 +17,105 @@ function predictionComplete(up) {
 }
 
 const FLAGS = {
-  "MEXICO": "🇲🇽", "ESTADOS UNIDOS": "🇺🇸", "CANADA": "🇨🇦", "BRASIL": "🇧🇷",
-  "ARGENTINA": "🇦🇷", "ECUADOR": "🇪🇨", "COLOMBIA": "🇨🇴", "URUGUAY": "🇺🇾",
-  "PARAGUAY": "🇵🇾", "CHILE": "🇨🇱", "PERU": "🇵🇪", "VENEZUELA": "🇻🇪",
-  "ALEMANIA": "🇩🇪", "ESPANA": "🇪🇸", "ESPAÑA": "🇪🇸", "FRANCIA": "🇫🇷", "PORTUGAL": "🇵🇹",
-  "BELGICA": "🇧🇪", "PAISES BAJOS": "🇳🇱", "CROACIA": "🇭🇷", "SERBIA": "🇷🇸",
-  "SUIZA": "🇨🇭", "TURQUIA": "🇹🇷", "DINAMARCA": "🇩🇰", "AUSTRIA": "🇦🇹",
-  "POLONIA": "🇵🇱", "RUMANIA": "🇷🇴", "ESLOVENIA": "🇸🇮", "ESLOVAQUIA": "🇸🇰",
-  "ALBANIA": "🇦🇱", "UCRANIA": "🇺🇦", "GRECIA": "🇬🇷", "MARRUECOS": "🇲🇦",
-  "SENEGAL": "🇸🇳", "NIGERIA": "🇳🇬", "CAMERUN": "🇨🇲", "COSTA DE MARFIL": "🇨🇮",
-  "EGIPTO": "🇪🇬", "GHANA": "🇬🇭", "TUNEZ": "🇹🇳", "JAPON": "🇯🇵",
-  "COREA DEL SUR": "🇰🇷", "AUSTRALIA": "🇦🇺", "IRAN": "🇮🇷", "ARABIA SAUDITA": "🇸🇦",
-  "INDONESIA": "🇮🇩", "COSTA RICA": "🇨🇷", "PANAMA": "🇵🇦", "JAMAICA": "🇯🇲",
-  "SUDAFRICA": "🇿🇦", "REPUBLICA CHECA": "🇨🇿", "BOSNIA": "🇧🇦", "BOSNIA Y HERZEGOVINA": "🇧🇦",
-  "QATAR": "🇶🇦", "HAITI": "🇭🇹", "HAITÍ": "🇭🇹", "ESCOCIA": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-  "CURAZAO": "🇨🇼", "SUECIA": "🇸🇪", "NUEVA ZELANDA": "🇳🇿", "CABO VERDE": "🇨🇻",
-  "IRAK": "🇮🇶", "NORUEGA": "🇳🇴", "ARGELIA": "🇩🇿", "JORDANIA": "🇯🇴",
-  "RD CONGO": "🇨🇬", "CONGO": "🇨🇬", "REPUBLICA DEL CONGO": "🇨🇬", "REPÚBLICA DEL CONGO": "🇨🇬",
-  "UZBEKISTAN": "🇺🇿", "UZBEKISTÁN": "🇺🇿", "INGLATERRA": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  "REPUBLICA DE COREA": "🇰🇷", "REPÚBLICA DE COREA": "🇰🇷"
+  MEXICO: "🇲🇽",
+  "ESTADOS UNIDOS": "🇺🇸",
+  CANADA: "🇨🇦",
+  BRASIL: "🇧🇷",
+  ARGENTINA: "🇦🇷",
+  ECUADOR: "🇪🇨",
+  COLOMBIA: "🇨🇴",
+  URUGUAY: "🇺🇾",
+  PARAGUAY: "🇵🇾",
+  CHILE: "🇨🇱",
+  PERU: "🇵🇪",
+  VENEZUELA: "🇻🇪",
+  ALEMANIA: "🇩🇪",
+  ESPANA: "🇪🇸",
+  ESPAÑA: "🇪🇸",
+  FRANCIA: "🇫🇷",
+  PORTUGAL: "🇵🇹",
+  BELGICA: "🇧🇪",
+  "PAISES BAJOS": "🇳🇱",
+  CROACIA: "🇭🇷",
+  SERBIA: "🇷🇸",
+  SUIZA: "🇨🇭",
+  TURQUIA: "🇹🇷",
+  DINAMARCA: "🇩🇰",
+  AUSTRIA: "🇦🇹",
+  POLONIA: "🇵🇱",
+  RUMANIA: "🇷🇴",
+  ESLOVENIA: "🇸🇮",
+  ESLOVAQUIA: "🇸🇰",
+  ALBANIA: "🇦🇱",
+  UCRANIA: "🇺🇦",
+  GRECIA: "🇬🇷",
+  MARRUECOS: "🇲🇦",
+  SENEGAL: "🇸🇳",
+  NIGERIA: "🇳🇬",
+  CAMERUN: "🇨🇲",
+  "COSTA DE MARFIL": "🇨🇮",
+  EGIPTO: "🇪🇬",
+  GHANA: "🇬🇭",
+  TUNEZ: "🇹🇳",
+  JAPON: "🇯🇵",
+  "COREA DEL SUR": "🇰🇷",
+  AUSTRALIA: "🇦🇺",
+  IRAN: "🇮🇷",
+  "ARABIA SAUDITA": "🇸🇦",
+  INDONESIA: "🇮🇩",
+  "COSTA RICA": "🇨🇷",
+  PANAMA: "🇵🇦",
+  JAMAICA: "🇯🇲",
+  SUDAFRICA: "🇿🇦",
+  "REPUBLICA CHECA": "🇨🇿",
+  BOSNIA: "🇧🇦",
+  "BOSNIA Y HERZEGOVINA": "🇧🇦",
+  QATAR: "🇶🇦",
+  HAITI: "🇭🇹",
+  HAITÍ: "🇭🇹",
+  ESCOCIA: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+  CURAZAO: "🇨🇼",
+  SUECIA: "🇸🇪",
+  "NUEVA ZELANDA": "🇳🇿",
+  "CABO VERDE": "🇨🇻",
+  IRAK: "🇮🇶",
+  NORUEGA: "🇳🇴",
+  ARGELIA: "🇩🇿",
+  JORDANIA: "🇯🇴",
+  "RD CONGO": "🇨🇬",
+  CONGO: "🇨🇬",
+  "REPUBLICA DEL CONGO": "🇨🇬",
+  "REPÚBLICA DEL CONGO": "🇨🇬",
+  UZBEKISTAN: "🇺🇿",
+  UZBEKISTÁN: "🇺🇿",
+  INGLATERRA: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  "REPUBLICA DE COREA": "🇰🇷",
+  "REPÚBLICA DE COREA": "🇰🇷",
 };
-function flag(n) { return FLAGS[(n || '').toUpperCase()] || '\uD83C\uDFF3\uFE0F'; }
+function flag(n) {
+  return FLAGS[(n || "").toUpperCase()] || "\uD83C\uDFF3\uFE0F";
+}
 
 async function fetchDatum(collection, method, body, id, query) {
-  method = method || 'GET'; id = id || ''; query = query || '';
-  const url = BASE_URL + '/' + collection + '/records' + (id ? '/' + id : '') + '?perPage=500' + query;
-  const options = { method: method, headers: { 'X-Api-Key': API_KEY, 'Content-Type': 'application/json' } };
+  method = method || "GET";
+  id = id || "";
+  query = query || "";
+  const url =
+    BASE_URL +
+    "/" +
+    collection +
+    "/records" +
+    (id ? "/" + id : "") +
+    "?perPage=500" +
+    query;
+  const options = {
+    method: method,
+    headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },
+  };
   if (body) options.body = JSON.stringify(body);
   const res = await fetch(url, options);
-  if (!res.ok) throw new Error('HTTP Error ' + res.status);
-  if (method === 'DELETE' || res.status === 204) return true;
+  if (!res.ok) throw new Error("HTTP Error " + res.status);
+  if (method === "DELETE" || res.status === 204) return true;
   return await res.json();
 }
 
@@ -60,7 +129,10 @@ async function fetchDatumRetry(collection, method, body, id, query, attempts) {
       return await fetchDatum(collection, method, body, id, query);
     } catch (e) {
       lastErr = e;
-      if (i < attempts - 1) await new Promise(function (r) { setTimeout(r, 300); });
+      if (i < attempts - 1)
+        await new Promise(function (r) {
+          setTimeout(r, 300);
+        });
     }
   }
   throw lastErr;
@@ -68,50 +140,100 @@ async function fetchDatumRetry(collection, method, body, id, query, attempts) {
 
 export default async function handler(req) {
   const url = getRequestUrl(req);
-  const userId = url.searchParams.get('user_id') || 'GUEST';
-  const lang = url.searchParams.get('lang') || 'es';
+  const userId = url.searchParams.get("user_id") || "GUEST";
+  const lang = url.searchParams.get("lang") || "es";
 
   const i18n = {
     es: {
-      doc_title: "Grupos - World Cup 26", toast: "¡GUARDADO!", badge: "FASE DE GRUPOS",
-      title: "MIS<br>PRONÓSTICOS", btn_save: "GUARDAR TODO", btn_back: "VOLVER",
-      pending: "PENDIENTE", finished: "FIN", live: "EN VIVO", your_pred: "Tu pronóstico: ", group: "GRUPO",
-      alert_closed: "Los pronósticos ya están cerrados.", btn_saving: "GUARDANDO...",
-      alert_save: "Error al guardar.", alert_net: "Error de red.",
-      alert_partial_a: "Solo se guardaron ", alert_partial_b: " de ", alert_partial_c: " pronósticos. Volvé a darle Guardar Todo para reintentar los que faltan."
+      doc_title: "Grupos - World Cup 26",
+      toast: "¡GUARDADO!",
+      badge: "FASE DE GRUPOS",
+      title: "MIS<br>PRONÓSTICOS",
+      btn_save: "GUARDAR TODO",
+      btn_back: "VOLVER",
+      pending: "PENDIENTE",
+      finished: "FIN",
+      live: "EN VIVO",
+      your_pred: "Tu pronóstico: ",
+      group: "GRUPO",
+      alert_closed: "Los pronósticos ya están cerrados.",
+      btn_saving: "GUARDANDO...",
+      alert_save: "Error al guardar.",
+      alert_net: "Error de red.",
+      alert_partial_a: "Solo se guardaron ",
+      alert_partial_b: " de ",
+      alert_partial_c:
+        " pronósticos. Volvé a darle Guardar Todo para reintentar los que faltan.",
     },
     en: {
-      doc_title: "Groups - World Cup 26", toast: "SAVED!", badge: "GROUP STAGE",
-      title: "MY<br>PREDICTIONS", btn_save: "SAVE ALL", btn_back: "BACK",
-      pending: "TBD", finished: "END", live: "LIVE", your_pred: "Your prediction: ", group: "GROUP",
-      alert_closed: "Predictions are already closed.", btn_saving: "SAVING...",
-      alert_save: "Error saving.", alert_net: "Network error.",
-      alert_partial_a: "Only ", alert_partial_b: " of ", alert_partial_c: " predictions were saved. Tap Save All again to retry the rest."
+      doc_title: "Groups - World Cup 26",
+      toast: "SAVED!",
+      badge: "GROUP STAGE",
+      title: "MY<br>PREDICTIONS",
+      btn_save: "SAVE ALL",
+      btn_back: "BACK",
+      pending: "TBD",
+      finished: "END",
+      live: "LIVE",
+      your_pred: "Your prediction: ",
+      group: "GROUP",
+      alert_closed: "Predictions are already closed.",
+      btn_saving: "SAVING...",
+      alert_save: "Error saving.",
+      alert_net: "Network error.",
+      alert_partial_a: "Only ",
+      alert_partial_b: " of ",
+      alert_partial_c:
+        " predictions were saved. Tap Save All again to retry the rest.",
     },
     pt: {
-      doc_title: "Grupos - World Cup 26", toast: "SALVO!", badge: "FASE DE GRUPOS",
-      title: "MEUS<br>PALPITES", btn_save: "SALVAR TUDO", btn_back: "VOLTAR",
-      pending: "PENDENTE", finished: "FIM", live: "AO VIVO", your_pred: "Seu palpite: ", group: "GRUPO",
-      alert_closed: "Os palpites já estão encerrados.", btn_saving: "SALVANDO...",
-      alert_save: "Erro ao salvar.", alert_net: "Erro de rede.",
-      alert_partial_a: "Apenas ", alert_partial_b: " de ", alert_partial_c: " palpites foram salvos. Clique em Salvar Tudo de novo para tentar os que faltam."
-    }
+      doc_title: "Grupos - World Cup 26",
+      toast: "SALVO!",
+      badge: "FASE DE GRUPOS",
+      title: "MEUS<br>PALPITES",
+      btn_save: "SALVAR TUDO",
+      btn_back: "VOLTAR",
+      pending: "PENDENTE",
+      finished: "FIM",
+      live: "AO VIVO",
+      your_pred: "Seu palpite: ",
+      group: "GRUPO",
+      alert_closed: "Os palpites já estão encerrados.",
+      btn_saving: "SALVANDO...",
+      alert_save: "Erro ao salvar.",
+      alert_net: "Erro de rede.",
+      alert_partial_a: "Apenas ",
+      alert_partial_b: " de ",
+      alert_partial_c:
+        " palpites foram salvos. Clique em Salvar Tudo de novo para tentar os que faltam.",
+    },
   };
-  const t = i18n[lang] || i18n['es'];
+  const t = i18n[lang] || i18n["es"];
 
-
-  if (req.method === 'POST') {
+  if (req.method === "POST") {
     try {
       const fechaServidor = await fetchFechaTorneoDesdeJelou();
       if (fechaServidor > FECHA_LIMITE_PRONOSTICOS) {
-        return new Response(JSON.stringify({ error: 'Pronósticos cerrados' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: "Pronósticos cerrados" }), {
+          status: 403,
+          headers: { "Content-Type": "application/json" },
+        });
       }
       const body = await req.json();
       let existingItems = [];
       try {
-        const existingReq = await fetchDatumRetry('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')", 3);
+        const existingReq = await fetchDatumRetry(
+          "pbc_1944158292",
+          "GET",
+          null,
+          "",
+          "&filter=(user_id='" + userId + "')",
+          3,
+        );
         existingItems = existingReq.items || existingReq;
-      } catch (e) { existingItems = []; }
+      } catch (e) {
+        existingItems = [];
+      }
 
       // Filtra primero los items invalidos / bloqueados.
       const valid = body.filter(function (p) {
@@ -124,10 +246,17 @@ export default async function handler(req) {
 
       const buildPayload = function (p) {
         return {
-          user_id: userId, match_id: p.match_id, equipo_local: p.equipo_local,
-          equipo_visitante: p.equipo_visitante, pronostico_local: p.local_score,
-          pronostico_visitante: p.visitor_score, fecha_partido: p.fecha,
-          estado: 'PENDIENTE', resultado_real_local: 0, resultado_real_visitante: 0, puntos_ganados: 0
+          user_id: userId,
+          match_id: p.match_id,
+          equipo_local: p.equipo_local,
+          equipo_visitante: p.equipo_visitante,
+          pronostico_local: p.local_score,
+          pronostico_visitante: p.visitor_score,
+          fecha_partido: p.fecha,
+          estado: "PENDIENTE",
+          resultado_real_local: 0,
+          resultado_real_visitante: 0,
+          puntos_ganados: 0,
         };
       };
 
@@ -138,38 +267,65 @@ export default async function handler(req) {
       // sobre Datum (lo que causaba rate-limit en rafaga). El batch es transaccional:
       // entran todos o ninguno; si algo falla, hacemos fallback registro-por-registro.
       const saveViaBatch = async function (items) {
-        const batchUrl = BASE_URL.replace(/\/collections\/?$/, '') + '/batch';
+        const batchUrl = BASE_URL.replace(/\/collections\/?$/, "") + "/batch";
         const requests = items.map(function (p) {
-          const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
-          if (found) return { method: 'PATCH', url: '/api/collections/pbc_1944158292/records/' + found.id, body: buildPayload(p) };
-          return { method: 'POST', url: '/api/collections/pbc_1944158292/records', body: buildPayload(p) };
+          const found = existingItems.find(function (e) {
+            return e.match_id === p.match_id;
+          });
+          if (found)
+            return {
+              method: "PATCH",
+              url: "/api/collections/pbc_1944158292/records/" + found.id,
+              body: buildPayload(p),
+            };
+          return {
+            method: "POST",
+            url: "/api/collections/pbc_1944158292/records",
+            body: buildPayload(p),
+          };
         });
         const res = await fetch(batchUrl, {
-          method: 'POST',
-          headers: { 'X-Api-Key': API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ requests: requests })
+          method: "POST",
+          headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ requests: requests }),
         });
         if (!res.ok) {
-          const txt = await res.text().catch(function () { return ''; });
-          throw new Error('Batch HTTP ' + res.status + ' ' + String(txt).slice(0, 160));
+          const txt = await res.text().catch(function () {
+            return "";
+          });
+          throw new Error(
+            "Batch HTTP " + res.status + " " + String(txt).slice(0, 160),
+          );
         }
         return items.length;
       };
 
       // --- Fallback: upsert registro por registro (si el batch no estuviera disponible) ---
       const upsertOne = async function (p) {
-        const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
+        const found = existingItems.find(function (e) {
+          return e.match_id === p.match_id;
+        });
         const recordId = found ? found.id : null;
         const payload = buildPayload(p);
-        let lastErr = '';
+        let lastErr = "";
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
-            if (recordId) await fetchDatum('pbc_1944158292', 'PATCH', payload, recordId, '');
-            else await fetchDatum('pbc_1944158292', 'POST', payload, '', '');
+            if (recordId)
+              await fetchDatum(
+                "pbc_1944158292",
+                "PATCH",
+                payload,
+                recordId,
+                "",
+              );
+            else await fetchDatum("pbc_1944158292", "POST", payload, "", "");
             return { ok: true, match_id: p.match_id };
           } catch (e) {
-            lastErr = e && e.message ? e.message : 'unknown';
-            if (attempt === 0) await new Promise(function (r) { setTimeout(r, 400); });
+            lastErr = e && e.message ? e.message : "unknown";
+            if (attempt === 0)
+              await new Promise(function (r) {
+                setTimeout(r, 400);
+              });
           }
         }
         return { ok: false, match_id: p.match_id, error: lastErr };
@@ -179,72 +335,147 @@ export default async function handler(req) {
         let okCount = 0;
         const failed = [];
         for (let i = 0; i < items.length; i += CHUNK) {
-          const results = await Promise.all(items.slice(i, i + CHUNK).map(upsertOne));
-          results.forEach(function (r) { if (r.ok) okCount++; else failed.push(r.match_id); });
+          const results = await Promise.all(
+            items.slice(i, i + CHUNK).map(upsertOne),
+          );
+          results.forEach(function (r) {
+            if (r.ok) okCount++;
+            else failed.push(r.match_id);
+          });
         }
         return { saved: okCount, failedIds: failed };
       };
 
       let saved = 0;
       let failedIds = [];
-      let via = 'batch';
+      let via = "batch";
       if (valid.length > 0) {
         try {
           saved = await saveViaBatch(valid);
         } catch (batchErr) {
-          via = 'perrecord';
+          via = "perrecord";
           const r = await saveViaPerRecord(valid);
           saved = r.saved;
           failedIds = r.failedIds;
         }
       }
       return new Response(
-        JSON.stringify({ success: failedIds.length === 0, saved: saved, failed: failedIds.length, failed_ids: failedIds, total: valid.length, via: via }),
-        { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+        JSON.stringify({
+          success: failedIds.length === 0,
+          saved: saved,
+          failed: failedIds.length,
+          failed_ids: failedIds,
+          total: valid.length,
+          via: via,
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-store",
+          },
+        },
       );
     } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+      });
     }
   }
 
   const [fechaServidor, dataMatches, dataPreds] = await Promise.all([
     fetchFechaTorneoDesdeJelou(),
-    fetchDatumRetry('pbc_631836067', 'GET', null, '', '', 3).catch(function () { return { items: [] }; }),
-    userId !== 'GUEST'
-      ? fetchDatumRetry('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')", 3).catch(function () { return { items: [] }; })
-      : Promise.resolve({ items: [] })
+    fetchDatumRetry("pbc_631836067", "GET", null, "", "", 3).catch(function () {
+      return { items: [] };
+    }),
+    userId !== "GUEST"
+      ? fetchDatumRetry(
+          "pbc_1944158292",
+          "GET",
+          null,
+          "",
+          "&filter=(user_id='" + userId + "')",
+          3,
+        ).catch(function () {
+          return { items: [] };
+        })
+      : Promise.resolve({ items: [] }),
   ]);
-  const rawMatches = Array.isArray(dataMatches) ? dataMatches : (dataMatches.items || []);
-  const userPredictions = Array.isArray(dataPreds) ? dataPreds : (dataPreds.items || []);
+  const rawMatches = Array.isArray(dataMatches)
+    ? dataMatches
+    : dataMatches.items || [];
+  const userPredictions = Array.isArray(dataPreds)
+    ? dataPreds
+    : dataPreds.items || [];
 
   // Si el fetch de partidos fallo aun con reintentos, NO renderizamos una pagina
   // vacia (que el usuario ve como "no me salen los grupos"). Mostramos una
   // pantalla de carga que se auto-recarga, con tope de intentos y boton manual.
   if (rawMatches.length === 0) {
     const L = {
-      es: { loading: 'Cargando partidos…', wait: 'Estamos preparando tus pronósticos, un momento.', err: 'No pudimos cargar los partidos. Revisa tu conexión e inténtalo de nuevo.', retry: 'Reintentar' },
-      en: { loading: 'Loading matches…', wait: 'Getting your predictions ready, one moment.', err: 'We could not load the matches. Check your connection and try again.', retry: 'Retry' },
-      pt: { loading: 'Carregando partidas…', wait: 'Preparando seus palpites, um momento.', err: 'Não foi possível carregar as partidas. Verifique sua conexão e tente novamente.', retry: 'Tentar novamente' }
+      es: {
+        loading: "Cargando partidos…",
+        wait: "Estamos preparando tus pronósticos, un momento.",
+        err: "No pudimos cargar los partidos. Revisa tu conexión e inténtalo de nuevo.",
+        retry: "Reintentar",
+      },
+      en: {
+        loading: "Loading matches…",
+        wait: "Getting your predictions ready, one moment.",
+        err: "We could not load the matches. Check your connection and try again.",
+        retry: "Retry",
+      },
+      pt: {
+        loading: "Carregando partidas…",
+        wait: "Preparando seus palpites, um momento.",
+        err: "Não foi possível carregar as partidas. Verifique sua conexão e tente novamente.",
+        retry: "Tentar novamente",
+      },
     };
     const lt = L[lang] || L.es;
-    const reloadCount = parseInt(url.searchParams.get('_r') || '0', 10) || 0;
+    const reloadCount = parseInt(url.searchParams.get("_r") || "0", 10) || 0;
     const params = new URLSearchParams(url.search);
-    params.set('_r', String(reloadCount + 1));
-    const retryUrl = (url.pathname + '?' + params.toString()).replace(/"/g, '&quot;');
+    params.set("_r", String(reloadCount + 1));
+    const retryUrl = (url.pathname + "?" + params.toString()).replace(
+      /"/g,
+      "&quot;",
+    );
     const canAuto = reloadCount < 4;
-    const reloadHtml = '<!DOCTYPE html><html lang="' + lang + '"><head><meta charset="UTF-8">' +
+    const reloadHtml =
+      '<!DOCTYPE html><html lang="' +
+      lang +
+      '"><head><meta charset="UTF-8">' +
       '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-      '<title>' + t.doc_title + '</title>' +
-      (canAuto ? '<meta http-equiv="refresh" content="2;url=' + retryUrl + '">' : '') +
-      '<style>*{box-sizing:border-box}body{background:#000;color:#fff;font-family:Inter,Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;text-align:center;padding:24px}' +
-      '.box{max-width:320px}.sp{width:42px;height:42px;border:4px solid #222;border-top-color:#C9FF24;border-radius:50%;margin:0 auto 18px;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}' +
-      'h2{font-size:18px;margin:0 0 8px}p{color:rgba(255,255,255,.6);font-size:13px;margin:0 0 18px;line-height:1.4}a{display:inline-block;background:#C9FF24;color:#000;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:6px}</style></head>' +
-      '<body><div class="box">' + (canAuto ? '<div class="sp"></div>' : '') +
-      '<h2>' + (canAuto ? lt.loading : lt.retry) + '</h2>' +
-      '<p>' + (canAuto ? lt.wait : lt.err) + '</p>' +
-      '<a href="' + retryUrl + '">' + lt.retry + '</a>' +
-      '</div></body></html>';
-    return new Response(reloadHtml, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+      "<title>" +
+      t.doc_title +
+      "</title>" +
+      (canAuto
+        ? '<meta http-equiv="refresh" content="2;url=' + retryUrl + '">'
+        : "") +
+      "<style>*{box-sizing:border-box}body{background:#000;color:#fff;font-family:Inter,Arial,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;text-align:center;padding:24px}" +
+      ".box{max-width:320px}.sp{width:42px;height:42px;border:4px solid #222;border-top-color:#C9FF24;border-radius:50%;margin:0 auto 18px;animation:s 1s linear infinite}@keyframes s{to{transform:rotate(360deg)}}" +
+      "h2{font-size:18px;margin:0 0 8px}p{color:rgba(255,255,255,.6);font-size:13px;margin:0 0 18px;line-height:1.4}a{display:inline-block;background:#C9FF24;color:#000;text-decoration:none;font-weight:800;padding:12px 22px;border-radius:6px}</style></head>" +
+      '<body><div class="box">' +
+      (canAuto ? '<div class="sp"></div>' : "") +
+      "<h2>" +
+      (canAuto ? lt.loading : lt.retry) +
+      "</h2>" +
+      "<p>" +
+      (canAuto ? lt.wait : lt.err) +
+      "</p>" +
+      '<a href="' +
+      retryUrl +
+      '">' +
+      lt.retry +
+      "</a>" +
+      "</div></body></html>";
+    return new Response(reloadHtml, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "no-store",
+      },
+    });
   }
   const puedeEditarPronosticos = fechaServidor <= FECHA_LIMITE_PRONOSTICOS;
 
@@ -253,106 +484,168 @@ export default async function handler(req) {
     const g = m.Fase_o_Grupo || "X";
     if (g.length > 1) return;
     if (!groups[g]) groups[g] = [];
-    const up = userPredictions.find(function (pr) { return pr.match_id === m.id_partido; });
-    const partidoFinalizado = hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante);
+    const up = userPredictions.find(function (pr) {
+      return pr.match_id === m.id_partido;
+    });
+    const partidoFinalizado = hasPairOfDatumScores(
+      m.resulltado_local,
+      m.resultado_visitante,
+    );
     // Un partido cuya fecha ya llego (m.fecha <= hoy) deja de ser pronosticable,
     // este o no cargado todavia el marcador.
     const partidoYaEmpezo = !!(m.fecha && m.fecha <= fechaServidor);
     const rl = parseDatumScore(m.resulltado_local);
     const rv = parseDatumScore(m.resultado_visitante);
     groups[g].push({
-      id: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
+      id: m.id_partido,
+      local: m.equipo_local,
+      visitante: m.equipo_visitante,
       fecha: m.fecha,
       partidoFinalizado: partidoFinalizado,
       partidoEnCurso: partidoYaEmpezo && !partidoFinalizado,
-      realDispL: partidoFinalizado ? String(rl) : '-',
-      realDispV: partidoFinalizado ? String(rv) : '-',
-      pred_l: up ? up.pronostico_local : null, pred_v: up ? up.pronostico_visitante : null,
-      locked: !puedeEditarPronosticos || partidoYaEmpezo
+      realDispL: partidoFinalizado ? String(rl) : "-",
+      realDispV: partidoFinalizado ? String(rv) : "-",
+      pred_l: up ? up.pronostico_local : null,
+      pred_v: up ? up.pronostico_visitante : null,
+      locked: !puedeEditarPronosticos || partidoYaEmpezo,
     });
   });
   const groupKeys = Object.keys(groups).sort();
 
-  let groupsHtml = '';
+  let groupsHtml = "";
   groupKeys.forEach(function (gk) {
     const list = groups[gk];
     const total = list.length;
     var hechos = 0;
     list.forEach(function (m) {
-      const up = userPredictions.find(function (pr) { return pr.match_id === m.id; });
+      const up = userPredictions.find(function (pr) {
+        return pr.match_id === m.id;
+      });
       if (predictionComplete(up)) hechos++;
     });
     const pct = total > 0 ? Math.round((hechos / total) * 100) : 0;
     const pctHtml = "<span class='group-pct'>" + pct + "%</span>";
 
-    let matchHtml = '';
+    let matchHtml = "";
     list.forEach(function (m) {
-      const up = userPredictions.find(function (pr) { return pr.match_id === m.id; });
-      var valL = '', valV = '';
-      if (m.pred_l !== null && m.pred_l !== undefined && String(m.pred_l) !== '') {
+      const up = userPredictions.find(function (pr) {
+        return pr.match_id === m.id;
+      });
+      var valL = "",
+        valV = "";
+      if (
+        m.pred_l !== null &&
+        m.pred_l !== undefined &&
+        String(m.pred_l) !== ""
+      ) {
         var pln = parseDatumScore(m.pred_l);
         if (pln !== null) valL = String(pln);
       }
-      if (m.pred_v !== null && m.pred_v !== undefined && String(m.pred_v) !== '') {
+      if (
+        m.pred_v !== null &&
+        m.pred_v !== undefined &&
+        String(m.pred_v) !== ""
+      ) {
         var pvn = parseDatumScore(m.pred_v);
         if (pvn !== null) valV = String(pvn);
       }
 
-      const lockClass = m.locked ? 'locked' : '';
-      const lockData = m.locked ? "data-locked='true'" : '';
+      const lockClass = m.locked ? "locked" : "";
+      const lockData = m.locked ? "data-locked='true'" : "";
       const statusBadge = m.partidoFinalizado
         ? "<span class='lock-badge'>" + t.finished + "</span>"
         : m.partidoEnCurso
           ? "<span class='live-badge'>" + t.live + "</span>"
           : "<span class='pending-badge'>" + t.pending + "</span>";
 
-      var predSubline = '';
+      var predSubline = "";
       if (m.locked) {
         if (predictionComplete(up)) {
-          predSubline = "<div class='pred-subline'>" + t.your_pred + parseDatumScore(m.pred_l) + " \u2013 " + parseDatumScore(m.pred_v) + '</div>';
+          predSubline =
+            "<div class='pred-subline'>" +
+            t.your_pred +
+            parseDatumScore(m.pred_l) +
+            " \u2013 " +
+            parseDatumScore(m.pred_v) +
+            "</div>";
         } else {
-          predSubline = "<div class='pred-subline'>" + t.your_pred + "\u2014</div>";
+          predSubline =
+            "<div class='pred-subline'>" + t.your_pred + "\u2014</div>";
         }
       }
 
-      var predRowHtml = '';
+      var predRowHtml = "";
       if (!m.locked) {
         predRowHtml =
           "<div class='pred-row'>" +
-          "<div class='score-block " + lockClass + "'>" +
+          "<div class='score-block " +
+          lockClass +
+          "'>" +
           "<button type='button' class='btn-step step-up' onclick='step(this,1)'>\u25B2</button>" +
-          "<input type='number' class='input-score input-local' value='" + valL + "' readonly placeholder='-'>" +
+          "<input type='number' class='input-score input-local' value='" +
+          valL +
+          "' readonly placeholder='-'>" +
           "<button type='button' class='btn-step step-down' onclick='step(this,-1)'>\u25BC</button>" +
           "</div>" +
           "<div class='vs'>x</div>" +
-          "<div class='score-block " + lockClass + "'>" +
+          "<div class='score-block " +
+          lockClass +
+          "'>" +
           "<button type='button' class='btn-step step-up' onclick='step(this,1)'>\u25B2</button>" +
-          "<input type='number' class='input-score input-visitor' value='" + valV + "' readonly placeholder='-'>" +
+          "<input type='number' class='input-score input-visitor' value='" +
+          valV +
+          "' readonly placeholder='-'>" +
           "<button type='button' class='btn-step step-down' onclick='step(this,-1)'>\u25BC</button>" +
           "</div>" +
           "</div>";
       }
 
       matchHtml +=
-        "<div class='match-row' " + lockData + " data-id='" + m.id + "' data-f='" + m.fecha + "' data-l='" + m.local + "' data-v='" + m.visitante + "'>" +
-        "<div class='match-meta'><span>" + m.fecha + "</span> " + statusBadge + "</div>" +
+        "<div class='match-row' " +
+        lockData +
+        " data-id='" +
+        m.id +
+        "' data-f='" +
+        m.fecha +
+        "' data-l='" +
+        m.local +
+        "' data-v='" +
+        m.visitante +
+        "'>" +
+        "<div class='match-meta'><span>" +
+        m.fecha +
+        "</span> " +
+        statusBadge +
+        "</div>" +
         "<div class='match-body'>" +
         "<div class='team-side'>" +
-        "<div class='t-flag'>" + flag(m.local) + "</div>" +
-        "<div class='t-name'>" + m.local + "</div>" +
+        "<div class='t-flag'>" +
+        flag(m.local) +
+        "</div>" +
+        "<div class='t-name'>" +
+        m.local +
+        "</div>" +
         "</div>" +
         "<div class='match-center'>" +
         "<div class='real-line'>" +
-        "<span class='real-num'>" + m.realDispL + "</span>" +
+        "<span class='real-num'>" +
+        m.realDispL +
+        "</span>" +
         "<span class='real-x'>x</span>" +
-        "<span class='real-num'>" + m.realDispV + "</span>" +
+        "<span class='real-num'>" +
+        m.realDispV +
+        "</span>" +
         "</div>" +
         predRowHtml +
         predSubline +
         "</div>" +
         "<div class='team-side right'>" +
-        "<div class='t-flag'>" + flag(m.visitante) + "</div>" +
-        "<div class='t-name'>" + m.visitante + "</div>" +
+        "<div class='t-flag'>" +
+        flag(m.visitante) +
+        "</div>" +
+        "<div class='t-name'>" +
+        m.visitante +
+        "</div>" +
         "</div>" +
         "</div>" +
         "</div>";
@@ -361,9 +654,16 @@ export default async function handler(req) {
     groupsHtml +=
       "<div class='group-block'>" +
       "<div class='group-header' onclick=\"this.parentElement.classList.toggle('open')\">" +
-      "<span class='group-title'>" + t.group + " " + gk + '</span>' + pctHtml +
+      "<span class='group-title'>" +
+      t.group +
+      " " +
+      gk +
+      "</span>" +
+      pctHtml +
       "</div>" +
-      "<div class='group-content'>" + matchHtml + "</div>" +
+      "<div class='group-content'>" +
+      matchHtml +
+      "</div>" +
       "</div>";
   });
 
@@ -422,7 +722,7 @@ export default async function handler(req) {
     .toast.show{transform:translateX(-50%) translateY(0)}
   `;
 
-  const bodyClass = puedeEditarPronosticos ? '' : ' class="read-only-mode"';
+  const bodyClass = puedeEditarPronosticos ? "" : ' class="read-only-mode"';
 
   const jsCode = `
 var T_SAVING=${JSON.stringify(t.btn_saving)};
@@ -455,7 +755,9 @@ function rowToPred(row){
   var il=row.querySelector(".input-local"); var iv=row.querySelector(".input-visitor");
   if(!il||!iv)return null;
   var valL=il.value; var valV=iv.value;
-  if(valL===""||valV==="")return null;
+  if(valL===""&&valV==="")return null;
+  if(valL!==""&&valV==="")valV="0";
+  if(valV!==""&&valL==="")valL="0";
   return { match_id:row.getAttribute("data-id"), equipo_local:row.getAttribute("data-l"),
     equipo_visitante:row.getAttribute("data-v"), fecha:row.getAttribute("data-f"),
     local_score:parseInt(valL), visitor_score:parseInt(valV), locked:false };
@@ -579,24 +881,48 @@ window.step=step;
 window.save=save;
 `;
 
-  const html = '<!DOCTYPE html><html lang="es"><head>' +
+  const html =
+    '<!DOCTYPE html><html lang="es"><head>' +
     '<meta charset="UTF-8">' +
     '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">' +
-    '<title>' + t.doc_title + '</title>' +
+    "<title>" +
+    t.doc_title +
+    "</title>" +
     '<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">' +
-    '<style>' + css + '</style>' +
-    '</head><body' + bodyClass + '>' +
-    '<div class="toast" id="toast">' + t.toast + '</div>' +
+    "<style>" +
+    css +
+    "</style>" +
+    "</head><body" +
+    bodyClass +
+    ">" +
+    '<div class="toast" id="toast">' +
+    t.toast +
+    "</div>" +
     '<div class="app-container">' +
-    '<div class="header-box"><div class="badge-26">' + t.badge + '</div><h1>' + t.title + '</h1></div>' +
-    '<div>' + groupsHtml + '</div>' +
-    '</div>' +
+    '<div class="header-box"><div class="badge-26">' +
+    t.badge +
+    "</div><h1>" +
+    t.title +
+    "</h1></div>" +
+    "<div>" +
+    groupsHtml +
+    "</div>" +
+    "</div>" +
     '<div class="bottom-bar">' +
-    '  <button class="btn-save" id="btnSave" onclick="save()">' + t.btn_save + '</button>' +
-    '  <button class="btn-volver" onclick="volver()">' + t.btn_back + '</button>' +
-    '</div>' +
-    '<script>' + jsCode + '<\/script>' +
-    '</body></html>';
+    '  <button class="btn-save" id="btnSave" onclick="save()">' +
+    t.btn_save +
+    "</button>" +
+    '  <button class="btn-volver" onclick="volver()">' +
+    t.btn_back +
+    "</button>" +
+    "</div>" +
+    "<script>" +
+    jsCode +
+    "<\/script>" +
+    "</body></html>";
 
-  return new Response(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+  return new Response(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
 }

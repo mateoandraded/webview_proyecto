@@ -358,19 +358,32 @@ export default async function handler(req) {
     'if(payload.length===0){btn.innerHTML="' + t.btn_save + '";return;}' +
     'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
     'var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
-    'fetch("/api/grupos?user_id="+userId,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},body:JSON.stringify(payload)})' +
-    '.then(function(res){' +
-    '  if(res.status===403){alert("' + t.alert_closed + '");return null;}' +
-    '  return res.json().then(function(d){return {ok:res.ok,data:d};}).catch(function(){return {ok:res.ok,data:null};});' +
-    '})' +
-    '.then(function(result){' +
-    '  if(!result)return;' +
-    '  if(!result.ok){alert("' + t.alert_save + '");return;}' +
-    '  var data=result.data||{};' +
-    '  var saved=data.saved||0;' +
-    '  var failed=data.failed||0;' +
-    '  var total=data.total||(saved+failed);' +
-    '  if(failed>0){alert("' + t.alert_partial_a + '"+saved+"' + t.alert_partial_b + '"+total+"' + t.alert_partial_c + '");return;}' +
+    'function attemptSave(items,retries){' +
+    '  return fetch("/api/grupos?user_id="+userId,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},body:JSON.stringify(items)})' +
+    '    .then(function(res){' +
+    '      if(res.status===403){alert("' + t.alert_closed + '");return {closed:true};}' +
+    '      return res.json().then(function(d){return {ok:res.ok,data:d||{}};}).catch(function(){return {ok:res.ok,data:{}};});' +
+    '    })' +
+    '    .then(function(result){' +
+    '      if(!result||result.closed)return result;' +
+    '      if(!result.ok)return {hardError:true};' +
+    '      var data=result.data||{};' +
+    '      var failed=data.failed||0;' +
+    '      if(failed===0||retries<=0)return data;' +
+    '      var failedIds=data.failed_ids||[];' +
+    '      var retryItems=items.filter(function(p){return failedIds.indexOf(p.match_id)!==-1;});' +
+    '      if(retryItems.length===0)return data;' +
+    '      return new Promise(function(r){setTimeout(r,600);}).then(function(){return attemptSave(retryItems,retries-1);});' +
+    '    });' +
+    '}' +
+    'var originalTotal=payload.length;' +
+    'attemptSave(payload,2)' +
+    '.then(function(finalData){' +
+    '  if(!finalData||finalData.closed)return;' +
+    '  if(finalData.hardError){alert("' + t.alert_save + '");return;}' +
+    '  var failed=finalData.failed||0;' +
+    '  var saved=originalTotal-failed;' +
+    '  if(failed>0){alert("' + t.alert_partial_a + '"+saved+"' + t.alert_partial_b + '"+originalTotal+"' + t.alert_partial_c + '");return;}' +
     '  var toast=document.getElementById("toast");toast.classList.add("show");' +
     '  var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
     '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +

@@ -61,21 +61,24 @@ export default async function handler(req) {
       title: "MIS<br>PRONÓSTICOS", btn_save: "GUARDAR TODO", btn_back: "VOLVER",
       pending: "PENDIENTE", finished: "FIN", live: "EN VIVO", your_pred: "Tu pronóstico: ", group: "GRUPO",
       alert_closed: "Los pronósticos ya están cerrados.", btn_saving: "GUARDANDO...",
-      alert_save: "Error al guardar.", alert_net: "Error de red."
+      alert_save: "Error al guardar.", alert_net: "Error de red.",
+      alert_partial_a: "Solo se guardaron ", alert_partial_b: " de ", alert_partial_c: " pronósticos. Volvé a darle Guardar Todo para reintentar los que faltan."
     },
     en: {
       doc_title: "Groups - World Cup 26", toast: "SAVED!", badge: "GROUP STAGE",
       title: "MY<br>PREDICTIONS", btn_save: "SAVE ALL", btn_back: "BACK",
       pending: "TBD", finished: "END", live: "LIVE", your_pred: "Your prediction: ", group: "GROUP",
       alert_closed: "Predictions are already closed.", btn_saving: "SAVING...",
-      alert_save: "Error saving.", alert_net: "Network error."
+      alert_save: "Error saving.", alert_net: "Network error.",
+      alert_partial_a: "Only ", alert_partial_b: " of ", alert_partial_c: " predictions were saved. Tap Save All again to retry the rest."
     },
     pt: {
       doc_title: "Grupos - World Cup 26", toast: "SALVO!", badge: "FASE DE GRUPOS",
       title: "MEUS<br>PALPITES", btn_save: "SALVAR TUDO", btn_back: "VOLTAR",
       pending: "PENDENTE", finished: "FIM", live: "AO VIVO", your_pred: "Seu palpite: ", group: "GRUPO",
       alert_closed: "Os palpites já estão encerrados.", btn_saving: "SALVANDO...",
-      alert_save: "Erro ao salvar.", alert_net: "Erro de rede."
+      alert_save: "Erro ao salvar.", alert_net: "Erro de rede.",
+      alert_partial_a: "Apenas ", alert_partial_b: " de ", alert_partial_c: " palpites foram salvos. Clique em Salvar Tudo de novo para tentar os que faltam."
     }
   };
   const t = i18n[lang] || i18n['es'];
@@ -112,25 +115,35 @@ export default async function handler(req) {
           pronostico_visitante: p.visitor_score, fecha_partido: p.fecha,
           estado: 'PENDIENTE', resultado_real_local: 0, resultado_real_visitante: 0, puntos_ganados: 0
         };
-        try {
-          if (recordId) await fetchDatum('pbc_1944158292', 'PATCH', payload, recordId, '');
-          else await fetchDatum('pbc_1944158292', 'POST', payload, '', '');
-          return { ok: true, match_id: p.match_id };
-        } catch (e) {
-          return { ok: false, match_id: p.match_id, error: e.message };
+        // Hasta 2 intentos por record: cubre el caso de un timeout puntual hacia
+        // PocketBase que dejaba el chunk inconsistente bajo la implementacion previa.
+        let lastErr = '';
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            if (recordId) await fetchDatum('pbc_1944158292', 'PATCH', payload, recordId, '');
+            else await fetchDatum('pbc_1944158292', 'POST', payload, '', '');
+            return { ok: true, match_id: p.match_id };
+          } catch (e) {
+            lastErr = e && e.message ? e.message : 'unknown';
+            if (attempt === 0) await new Promise(function (r) { setTimeout(r, 400); });
+          }
         }
+        return { ok: false, match_id: p.match_id, error: lastErr };
       };
 
       // Paraleliza en chunks de 8 para no agotar el timeout del Edge runtime
       // ni saturar PocketBase. 72 partidos / 8 = ~9 oleadas, ~2-3s total.
       const CHUNK = 8;
       let saved = 0;
-      let failed = 0;
+      const failedIds = [];
       for (let i = 0; i < valid.length; i += CHUNK) {
         const results = await Promise.all(valid.slice(i, i + CHUNK).map(upsertOne));
-        results.forEach(function (r) { if (r.ok) saved++; else failed++; });
+        results.forEach(function (r) { if (r.ok) saved++; else failedIds.push(r.match_id); });
       }
-      return new Response(JSON.stringify({ success: failed === 0, saved: saved, failed: failed }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(
+        JSON.stringify({ success: failedIds.length === 0, saved: saved, failed: failedIds.length, failed_ids: failedIds, total: valid.length }),
+        { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
+      );
     } catch (err) {
       return new Response(JSON.stringify({ error: err.message }), { status: 500 });
     }
@@ -345,15 +358,23 @@ export default async function handler(req) {
     'if(payload.length===0){btn.innerHTML="' + t.btn_save + '";return;}' +
     'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
     'var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
-    'fetch("/api/grupos?user_id="+userId,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)})' +
+    'fetch("/api/grupos?user_id="+userId,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},body:JSON.stringify(payload)})' +
     '.then(function(res){' +
-    '  if(res.status===403){alert("' + t.alert_closed + '");return;}' +
-    '  if(res.ok){' +
-    '    var toast=document.getElementById("toast");toast.classList.add("show");' +
-    '    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
-    '    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
-    '    .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/593983456638";},1500); });' +
-    '  }else{alert("' + t.alert_save + '");}' +
+    '  if(res.status===403){alert("' + t.alert_closed + '");return null;}' +
+    '  return res.json().then(function(d){return {ok:res.ok,data:d};}).catch(function(){return {ok:res.ok,data:null};});' +
+    '})' +
+    '.then(function(result){' +
+    '  if(!result)return;' +
+    '  if(!result.ok){alert("' + t.alert_save + '");return;}' +
+    '  var data=result.data||{};' +
+    '  var saved=data.saved||0;' +
+    '  var failed=data.failed||0;' +
+    '  var total=data.total||(saved+failed);' +
+    '  if(failed>0){alert("' + t.alert_partial_a + '"+saved+"' + t.alert_partial_b + '"+total+"' + t.alert_partial_c + '");return;}' +
+    '  var toast=document.getElementById("toast");toast.classList.add("show");' +
+    '  var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
+    '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
+    '  .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/593983456638";},1500); });' +
     '})' +
     '.catch(function(){alert("' + t.alert_net + '");})' +
     '.finally(function(){btn.innerHTML="' + t.btn_save + '";});' +

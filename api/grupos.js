@@ -59,21 +59,21 @@ export default async function handler(req) {
     es: {
       doc_title: "Grupos - World Cup 26", toast: "¡GUARDADO!", badge: "FASE DE GRUPOS",
       title: "MIS<br>PRONÓSTICOS", btn_save: "GUARDAR TODO", btn_back: "VOLVER",
-      pending: "PENDIENTE", finished: "FIN", your_pred: "Tu pronóstico: ", group: "GRUPO",
+      pending: "PENDIENTE", finished: "FIN", live: "EN VIVO", your_pred: "Tu pronóstico: ", group: "GRUPO",
       alert_closed: "Los pronósticos ya están cerrados.", btn_saving: "GUARDANDO...",
       alert_save: "Error al guardar.", alert_net: "Error de red."
     },
     en: {
       doc_title: "Groups - World Cup 26", toast: "SAVED!", badge: "GROUP STAGE",
       title: "MY<br>PREDICTIONS", btn_save: "SAVE ALL", btn_back: "BACK",
-      pending: "TBD", finished: "END", your_pred: "Your prediction: ", group: "GROUP",
+      pending: "TBD", finished: "END", live: "LIVE", your_pred: "Your prediction: ", group: "GROUP",
       alert_closed: "Predictions are already closed.", btn_saving: "SAVING...",
       alert_save: "Error saving.", alert_net: "Network error."
     },
     pt: {
       doc_title: "Grupos - World Cup 26", toast: "SALVO!", badge: "FASE DE GRUPOS",
       title: "MEUS<br>PALPITES", btn_save: "SALVAR TUDO", btn_back: "VOLTAR",
-      pending: "PENDENTE", finished: "FIM", your_pred: "Seu palpite: ", group: "GRUPO",
+      pending: "PENDENTE", finished: "FIM", live: "AO VIVO", your_pred: "Seu palpite: ", group: "GRUPO",
       alert_closed: "Os palpites já estão encerrados.", btn_saving: "SALVANDO...",
       alert_save: "Erro ao salvar.", alert_net: "Erro de rede."
     }
@@ -96,6 +96,9 @@ export default async function handler(req) {
 
       for (const p of body) {
         if (p.locked) continue;
+        // Server-side: rechazar pronosticos de partidos que ya empezaron (su fecha <= hoy).
+        // Cubre el caso de un cliente con estado viejo (vio el form antes del lock).
+        if (p.fecha && p.fecha <= fechaServidor) continue;
         const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
         const recordId = found ? found.id : null;
         const payload = {
@@ -131,16 +134,20 @@ export default async function handler(req) {
     if (!groups[g]) groups[g] = [];
     const up = userPredictions.find(function (pr) { return pr.match_id === m.id_partido; });
     const partidoFinalizado = hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante);
+    // Un partido cuya fecha ya llego (m.fecha <= hoy) deja de ser pronosticable,
+    // este o no cargado todavia el marcador.
+    const partidoYaEmpezo = !!(m.fecha && m.fecha <= fechaServidor);
     const rl = parseDatumScore(m.resulltado_local);
     const rv = parseDatumScore(m.resultado_visitante);
     groups[g].push({
       id: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
       fecha: m.fecha,
       partidoFinalizado: partidoFinalizado,
+      partidoEnCurso: partidoYaEmpezo && !partidoFinalizado,
       realDispL: partidoFinalizado ? String(rl) : '-',
       realDispV: partidoFinalizado ? String(rv) : '-',
       pred_l: up ? up.pronostico_local : null, pred_v: up ? up.pronostico_visitante : null,
-      locked: !puedeEditarPronosticos
+      locked: !puedeEditarPronosticos || partidoYaEmpezo
     });
   });
   const groupKeys = Object.keys(groups).sort();
@@ -174,7 +181,9 @@ export default async function handler(req) {
       const lockData = m.locked ? "data-locked='true'" : '';
       const statusBadge = m.partidoFinalizado
         ? "<span class='lock-badge'>" + t.finished + "</span>"
-        : "<span class='pending-badge'>" + t.pending + "</span>";
+        : m.partidoEnCurso
+          ? "<span class='live-badge'>" + t.live + "</span>"
+          : "<span class='pending-badge'>" + t.pending + "</span>";
 
       var predSubline = '';
       if (m.locked) {
@@ -259,6 +268,8 @@ export default async function handler(req) {
     .match-row{border-top:2px solid var(--white);padding:16px 12px}
     .match-meta{font-size:10px;font-weight:800;color:rgba(255,255,255,.6);display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;letter-spacing:1px}
     .lock-badge{background:var(--purple);color:var(--white);padding:2px 6px;font-size:9px}
+    .live-badge{background:var(--magenta);color:var(--white);padding:2px 6px;font-size:9px;font-weight:800;letter-spacing:.5px;animation:livePulse 1.2s ease-in-out infinite}
+    @keyframes livePulse{0%,100%{opacity:1}50%{opacity:.55}}
     .pending-badge{background:var(--pending);color:var(--white);padding:2px 6px;font-size:9px;font-weight:800}
     .match-body{display:flex;align-items:flex-start;justify-content:space-between;gap:6px}
     .match-center{display:flex;flex-direction:column;align-items:center;gap:8px;flex:0 0 auto;min-width:100px;max-width:140px}

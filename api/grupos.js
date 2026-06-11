@@ -109,7 +109,7 @@ export default async function handler(req) {
       const body = await req.json();
       let existingItems = [];
       try {
-        const existingReq = await fetchDatum('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')");
+        const existingReq = await fetchDatumRetry('pbc_1944158292', 'GET', null, '', "&filter=(user_id='" + userId + "')", 3);
         existingItems = existingReq.items || existingReq;
       } catch (e) { existingItems = []; }
 
@@ -122,17 +122,45 @@ export default async function handler(req) {
         return true;
       });
 
-      const upsertOne = async function (p) {
-        const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
-        const recordId = found ? found.id : null;
-        const payload = {
+      const buildPayload = function (p) {
+        return {
           user_id: userId, match_id: p.match_id, equipo_local: p.equipo_local,
           equipo_visitante: p.equipo_visitante, pronostico_local: p.local_score,
           pronostico_visitante: p.visitor_score, fecha_partido: p.fecha,
           estado: 'PENDIENTE', resultado_real_local: 0, resultado_real_visitante: 0, puntos_ganados: 0
         };
-        // Hasta 2 intentos por record: cubre el caso de un timeout puntual hacia
-        // PocketBase que dejaba el chunk inconsistente bajo la implementacion previa.
+      };
+
+      // --- Camino principal: Batch API de PocketBase/Datum ---
+      // Guarda TODO el lote (crea/actualiza) en UNA sola peticion HTTP a Datum, en
+      // vez de 1 peticion por registro. Elimina el tope de subrequests del Edge
+      // runtime (que antes truncaba el guardado a ~58) y baja drasticamente la carga
+      // sobre Datum (lo que causaba rate-limit en rafaga). El batch es transaccional:
+      // entran todos o ninguno; si algo falla, hacemos fallback registro-por-registro.
+      const saveViaBatch = async function (items) {
+        const batchUrl = BASE_URL.replace(/\/collections\/?$/, '') + '/batch';
+        const requests = items.map(function (p) {
+          const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
+          if (found) return { method: 'PATCH', url: '/api/collections/pbc_1944158292/records/' + found.id, body: buildPayload(p) };
+          return { method: 'POST', url: '/api/collections/pbc_1944158292/records', body: buildPayload(p) };
+        });
+        const res = await fetch(batchUrl, {
+          method: 'POST',
+          headers: { 'X-Api-Key': API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requests: requests })
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(function () { return ''; });
+          throw new Error('Batch HTTP ' + res.status + ' ' + String(txt).slice(0, 160));
+        }
+        return items.length;
+      };
+
+      // --- Fallback: upsert registro por registro (si el batch no estuviera disponible) ---
+      const upsertOne = async function (p) {
+        const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
+        const recordId = found ? found.id : null;
+        const payload = buildPayload(p);
         let lastErr = '';
         for (let attempt = 0; attempt < 2; attempt++) {
           try {
@@ -146,20 +174,32 @@ export default async function handler(req) {
         }
         return { ok: false, match_id: p.match_id, error: lastErr };
       };
+      const saveViaPerRecord = async function (items) {
+        const CHUNK = 4;
+        let okCount = 0;
+        const failed = [];
+        for (let i = 0; i < items.length; i += CHUNK) {
+          const results = await Promise.all(items.slice(i, i + CHUNK).map(upsertOne));
+          results.forEach(function (r) { if (r.ok) okCount++; else failed.push(r.match_id); });
+        }
+        return { saved: okCount, failedIds: failed };
+      };
 
-      // Paraleliza en chunks de 4 para mantenerse bajo el limite de conexiones
-      // simultaneas del Edge runtime (~6). El cliente ya manda en lotes pequenos
-      // (<=12 por request), asi que ninguna invocacion se acerca al tope de
-      // subrequests del runtime que antes truncaba el guardado a ~58 registros.
-      const CHUNK = 4;
       let saved = 0;
-      const failedIds = [];
-      for (let i = 0; i < valid.length; i += CHUNK) {
-        const results = await Promise.all(valid.slice(i, i + CHUNK).map(upsertOne));
-        results.forEach(function (r) { if (r.ok) saved++; else failedIds.push(r.match_id); });
+      let failedIds = [];
+      let via = 'batch';
+      if (valid.length > 0) {
+        try {
+          saved = await saveViaBatch(valid);
+        } catch (batchErr) {
+          via = 'perrecord';
+          const r = await saveViaPerRecord(valid);
+          saved = r.saved;
+          failedIds = r.failedIds;
+        }
       }
       return new Response(
-        JSON.stringify({ success: failedIds.length === 0, saved: saved, failed: failedIds.length, failed_ids: failedIds, total: valid.length }),
+        JSON.stringify({ success: failedIds.length === 0, saved: saved, failed: failedIds.length, failed_ids: failedIds, total: valid.length, via: via }),
         { status: 200, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }
       );
     } catch (err) {
@@ -478,7 +518,7 @@ function flushAutosave(){
 
 // --- GUARDAR TODO: lotes chicos en requests separados para no superar el tope
 // de subrequests del Edge runtime (lo que antes truncaba a ~58 registros). ---
-var BATCH=12;
+var BATCH=40;
 function save(){
   var btn=document.getElementById("btnSave"); if(!btn)return;
   if(!PUEDE_EDITAR){alert(T_CLOSED);return;}

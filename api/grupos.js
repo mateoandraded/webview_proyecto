@@ -94,11 +94,16 @@ export default async function handler(req) {
         existingItems = existingReq.items || existingReq;
       } catch (e) { existingItems = []; }
 
-      for (const p of body) {
-        if (p.locked) continue;
+      // Filtra primero los items invalidos / bloqueados.
+      const valid = body.filter(function (p) {
+        if (p.locked) return false;
         // Server-side: rechazar pronosticos de partidos que ya empezaron (su fecha <= hoy).
         // Cubre el caso de un cliente con estado viejo (vio el form antes del lock).
-        if (p.fecha && p.fecha <= fechaServidor) continue;
+        if (p.fecha && p.fecha <= fechaServidor) return false;
+        return true;
+      });
+
+      const upsertOne = async function (p) {
         const found = existingItems.find(function (e) { return e.match_id === p.match_id; });
         const recordId = found ? found.id : null;
         const payload = {
@@ -107,10 +112,25 @@ export default async function handler(req) {
           pronostico_visitante: p.visitor_score, fecha_partido: p.fecha,
           estado: 'PENDIENTE', resultado_real_local: 0, resultado_real_visitante: 0, puntos_ganados: 0
         };
-        if (recordId) { await fetchDatum('pbc_1944158292', 'PATCH', payload, recordId, ''); }
-        else { try { await fetchDatum('pbc_1944158292', 'POST', payload, '', ''); } catch (e) { } }
+        try {
+          if (recordId) await fetchDatum('pbc_1944158292', 'PATCH', payload, recordId, '');
+          else await fetchDatum('pbc_1944158292', 'POST', payload, '', '');
+          return { ok: true, match_id: p.match_id };
+        } catch (e) {
+          return { ok: false, match_id: p.match_id, error: e.message };
+        }
+      };
+
+      // Paraleliza en chunks de 8 para no agotar el timeout del Edge runtime
+      // ni saturar PocketBase. 72 partidos / 8 = ~9 oleadas, ~2-3s total.
+      const CHUNK = 8;
+      let saved = 0;
+      let failed = 0;
+      for (let i = 0; i < valid.length; i += CHUNK) {
+        const results = await Promise.all(valid.slice(i, i + CHUNK).map(upsertOne));
+        results.forEach(function (r) { if (r.ok) saved++; else failed++; });
       }
-      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ success: failed === 0, saved: saved, failed: failed }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     } catch (err) {
       return new Response(JSON.stringify({ error: err.message }), { status: 500 });
     }

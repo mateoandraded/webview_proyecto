@@ -483,6 +483,24 @@ export default async function handler(req) {
       recompute();
       hydrateWinners(derived.qf, state.winners.qf, SAVED.semis || []);
       recompute();
+
+      // Hidrata SF (los ganadores de semifinales = finalistas) derivando del podio.
+      // El campeon SIEMPRE viene de una de las 2 semifinales; ubicamos cual mirando
+      // sus contendientes. El subcampeon va a la otra SF.
+      // Sin esto, al volver a abrir el bracket aparecia SEMIS 0/2 y PODIO bloqueado.
+      if (SAVED.campeon && SAVED.subcampeon) {
+        var sf101 = derived.sf.find(function(m){ return m.id === 101; });
+        var sf102 = derived.sf.find(function(m){ return m.id === 102; });
+        var c = SAVED.campeon, s = SAVED.subcampeon;
+        if (sf101 && (sf101.home === c || sf101.away === c)) {
+          state.winners.sf["101"] = c;
+          if (sf102 && (sf102.home === s || sf102.away === s)) state.winners.sf["102"] = s;
+        } else if (sf102 && (sf102.home === c || sf102.away === c)) {
+          state.winners.sf["102"] = c;
+          if (sf101 && (sf101.home === s || sf101.away === s)) state.winners.sf["101"] = s;
+        }
+        recompute();
+      }
     }
 
     function thirdCount(){

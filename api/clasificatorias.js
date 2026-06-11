@@ -529,6 +529,7 @@ export default async function handler(req) {
       state.winners.sf = {};
       state.podium = { campeon:"", sub:"", tercero:"", cuarto:"" };
       rerender();
+      scheduleAutosave();
     }
 
     function toggleWinner(stage, matchId, team){
@@ -544,6 +545,7 @@ export default async function handler(req) {
       if(stage === "qf"){ state.winners.sf = {}; state.podium = { campeon:"", sub:"", tercero:"", cuarto:"" }; }
       if(stage === "sf"){ state.podium = { campeon:"", sub:"", tercero:"", cuarto:"" }; }
       rerender();
+      scheduleAutosave();
     }
 
     function pickFinalMatch(winKey, loseKey, t, other){
@@ -557,6 +559,7 @@ export default async function handler(req) {
       }
       buildPanel(5);
       checkSaveButton();
+      scheduleAutosave();
     }
 
     function renderMatchList(matches, stage, title){
@@ -725,14 +728,14 @@ export default async function handler(req) {
       return base;
     }
 
-    function guardar(){
-      if(!PUEDE_EDITAR){
-        alert(T.alert_closed);
-        return;
-      }
-      var btn = document.getElementById("btnSave");
-      btn.innerText = T.btn_save_loading;
-      var payload = {
+    function currentUid(){
+      return new URLSearchParams(window.location.search).get("user_id") || "GUEST";
+    }
+
+    // Arma el payload del bracket actual (parcial o completo) con el mismo
+    // formato que entiende el servidor y initFromSaved().
+    function buildPayload(){
+      return {
         dieciseisavos: derived.placements.legacyD16,
         octavos: orderedWinners([73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88], state.winners.r32),
         cuartos: orderedWinners([89,90,91,92,93,94,95,96], state.winners.r16),
@@ -742,6 +745,79 @@ export default async function handler(req) {
         tercer_lugar: state.podium.tercero,
         cuarto_lugar: state.podium.cuarto
       };
+    }
+
+    // Guarda el progreso en este dispositivo (sobrevive cerrar/volver sin red).
+    function saveLocal(payload){
+      try { localStorage.setItem("jelou_bracket_" + currentUid(), JSON.stringify(payload)); } catch(e){}
+    }
+
+    // POST del bracket al servidor, sin toast ni redirect (autoguardado silencioso).
+    function postBracket(payload, useKeepalive){
+      return fetch("/api/clasificatorias?user_id=" + currentUid(), {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload),
+        keepalive: !!useKeepalive
+      });
+    }
+
+    var autosaveTimer = null;
+
+    // Autoguardado tras cada cambio: local inmediato + servidor con debounce.
+    function scheduleAutosave(){
+      if(!PUEDE_EDITAR) return;
+      var payload = buildPayload();
+      saveLocal(payload);
+      if(currentUid() === "GUEST") return;
+      if(autosaveTimer) clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(function(){
+        autosaveTimer = null;
+        postBracket(payload, false).catch(function(){});
+      }, 900);
+    }
+
+    // Fuerza un guardado inmediato (al salir / ocultar / cerrar la webview).
+    function flushAutosave(){
+      if(!PUEDE_EDITAR) return;
+      var payload = buildPayload();
+      saveLocal(payload);
+      if(currentUid() === "GUEST") return;
+      if(autosaveTimer){ clearTimeout(autosaveTimer); autosaveTimer = null; }
+      try { postBracket(payload, true); } catch(e){}
+    }
+
+    function hasServerData(){
+      if(!SAVED) return false;
+      if(Array.isArray(SAVED.dieciseisavos) && SAVED.dieciseisavos.length) return true;
+      if(Array.isArray(SAVED.octavos) && SAVED.octavos.length) return true;
+      if(SAVED.campeon) return true;
+      return false;
+    }
+
+    // El servidor manda; si no hay nada guardado en el server, recupera lo que
+    // quedo en este dispositivo (autosave local) para no perder el progreso.
+    function resolveSavedSource(){
+      if(hasServerData()) return SAVED;
+      try {
+        var ls = localStorage.getItem("jelou_bracket_" + currentUid());
+        if(ls){
+          var parsed = JSON.parse(ls);
+          if(parsed && typeof parsed === "object") return parsed;
+        }
+      } catch(e){}
+      return SAVED;
+    }
+
+    function guardar(){
+      if(!PUEDE_EDITAR){
+        alert(T.alert_closed);
+        return;
+      }
+      var btn = document.getElementById("btnSave");
+      btn.innerText = T.btn_save_loading;
+      var payload = buildPayload();
+      saveLocal(payload);
       var uid = new URLSearchParams(window.location.search).get("user_id") || "GUEST";
       var exId = new URLSearchParams(window.location.search).get("executionId") || "";
       fetch("/api/clasificatorias?user_id=" + uid, {
@@ -774,6 +850,7 @@ export default async function handler(req) {
     function volver(){
       if(callbackSent) return;
       callbackSent = true;
+      flushAutosave();
       var exId = new URLSearchParams(window.location.search).get("executionId") || SERVER_EXECUTION_ID || "";
       fetch("https://workflows.jelou.ai/v1/webview/callback", {
         method:"POST",
@@ -783,17 +860,19 @@ export default async function handler(req) {
     }
 
     document.addEventListener("visibilitychange", function(){
-      if(document.visibilityState === "hidden" && !callbackSent){
-        callbackSent = true;
-        var exId = new URLSearchParams(window.location.search).get("executionId") || SERVER_EXECUTION_ID || "";
-        fetch("https://workflows.jelou.ai/v1/webview/callback", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({ executionId: exId, success: true, data: { action: "volver" } }),
-          keepalive:true
-        });
-      }
+      if(document.visibilityState !== "hidden") return;
+      flushAutosave();
+      if(callbackSent) return;
+      callbackSent = true;
+      var exId = new URLSearchParams(window.location.search).get("executionId") || SERVER_EXECUTION_ID || "";
+      fetch("https://workflows.jelou.ai/v1/webview/callback", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ executionId: exId, success: true, data: { action: "volver" } }),
+        keepalive:true
+      });
     });
+    window.addEventListener("pagehide", function(){ flushAutosave(); });
 
     window.toggleGroupTeam = toggleGroupTeam;
     window.toggleWinner = toggleWinner;
@@ -802,6 +881,7 @@ export default async function handler(req) {
     window.guardar = guardar;
     window.volver = volver;
 
+    SAVED = resolveSavedSource();
     initFromSaved();
     rerender();
   </script>

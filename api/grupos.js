@@ -131,9 +131,11 @@ export default async function handler(req) {
         return { ok: false, match_id: p.match_id, error: lastErr };
       };
 
-      // Paraleliza en chunks de 8 para no agotar el timeout del Edge runtime
-      // ni saturar PocketBase. 72 partidos / 8 = ~9 oleadas, ~2-3s total.
-      const CHUNK = 8;
+      // Paraleliza en chunks de 4 para mantenerse bajo el limite de conexiones
+      // simultaneas del Edge runtime (~6). El cliente ya manda en lotes pequenos
+      // (<=12 por request), asi que ninguna invocacion se acerca al tope de
+      // subrequests del runtime que antes truncaba el guardado a ~58 registros.
+      const CHUNK = 4;
       let saved = 0;
       const failedIds = [];
       for (let i = 0; i < valid.length; i += CHUNK) {
@@ -336,70 +338,160 @@ export default async function handler(req) {
 
   const bodyClass = puedeEditarPronosticos ? '' : ' class="read-only-mode"';
 
-  const jsCode =
-    'var callbackSent=false;' +
-    'document.addEventListener("visibilitychange",function(){' +
-    'if(document.visibilityState==="hidden"&&!callbackSent){' +
-    'callbackSent=true;' +
-    'var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
-    'fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},' +
-    'body:JSON.stringify({executionId:exId,success:true,data:{action:"volver"}}),keepalive:true});' +
-    '}});' +
-    'function step(btn,amount){var input=btn.parentElement.querySelector("input");var val=parseInt(input.value);if(isNaN(val))val=0;val+=amount;if(val<0)val=0;if(val>20)val=20;input.value=val;}' +
-    'function save(){' +
-    'var btn=document.getElementById("btnSave");if(!btn)return;btn.innerHTML="' + t.btn_saving + '";' +
-    'var payload=[];' +
-    'document.querySelectorAll(".match-row").forEach(function(row){' +
-    'if(row.getAttribute("data-locked")==="true")return;' +
-    'var il=row.querySelector(".input-local");var iv=row.querySelector(".input-visitor");if(!il||!iv)return;' +
-    'var valL=il.value;var valV=iv.value;' +
-    'if(valL!==""&&valV!==""){payload.push({match_id:row.getAttribute("data-id"),equipo_local:row.getAttribute("data-l"),equipo_visitante:row.getAttribute("data-v"),fecha:row.getAttribute("data-f"),local_score:parseInt(valL),visitor_score:parseInt(valV),locked:false});}' +
-    '});' +
-    'if(payload.length===0){btn.innerHTML="' + t.btn_save + '";return;}' +
-    'var userId=new URLSearchParams(window.location.search).get("user_id")||"GUEST";' +
-    'var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
-    'function attemptSave(items,retries){' +
-    '  return fetch("/api/grupos?user_id="+userId,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},body:JSON.stringify(items)})' +
-    '    .then(function(res){' +
-    '      if(res.status===403){alert("' + t.alert_closed + '");return {closed:true};}' +
-    '      return res.json().then(function(d){return {ok:res.ok,data:d||{}};}).catch(function(){return {ok:res.ok,data:{}};});' +
-    '    })' +
-    '    .then(function(result){' +
-    '      if(!result||result.closed)return result;' +
-    '      if(!result.ok)return {hardError:true};' +
-    '      var data=result.data||{};' +
-    '      var failed=data.failed||0;' +
-    '      if(failed===0||retries<=0)return data;' +
-    '      var failedIds=data.failed_ids||[];' +
-    '      var retryItems=items.filter(function(p){return failedIds.indexOf(p.match_id)!==-1;});' +
-    '      if(retryItems.length===0)return data;' +
-    '      return new Promise(function(r){setTimeout(r,600);}).then(function(){return attemptSave(retryItems,retries-1);});' +
-    '    });' +
-    '}' +
-    'var originalTotal=payload.length;' +
-    'attemptSave(payload,2)' +
-    '.then(function(finalData){' +
-    '  if(!finalData||finalData.closed)return;' +
-    '  if(finalData.hardError){alert("' + t.alert_save + '");return;}' +
-    '  var failed=finalData.failed||0;' +
-    '  var saved=originalTotal-failed;' +
-    '  if(failed>0){alert("' + t.alert_partial_a + '"+saved+"' + t.alert_partial_b + '"+originalTotal+"' + t.alert_partial_c + '");return;}' +
-    '  var toast=document.getElementById("toast");toast.classList.add("show");' +
-    '  var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",summary:payload}};' +
-    '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
-    '  .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/593983456638";},1500); });' +
-    '})' +
-    '.catch(function(){alert("' + t.alert_net + '");})' +
-    '.finally(function(){btn.innerHTML="' + t.btn_save + '";});' +
-    '}' +
-    'window.volver=function(){' +
-    '  if(callbackSent)return;' +
-    '  callbackSent=true;' +
-    '  var exId=new URLSearchParams(window.location.search).get("executionId")||"";' +
-    '  var cbBody={executionId:exId,success:true,data:{action:"volver"}}; ' +
-    '  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})' +
-    '    .finally(function(){ window.location.href="https://wa.me/593983456638"; });' +
-    '};';
+  const jsCode = `
+var T_SAVING=${JSON.stringify(t.btn_saving)};
+var T_SAVE=${JSON.stringify(t.btn_save)};
+var T_CLOSED=${JSON.stringify(t.alert_closed)};
+var T_ERR_SAVE=${JSON.stringify(t.alert_save)};
+var T_ERR_NET=${JSON.stringify(t.alert_net)};
+var T_PA=${JSON.stringify(t.alert_partial_a)};
+var T_PB=${JSON.stringify(t.alert_partial_b)};
+var T_PC=${JSON.stringify(t.alert_partial_c)};
+var PUEDE_EDITAR=${JSON.stringify(puedeEditarPronosticos)};
+var callbackSent=false;
+
+function qp(name){ return new URLSearchParams(window.location.search).get(name)||""; }
+function currentUid(){ return qp("user_id")||"GUEST"; }
+
+// Sube/baja el marcador y marca la fila para autoguardado.
+function step(btn,amount){
+  var input=btn.parentElement.querySelector("input");
+  var val=parseInt(input.value); if(isNaN(val))val=0;
+  val+=amount; if(val<0)val=0; if(val>20)val=20;
+  input.value=val;
+  var row=btn.closest(".match-row");
+  if(row) markDirty(row);
+}
+
+// Convierte una fila a pronostico, o null si esta bloqueada / incompleta.
+function rowToPred(row){
+  if(row.getAttribute("data-locked")==="true")return null;
+  var il=row.querySelector(".input-local"); var iv=row.querySelector(".input-visitor");
+  if(!il||!iv)return null;
+  var valL=il.value; var valV=iv.value;
+  if(valL===""||valV==="")return null;
+  return { match_id:row.getAttribute("data-id"), equipo_local:row.getAttribute("data-l"),
+    equipo_visitante:row.getAttribute("data-v"), fecha:row.getAttribute("data-f"),
+    local_score:parseInt(valL), visitor_score:parseInt(valV), locked:false };
+}
+
+function collectAll(){
+  var out=[];
+  document.querySelectorAll(".match-row").forEach(function(row){
+    var p=rowToPred(row); if(p)out.push(p);
+  });
+  return out;
+}
+
+// POST de un lote (cualquier tamano) reintentando solo los que el server reporte como fallidos.
+function postBatch(items,retries,useKeepalive){
+  return fetch("/api/grupos?user_id="+currentUid(),{
+    method:"POST",cache:"no-store",
+    headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},
+    body:JSON.stringify(items),keepalive:!!useKeepalive
+  })
+  .then(function(res){
+    if(res.status===403){return {closed:true};}
+    return res.json().then(function(d){return {ok:res.ok,data:d||{}};}).catch(function(){return {ok:res.ok,data:{}};});
+  })
+  .then(function(result){
+    if(!result||result.closed)return result;
+    if(!result.ok)return {hardError:true};
+    var data=result.data||{};
+    var failed=data.failed||0;
+    if(failed===0||retries<=0)return data;
+    var failedIds=data.failed_ids||[];
+    var retryItems=items.filter(function(p){return failedIds.indexOf(p.match_id)!==-1;});
+    if(retryItems.length===0)return data;
+    return new Promise(function(r){setTimeout(r,500);}).then(function(){return postBatch(retryItems,retries-1,useKeepalive);});
+  });
+}
+
+// --- Autoguardado incremental por partido (debounce, lotes chicos) ---
+var dirtyRows={};
+var autosaveTimer=null;
+function cancelAutosave(){ if(autosaveTimer){clearTimeout(autosaveTimer);autosaveTimer=null;} dirtyRows={}; }
+function markDirty(row){
+  if(!PUEDE_EDITAR)return;
+  if(currentUid()==="GUEST")return;
+  var p=rowToPred(row);
+  if(!p)return;
+  dirtyRows[p.match_id]=p;
+  if(autosaveTimer)clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(flushAutosave,800);
+}
+function flushAutosave(){
+  if(autosaveTimer){clearTimeout(autosaveTimer);autosaveTimer=null;}
+  if(!PUEDE_EDITAR)return;
+  if(currentUid()==="GUEST")return;
+  var items=Object.keys(dirtyRows).map(function(k){return dirtyRows[k];});
+  if(items.length===0)return;
+  dirtyRows={};
+  postBatch(items,1,true).catch(function(){});
+}
+
+// --- GUARDAR TODO: lotes chicos en requests separados para no superar el tope
+// de subrequests del Edge runtime (lo que antes truncaba a ~58 registros). ---
+var BATCH=12;
+function save(){
+  var btn=document.getElementById("btnSave"); if(!btn)return;
+  if(!PUEDE_EDITAR){alert(T_CLOSED);return;}
+  cancelAutosave();
+  btn.innerHTML=T_SAVING;
+  var payload=collectAll();
+  if(payload.length===0){btn.innerHTML=T_SAVE;return;}
+  var exId=qp("executionId");
+  var batches=[]; for(var i=0;i<payload.length;i+=BATCH)batches.push(payload.slice(i,i+BATCH));
+  var totalFailed=0, closed=false, hard=false;
+  function runBatch(idx){
+    if(idx>=batches.length)return Promise.resolve();
+    return postBatch(batches[idx],2,false).then(function(r){
+      if(r&&r.closed){closed=true;return;}
+      if(r&&r.hardError){hard=true;}
+      else { totalFailed+=(r&&r.failed)||0; }
+      return runBatch(idx+1);
+    });
+  }
+  runBatch(0).then(function(){
+    if(closed){alert(T_CLOSED);return;}
+    if(hard){alert(T_ERR_SAVE);return;}
+    if(totalFailed>0){
+      var saved=payload.length-totalFailed;
+      alert(T_PA+saved+T_PB+payload.length+T_PC);
+      return;
+    }
+    var toast=document.getElementById("toast"); if(toast)toast.classList.add("show");
+    var cbBody={executionId:exId,success:true,data:{action:"save_pronosticos",total:payload.length}};
+    fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})
+      .finally(function(){ setTimeout(function(){window.location.href="https://wa.me/593983456638";},1500); });
+  })
+  .catch(function(){alert(T_ERR_NET);})
+  .finally(function(){btn.innerHTML=T_SAVE;});
+}
+
+window.volver=function(){
+  if(callbackSent)return;
+  callbackSent=true;
+  flushAutosave();
+  var exId=qp("executionId");
+  var cbBody={executionId:exId,success:true,data:{action:"volver"}};
+  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(cbBody)})
+    .finally(function(){ window.location.href="https://wa.me/593983456638"; });
+};
+
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState!=="hidden")return;
+  flushAutosave();
+  if(callbackSent)return;
+  callbackSent=true;
+  var exId=qp("executionId");
+  fetch("https://workflows.jelou.ai/v1/webview/callback",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({executionId:exId,success:true,data:{action:"volver"}}),keepalive:true});
+});
+window.addEventListener("pagehide",function(){ flushAutosave(); });
+
+window.step=step;
+window.save=save;
+`;
 
   const html = '<!DOCTYPE html><html lang="es"><head>' +
     '<meta charset="UTF-8">' +

@@ -9,7 +9,7 @@ export const config = {
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
 
-const FECHA_LIMITE_PRONOSTICOS = "2026-06-12";
+const FECHA_LIMITE_PRONOSTICOS = "2026-06-13";
 
 function predictionComplete(up) {
   if (!up) return false;
@@ -238,9 +238,9 @@ export default async function handler(req) {
       // Filtra primero los items invalidos / bloqueados.
       const valid = body.filter(function (p) {
         if (p.locked) return false;
-        // Server-side: rechazar pronosticos de partidos que ya empezaron (su fecha <= hoy).
-        // Cubre el caso de un cliente con estado viejo (vio el form antes del lock).
-        if (p.fecha && p.fecha <= fechaServidor) return false;
+        // Pronosticos abiertos hasta FECHA_LIMITE: ya NO se rechazan partidos que
+        // ya empezaron/terminaron. La gente puede pronosticar cualquier partido
+        // (incluidos los ya jugados) hasta el cierre del sabado.
         return true;
       });
 
@@ -491,8 +491,8 @@ export default async function handler(req) {
       m.resulltado_local,
       m.resultado_visitante,
     );
-    // Un partido cuya fecha ya llego (m.fecha <= hoy) deja de ser pronosticable,
-    // este o no cargado todavia el marcador.
+    // partidoYaEmpezo solo se usa para el badge EN VIVO/FIN; el bloqueo de edicion
+    // ya NO depende de la fecha del partido (todos abiertos hasta FECHA_LIMITE).
     const partidoYaEmpezo = !!(m.fecha && m.fecha <= fechaServidor);
     const rl = parseDatumScore(m.resulltado_local);
     const rv = parseDatumScore(m.resultado_visitante);
@@ -507,7 +507,7 @@ export default async function handler(req) {
       realDispV: partidoFinalizado ? String(rv) : "-",
       pred_l: up ? up.pronostico_local : null,
       pred_v: up ? up.pronostico_visitante : null,
-      locked: !puedeEditarPronosticos || partidoYaEmpezo,
+      locked: !puedeEditarPronosticos,
     });
   });
   const groupKeys = Object.keys(groups).sort();

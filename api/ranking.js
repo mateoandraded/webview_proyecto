@@ -17,15 +17,22 @@ function esc(s) {
 }
 
 async function fetchDB(coll, query = '') {
-  const url = `${BASE_URL}/${coll}/records?perPage=500${query}`;
+  // Paginado: sin esto solo traía los primeros 500 registros, y a quien tuviera
+  // sus pronósticos más allá de ese tope se le calculaba 0 (y se le borraban).
+  let page = 1; let out = [];
   try {
-    const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" } });
-    if (!res.ok) return [];
-    const d = await res.json();
-    return Array.isArray(d) ? d : (d.items || []);
-  } catch (e) {
-    return [];
-  }
+    while (true) {
+      const url = `${BASE_URL}/${coll}/records?perPage=500&page=${page}${query}`;
+      const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" } });
+      if (!res.ok) break;
+      const d = await res.json();
+      const items = Array.isArray(d) ? d : (d.items || []);
+      out = out.concat(items);
+      if (Array.isArray(d) || !d.totalPages || page >= d.totalPages) break;
+      page++;
+    }
+  } catch (e) { /* devolvemos lo leído hasta ahora */ }
+  return out;
 }
 
 // Background async patch so we don't hold the Edge request
@@ -166,8 +173,15 @@ export default async function handler(req) {
   const matchById = new Map();
   for (const m of mappedMatches) matchById.set(m.id_partido, m);
 
-  const predsByUser = new Map();
+  // Dedupe: un registro por (user, match), el más reciente. Evita contar duplicados.
+  const _predByKey = new Map();
   for (const p of predictions) {
+    const k = p.user_id + '|' + p.match_id;
+    const prev = _predByKey.get(k);
+    if (!prev || String(p.updated) > String(prev.updated)) _predByKey.set(k, p);
+  }
+  const predsByUser = new Map();
+  for (const p of _predByKey.values()) {
     if (!predsByUser.has(p.user_id)) predsByUser.set(p.user_id, []);
     predsByUser.get(p.user_id).push(p);
   }
@@ -239,13 +253,8 @@ export default async function handler(req) {
       if (scoreEqDatum(p.pronostico_local, match.gl) && scoreEqDatum(p.pronostico_visitante, match.gv)) { pt = 2; aciertos++; }
       else if (scoreEqDatum(p.pronostico_local, match.gl) || scoreEqDatum(p.pronostico_visitante, match.gv)) { pt = 1; }
       ptsGoles += pt;
-
-      if (p.estado === 'PENDIENTE') {
-        silentPatch('pbc_1944158292', p.id, {
-          puntos_ganados: pt, estado: (pt === 2) ? 'GANADO_EXACTO' : (pt === 1 ? 'GANADO_PARCIAL' : 'PERDIDO'),
-          resultado_real_local: parseDatumScore(match.gl), resultado_real_visitante: parseDatumScore(match.gv)
-        });
-      }
+      // (No se escribe en la base: el cron recalcularTodos es la única fuente que
+      //  patchea pronósticos/ranking. Aquí solo calculamos para mostrar.)
     });
 
     let ptsBrackets = 0;
@@ -263,12 +272,8 @@ export default async function handler(req) {
     }
 
     const totalCalculado = ptsGoles + ptsBrackets;
-
-    if (totalCalculado !== pr.total_puntos || aciertos !== pr.pronosticos_correctos) {
-      silentPatch('pbc_3271891893', pr.id, {
-        total_puntos: totalCalculado, puntos_goles: ptsGoles, puntos_brackets: ptsBrackets, pronosticos_correctos: aciertos
-      });
-    }
+    // (Sin silentPatch: no reescribimos el ranking desde el webview para no pelear
+    //  con el cron ni borrar puntos por una lectura parcial.)
 
     return {
       nombre: String(pr.nombre).trim(),

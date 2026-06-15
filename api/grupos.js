@@ -9,7 +9,7 @@ export const config = {
 const API_KEY = process.env.API_KEY;
 const BASE_URL = process.env.BASE_URL;
 
-const FECHA_LIMITE_PRONOSTICOS = "2026-06-14";
+const FECHA_LIMITE_PRONOSTICOS = "2026-12-31";
 
 function predictionComplete(up) {
   if (!up) return false;

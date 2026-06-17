@@ -71,7 +71,8 @@ function partidoPuedeCalificar(m, hoyStr) {
   var fd = normalizeMatchDate(m.fecha);
   if (!fd) return false;
   if (fd < FECHA_INICIO_TORNEO) return false;
-  if (fd > hoyStr) return false;
+  // Ya NO se exige fd <= hoy: si el resultado está cargado, el partido cuenta
+  // (las fechas del calendario en la BD pueden ir por delante de la realidad).
   return hasResultadoMarcado(m);
 }
 

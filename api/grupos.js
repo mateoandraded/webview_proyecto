@@ -212,14 +212,33 @@ export default async function handler(req) {
 
   if (req.method === "POST") {
     try {
-      const fechaServidor = await fetchFechaTorneoDesdeJelou();
-      if (fechaServidor > FECHA_LIMITE_PRONOSTICOS) {
-        return new Response(JSON.stringify({ error: "Pronósticos cerrados" }), {
+      // Participantes OFICIALES del torneo: pronósticos cerrados (no pueden editar).
+      let esOficial = false;
+      if (userId !== "GUEST") {
+        try {
+          const rk = await fetchDatumRetry("pbc_3271891893", "GET", null, "", "&filter=(user_id='" + userId + "')", 2);
+          const rkItems = rk.items || rk || [];
+          esOficial = rkItems.length > 0 ? !!rkItems[0].es_oficial : false;
+        } catch (e) { esOficial = false; }
+      }
+      if (esOficial) {
+        return new Response(JSON.stringify({ error: "Pronósticos cerrados para participantes del torneo" }), {
           status: 403,
           headers: { "Content-Type": "application/json" },
         });
       }
       const body = await req.json();
+
+      // Partidos que YA tienen resultado cargado: no se pueden pronosticar.
+      let finishedSet = {};
+      try {
+        const mRes = await fetchDatumRetry("pbc_631836067", "GET", null, "", "", 2);
+        const ms = mRes.items || mRes || [];
+        ms.forEach(function (m) {
+          if (hasPairOfDatumScores(m.resulltado_local, m.resultado_visitante)) finishedSet[m.id_partido] = true;
+        });
+      } catch (e) { finishedSet = {}; }
+
       let existingItems = [];
       try {
         const existingReq = await fetchDatumRetry(
@@ -235,12 +254,10 @@ export default async function handler(req) {
         existingItems = [];
       }
 
-      // Filtra primero los items invalidos / bloqueados.
+      // Solo se aceptan partidos NO bloqueados y SIN resultado todavía.
       const valid = body.filter(function (p) {
         if (p.locked) return false;
-        // Pronosticos abiertos hasta FECHA_LIMITE: ya NO se rechazan partidos que
-        // ya empezaron/terminaron. La gente puede pronosticar cualquier partido
-        // (incluidos los ya jugados) hasta el cierre del sabado.
+        if (finishedSet[p.match_id]) return false; // ya jugado: no se pronostica
         return true;
       });
 
@@ -383,7 +400,7 @@ export default async function handler(req) {
     }
   }
 
-  const [fechaServidor, dataMatches, dataPreds] = await Promise.all([
+  const [fechaServidor, dataMatches, dataPreds, dataRank] = await Promise.all([
     fetchFechaTorneoDesdeJelou(),
     fetchDatumRetry("pbc_631836067", "GET", null, "", "", 3).catch(function () {
       return { items: [] };
@@ -400,6 +417,18 @@ export default async function handler(req) {
           return { items: [] };
         })
       : Promise.resolve({ items: [] }),
+    userId !== "GUEST"
+      ? fetchDatumRetry(
+          "pbc_3271891893",
+          "GET",
+          null,
+          "",
+          "&filter=(user_id='" + userId + "')",
+          2,
+        ).catch(function () {
+          return { items: [] };
+        })
+      : Promise.resolve({ items: [] }),
   ]);
   const rawMatches = Array.isArray(dataMatches)
     ? dataMatches
@@ -407,6 +436,10 @@ export default async function handler(req) {
   const userPredictions = Array.isArray(dataPreds)
     ? dataPreds
     : dataPreds.items || [];
+  // es_oficial = participante del torneo (bloqueado). Los no-oficiales (nuevos + Ruddy)
+  // SÍ pueden pronosticar, pero solo partidos sin resultado (ver 'locked').
+  const rankItems = Array.isArray(dataRank) ? dataRank : dataRank.items || [];
+  const esOficial = rankItems.length > 0 ? !!rankItems[0].es_oficial : false;
 
   // Si el fetch de partidos fallo aun con reintentos, NO renderizamos una pagina
   // vacia (que el usuario ve como "no me salen los grupos"). Mostramos una
@@ -477,7 +510,8 @@ export default async function handler(req) {
       },
     });
   }
-  const puedeEditarPronosticos = fechaServidor <= FECHA_LIMITE_PRONOSTICOS;
+  // Oficiales: bloqueados. No-oficiales (nuevos + Ruddy): pueden editar.
+  const puedeEditarPronosticos = !esOficial;
 
   const groups = {};
   rawMatches.forEach(function (m) {
@@ -507,7 +541,7 @@ export default async function handler(req) {
       realDispV: partidoFinalizado ? String(rv) : "-",
       pred_l: up ? up.pronostico_local : null,
       pred_v: up ? up.pronostico_visitante : null,
-      locked: !puedeEditarPronosticos,
+      locked: !puedeEditarPronosticos || partidoFinalizado,
     });
   });
   const groupKeys = Object.keys(groups).sort();

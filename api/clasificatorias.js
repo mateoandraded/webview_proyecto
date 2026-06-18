@@ -124,9 +124,17 @@ export default async function handler(req) {
 
   if (req.method === 'POST') {
     try {
-      var fechaPost = await fetchFechaTorneoDesdeJelou();
-      if (fechaPost > FECHA_LIMITE_PRONOSTICOS) {
-        return new Response(JSON.stringify({ error: 'Pronósticos cerrados' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
+      // Participantes oficiales del torneo: bracket cerrado.
+      var esOficialP = false;
+      if (userId !== 'GUEST') {
+        try {
+          var rkP = await fetchDatum('pbc_3271891893', 'GET', null, '', "&filter=(user_id='" + userId + "')");
+          var rkPItems = rkP.items || rkP || [];
+          esOficialP = rkPItems.length > 0 ? !!rkPItems[0].es_oficial : false;
+        } catch (e) { esOficialP = false; }
+      }
+      if (esOficialP) {
+        return new Response(JSON.stringify({ error: 'Pronósticos cerrados para participantes del torneo' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
       }
       const data = await req.json();
       let existingItems = [];
@@ -161,8 +169,16 @@ export default async function handler(req) {
     }
   }
 
-  var fechaServidor = await fetchFechaTorneoDesdeJelou();
-  var puedeEditar = fechaServidor <= FECHA_LIMITE_PRONOSTICOS;
+  // Oficiales: bracket bloqueado. No-oficiales (nuevos + Ruddy): pueden editar.
+  var esOficial = false;
+  if (userId !== 'GUEST') {
+    try {
+      const rkb = await fetchDatum('pbc_3271891893', 'GET', null, '', "&filter=(user_id='" + userId + "')");
+      const rkbItems = rkb.items || rkb || [];
+      esOficial = rkbItems.length > 0 ? !!rkbItems[0].es_oficial : false;
+    } catch (e) { esOficial = false; }
+  }
+  var puedeEditar = !esOficial;
   let uBracket = {};
   if (userId !== 'GUEST') {
     try {

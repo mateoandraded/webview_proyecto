@@ -231,7 +231,9 @@ export default async function handler(req) {
   }
 
   // 2. Calcular puntajes solo si el torneo ya empezó según fecha Jelou; si no, mostrar Datum sin PATCH
-  const calculatedUsers = profiles.map(pr => {
+  // Solo participantes OFICIALES aparecen en el ranking. Los no-oficiales
+  // (registros nuevos + Ruddy) juegan de demo pero quedan fuera del torneo.
+  const calculatedUsers = profiles.filter(function (pr) { return !!pr.es_oficial; }).map(pr => {
     if (!torneoIniciado) {
       return {
         nombre: String(pr.nombre).trim(),

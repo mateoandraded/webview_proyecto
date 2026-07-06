@@ -24,7 +24,7 @@ async function fetchDB(coll, query = '') {
     while (true) {
       const url = `${BASE_URL.replace(/\/$/, '')}/${coll}/records?perPage=500&page=${page}${query}`;
       const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" }, cache: 'no-store' });
-      if (!res.ok) break;
+      if (!res.ok) throw new Error("HTTP " + res.status);
       const d = await res.json();
       const items = Array.isArray(d) ? d : (d.items || []);
       out = out.concat(items);

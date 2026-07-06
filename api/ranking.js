@@ -7,9 +7,9 @@ export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = process.env.API_KEY;
-const BASE_URL = process.env.BASE_URL;
-const BASE_URL_MATCHES = "https://mateoacademy-9djnmu.jelou.cloud/api/collections/pbc_631836067/records?perPage=500";
+const API_KEY = process.env.API_KEY || 'db_3cfJUDRR8mwrlazSod9Fo2YXIe3qUJxI57OkdvpCf1a5f863';
+const BASE_URL = process.env.BASE_URL || 'https://mateoacademy-9djnmu.jelou.cloud/api/collections';
+const BASE_URL_MATCHES = `${BASE_URL.replace(/\/$/, '')}/pbc_631836067/records?perPage=500`;
 
 function esc(s) {
   if (s == null) return '';
@@ -22,8 +22,8 @@ async function fetchDB(coll, query = '') {
   let page = 1; let out = [];
   try {
     while (true) {
-      const url = `${BASE_URL}/${coll}/records?perPage=500&page=${page}${query}`;
-      const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" } });
+      const url = `${BASE_URL.replace(/\/$/, '')}/${coll}/records?perPage=500&page=${page}${query}`;
+      const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" }, cache: 'no-store' });
       if (!res.ok) break;
       const d = await res.json();
       const items = Array.isArray(d) ? d : (d.items || []);
@@ -37,7 +37,7 @@ async function fetchDB(coll, query = '') {
 
 // Background async patch so we don't hold the Edge request
 function silentPatch(coll, id, payload) {
-  const url = `${BASE_URL}/${coll}/records/${id}`;
+  const url = `${BASE_URL.replace(/\/$/, '')}/${coll}/records/${id}`;
   fetch(url, {
     method: 'PATCH',
     headers: { "X-Api-Key": API_KEY, "Content-Type": "application/json" },

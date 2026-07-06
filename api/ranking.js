@@ -168,7 +168,7 @@ export default async function handler(req) {
   // (registros nuevos + Ruddy) juegan de demo pero quedan fuera del torneo.
   const calculatedUsers = profiles.filter(function (pr) { return !!pr.es_oficial; }).map(function (pr) {
     return {
-      nombre: String(pr.nombre || '').trim(),
+      nombre: (String(pr.nombre || '').trim() + ' ' + String(pr.apellido || '').trim()).trim(),
       total_puntos: Number(pr.total_puntos) || 0,
       aciertos: Number(pr.pronosticos_correctos) || 0,
       esParticipante: !!pr.es_participante,

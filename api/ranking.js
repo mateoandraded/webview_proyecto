@@ -31,7 +31,9 @@ async function fetchDB(coll, query = '') {
       if (Array.isArray(d) || !d.totalPages || page >= d.totalPages) break;
       page++;
     }
-  } catch (e) { /* devolvemos lo leído hasta ahora */ }
+  } catch (e) {
+    if (out.length === 0) out.push({ _error: e.message || String(e) });
+  }
   return out;
 }
 
@@ -156,6 +158,11 @@ export default async function handler(req) {
   // aquí bajando TODOS los pronósticos + partidos + brackets, y con el torneo ya
   // avanzado ese fetch pesado fallaba y dejaba la tabla VACÍA. Ahora solo leemos.
   const profiles = await fetchDB('pbc_3271891893');
+  let errorMsg = '';
+  if (profiles.length > 0 && profiles[0]._error) {
+    errorMsg = profiles[0]._error;
+    profiles.shift();
+  }
 
   // Solo participantes OFICIALES aparecen en el ranking. Los no-oficiales
   // (registros nuevos + Ruddy) juegan de demo pero quedan fuera del torneo.
@@ -232,7 +239,7 @@ export default async function handler(req) {
         '</div>';
     });
   } else {
-    listHtml = '<div class="empty-state">' + t.no_participants + '</div>';
+    listHtml = '<div class="empty-state">' + t.no_participants + (errorMsg ? '<br><small style="color:red">' + esc(errorMsg) + '</small>' : '') + '</div>';
   }
 
   // Current user fallback if not top 5

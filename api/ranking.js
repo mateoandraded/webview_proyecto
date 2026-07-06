@@ -151,140 +151,22 @@ export default async function handler(req) {
   };
   const t = i18n[lang] || i18n['es'];
 
-  // 1. Fetch Datum + fecha simulada desde Jelou Functions (mismos secrets que FECHA_HOY)
-  const [rawMatches, profiles, predictions, brackets, hoy] = await Promise.all([
-    fetch(BASE_URL_MATCHES, { headers: { "X-Api-Key": API_KEY } }).then(r => r.ok ? r.json().then(d => d.items || []) : []).catch(() => []),
-    fetchDB('pbc_3271891893'), // Perfiles/Ranking
-    fetchDB('pbc_1944158292'), // Pronosticos Goles
-    fetchDB('pbc_3221812075'), // Pronosticos Brackets
-    fetchFechaTorneoDesdeJelou()
-  ]);
+  // Ranking = SOLO LECTURA de torneo_ranking. El cron recalcularTodos ya mantiene
+  // los puntos correctos (goles + brackets) en total_puntos. Antes se recalculaba
+  // aquí bajando TODOS los pronósticos + partidos + brackets, y con el torneo ya
+  // avanzado ese fetch pesado fallaba y dejaba la tabla VACÍA. Ahora solo leemos.
+  const profiles = await fetchDB('pbc_3271891893');
 
-  const torneoIniciado = hoy >= FECHA_INICIO_TORNEO;
-
-  // 1.5 Evaluar Fase Oficial de los Partidos Reales
-  const mappedMatches = rawMatches.map(m => ({
-    id_partido: m.id_partido, local: m.equipo_local, visitante: m.equipo_visitante,
-    gl: m.resulltado_local, gv: m.resultado_visitante,
-    fecha: m.fecha, ronda: m.Fase_o_Grupo, ganador: m.ganador_final
-  }));
-
-  // Indices O(1) para evitar find/filter por user dentro del loop principal.
-  // Con 175 perfiles x 80 pronosticos x 104 partidos pasariamos de ~1.4M ops a ~14k.
-  const matchById = new Map();
-  for (const m of mappedMatches) matchById.set(m.id_partido, m);
-
-  // Dedupe: un registro por (user, match), el más reciente. Evita contar duplicados.
-  const _predByKey = new Map();
-  for (const p of predictions) {
-    const k = p.user_id + '|' + p.match_id;
-    const prev = _predByKey.get(k);
-    if (!prev || String(p.updated) > String(prev.updated)) _predByKey.set(k, p);
-  }
-  const predsByUser = new Map();
-  for (const p of _predByKey.values()) {
-    if (!predsByUser.has(p.user_id)) predsByUser.set(p.user_id, []);
-    predsByUser.get(p.user_id).push(p);
-  }
-
-  const bracketByUser = new Map();
-  for (const b of brackets) bracketByUser.set(b.user_id, b);
-
-  const real32 = new Set(); const real16 = new Set(); const real8 = new Set(); const real4 = new Set();
-  let campeonReal = ''; let subcampeonReal = ''; let terceroReal = ''; let cuartoReal = '';
-
-  // Determinar quienes jugaron fases (heurística basada en 'Fase_o_Grupo' u otro asumiendo estructura de Mundial 26)
-  // Como la DB puede no tener la fase bien escrita, nos basamos en nombre.
-  if (torneoIniciado) {
-    const r32M = mappedMatches.filter(function (m) {
-      return isRoundOf32(m.ronda) && partidoPuedeCalificar(m, hoy);
-    });
-    r32M.forEach(m => { real32.add(m.local); real32.add(m.visitante); });
-    const r16M = mappedMatches.filter(function (m) {
-      return isRoundOf16(m.ronda) && partidoPuedeCalificar(m, hoy);
-    });
-    r16M.forEach(m => { real16.add(m.local); real16.add(m.visitante); });
-    const r8M = mappedMatches.filter(function (m) {
-      return isQuarterFinals(m.ronda) && partidoPuedeCalificar(m, hoy);
-    });
-    r8M.forEach(m => { real8.add(m.local); real8.add(m.visitante); });
-    const r4M = mappedMatches.filter(function (m) {
-      return isSemiFinals(m.ronda) && partidoPuedeCalificar(m, hoy);
-    });
-    r4M.forEach(m => { real4.add(m.local); real4.add(m.visitante); });
-
-    const finalM = mappedMatches.find(function (m) {
-      return normalizeRondaLabel(m.ronda) === 'final' && partidoPuedeCalificar(m, hoy);
-    });
-    if (finalM) {
-      campeonReal = finalM.ganador || '';
-      subcampeonReal = (campeonReal === finalM.local) ? finalM.visitante : finalM.local;
-    }
-    const thirdM = mappedMatches.find(function (m) {
-      var x = normalizeRondaLabel(m.ronda);
-      return (x.indexOf('third') !== -1 || x === 'tercer lugar' || x === '3er lugar' || x === '3º lugar') && partidoPuedeCalificar(m, hoy);
-    });
-    if (thirdM) {
-      terceroReal = thirdM.ganador || '';
-      cuartoReal = (terceroReal === thirdM.local) ? thirdM.visitante : thirdM.local;
-    }
-  }
-
-  // 2. Calcular puntajes solo si el torneo ya empezó según fecha Jelou; si no, mostrar Datum sin PATCH
   // Solo participantes OFICIALES aparecen en el ranking. Los no-oficiales
   // (registros nuevos + Ruddy) juegan de demo pero quedan fuera del torneo.
-  const calculatedUsers = profiles.filter(function (pr) { return !!pr.es_oficial; }).map(pr => {
-    if (!torneoIniciado) {
-      return {
-        nombre: String(pr.nombre).trim(),
-        total_puntos: Number(pr.total_puntos) || 0,
-        aciertos: Number(pr.pronosticos_correctos) || 0,
-        esParticipante: !!pr.es_participante,
-        nacionalidad: pr.nacionalidad || '',
-        isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre).trim().toLowerCase() === loggedUser)
-      };
-    }
-
-    let ptsGoles = 0; let aciertos = 0;
-
-    const userPreds = predsByUser.get(pr.user_id) || [];
-    userPreds.forEach(p => {
-      const match = matchById.get(p.match_id);
-      if (!match || !partidoPuedeCalificar(match, hoy)) return;
-
-      let pt = 0;
-      if (scoreEqDatum(p.pronostico_local, match.gl) && scoreEqDatum(p.pronostico_visitante, match.gv)) { pt = 2; aciertos++; }
-      else if (scoreEqDatum(p.pronostico_local, match.gl) || scoreEqDatum(p.pronostico_visitante, match.gv)) { pt = 1; }
-      ptsGoles += pt;
-      // (No se escribe en la base: el cron recalcularTodos es la única fuente que
-      //  patchea pronósticos/ranking. Aquí solo calculamos para mostrar.)
-    });
-
-    let ptsBrackets = 0;
-    const b = bracketByUser.get(pr.user_id);
-    if (b) {
-      const check = (arr, setRef, val) => { if (arr && Array.isArray(arr)) arr.forEach(t => { if (setRef.has(t)) ptsBrackets += val; }); };
-      check(b.dieciseisavos, real32, 1);
-      check(b.octavos, real16, 2);
-      check(b.cuartos, real8, 3);
-      check(b.semis, real4, 3);
-      if (b.campeon === campeonReal && campeonReal) ptsBrackets += 10;
-      if (b.subcampeon === subcampeonReal && subcampeonReal) ptsBrackets += 5;
-      if (b.tercer_lugar === terceroReal && terceroReal) ptsBrackets += 4;
-      if (b.cuarto_lugar === cuartoReal && cuartoReal) ptsBrackets += 4;
-    }
-
-    const totalCalculado = ptsGoles + ptsBrackets;
-    // (Sin silentPatch: no reescribimos el ranking desde el webview para no pelear
-    //  con el cron ni borrar puntos por una lectura parcial.)
-
+  const calculatedUsers = profiles.filter(function (pr) { return !!pr.es_oficial; }).map(function (pr) {
     return {
-      nombre: String(pr.nombre).trim(),
-      total_puntos: totalCalculado,
-      aciertos: aciertos,
+      nombre: String(pr.nombre || '').trim(),
+      total_puntos: Number(pr.total_puntos) || 0,
+      aciertos: Number(pr.pronosticos_correctos) || 0,
       esParticipante: !!pr.es_participante,
       nacionalidad: pr.nacionalidad || '',
-      isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre).trim().toLowerCase() === loggedUser)
+      isCurrentUser: loggedUserId !== 'GUEST' ? (pr.user_id === loggedUserId) : (String(pr.nombre || '').trim().toLowerCase() === loggedUser)
     };
   });
 

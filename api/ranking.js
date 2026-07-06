@@ -7,8 +7,8 @@ export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = process.env.API_KEY || 'db_3cfJUDRR8mwrlazSod9Fo2YXIe3qUJxI57OkdvpCf1a5f863';
-const BASE_URL = process.env.BASE_URL || 'https://mateoacademy-9djnmu.jelou.cloud/api/collections';
+const API_KEY = 'db_3cfJUDRR8mwrlazSod9Fo2YXIe3qUJxI57OkdvpCf1a5f863';
+const BASE_URL = 'https://mateoacademy-9djnmu.jelou.cloud/api/collections';
 const BASE_URL_MATCHES = `${BASE_URL.replace(/\/$/, '')}/pbc_631836067/records?perPage=500`;
 
 function esc(s) {

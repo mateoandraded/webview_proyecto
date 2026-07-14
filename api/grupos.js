@@ -6,8 +6,8 @@ export const config = {
   runtime: "edge",
 };
 
-const API_KEY = process.env.API_KEY;
-const BASE_URL = process.env.BASE_URL;
+const API_KEY = 'db_3cfJUDRR8mwrlazSod9Fo2YXIe3qUJxI57OkdvpCf1a5f863';
+const BASE_URL = 'https://mateoacademy-9djnmu.jelou.cloud/api/collections';
 
 const FECHA_LIMITE_PRONOSTICOS = "2026-06-14";
 

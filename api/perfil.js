@@ -8,8 +8,8 @@ export const config = {
   runtime: 'edge',
 };
 
-const API_KEY = process.env.API_KEY;
-const BASE_URL = process.env.BASE_URL;
+const API_KEY = process.env.API_KEY || 'db_3cfJUDRR8mwrlazSod9Fo2YXIe3qUJxI57OkdvpCf1a5f863';
+const BASE_URL = process.env.BASE_URL || 'https://mateoacademy-9djnmu.jelou.cloud/api/collections';
 
 const FLAGS = {
   "MEXICO": "🇲🇽", "ESTADOS UNIDOS": "🇺🇸", "CANADA": "🇨🇦", "BRASIL": "🇧🇷",
@@ -36,7 +36,7 @@ function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
 
 async function fetchDB(coll, query) {
   query = query || '';
-  const res = await fetch(BASE_URL + '/' + coll + '/records?perPage=500' + query, { headers: { 'X-Api-Key': API_KEY } });
+  const res = await fetch(BASE_URL.replace(/\/$/, '') + '/' + coll + '/records?perPage=500' + query, { headers: { 'X-Api-Key': API_KEY }, cache: 'no-store' });
   if (!res.ok) return [];
   const d = await res.json();
   return d.items || d || [];

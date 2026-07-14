@@ -34,12 +34,23 @@ const FLAGS = {
 };
 function flag(name) { return FLAGS[(name||'').toUpperCase()] || '🏳️'; }
 
-async function fetchDB(coll, query) {
-  query = query || '';
-  const res = await fetch(BASE_URL.replace(/\/$/, '') + '/' + coll + '/records?perPage=500' + query, { headers: { 'X-Api-Key': API_KEY }, cache: 'no-store' });
-  if (!res.ok) return [];
-  const d = await res.json();
-  return d.items || d || [];
+async function fetchDB(coll, query = '') {
+  let page = 1; let out = [];
+  try {
+    while (true) {
+      const url = `${BASE_URL.replace(/\/$/, '')}/${coll}/records?perPage=500&page=${page}${query}`;
+      const res = await fetch(url, { headers: { "X-Api-Key": API_KEY, "Accept": "application/json" }, cache: 'no-store' });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const d = await res.json();
+      const items = Array.isArray(d) ? d : (d.items || []);
+      out = out.concat(items);
+      if (Array.isArray(d) || !d.totalPages || page >= d.totalPages) break;
+      page++;
+    }
+  } catch (e) {
+    if (out.length === 0) out.push({ _error: e.message || String(e) });
+  }
+  return out;
 }
 
 export default async function handler(req) {

@@ -230,7 +230,7 @@ export default async function handler(req) {
       listHtml +=
         '<div class="rank-card" style="--accent:' + c.accent + ';--dark:' + c.dark + '">' +
         badgeHtml +
-        '<div class="rc-pos" style="background:' + c.accent + ';color:' + c.dark + '">' + medalLabel(posNum) + '</div>' +
+        '<div class="rc-pos" style="background:' + c.accent + ';color:' + c.dark + '; font-family: sans-serif;">' + medalLabel(posNum) + '</div>' +
         buildRcInfo(u, isUser, t.exact_hits) +
         '<div class="rc-score">' +
         '<div class="rc-pts" style="color:' + c.accent + '">' + (u.total_puntos || 0) + '</div>' +
@@ -272,7 +272,7 @@ export default async function handler(req) {
       listHtml +=
         '<div class="rank-card compact" style="--accent:' + accent + ';--dark:' + dark + '">' +
         badgeTu +
-        '<div class="rc-pos" style="background:' + accent + ';color:' + dark + '">' + (idx + 1) + '</div>' +
+        '<div class="rc-pos" style="background:' + accent + ';color:' + dark + '; font-family: sans-serif;">' + medalLabel(idx + 1) + '</div>' +
         buildRcInfo(u, isUser, t.exact_hits) +
         '<div class="rc-score">' +
         '<div class="rc-pts" style="color:' + (isUser ? '#C9FF24' : '#fff') + '">' + (u.total_puntos || 0) + '</div>' +
